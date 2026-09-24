@@ -1,0 +1,73 @@
+.figma-route-frame {
+  position: relative;
+  width: 440px;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow-x: hidden;
+  background: #fff;
+}
+.figma-route-frame > .frame { margin: 0; }
+.figma-route-interactive {
+  position: absolute;
+  z-index: 20;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.figma-route-interactive:focus-visible {
+  outline: 2px solid #1317e4;
+  outline-offset: 2px;
+}
+.figma-route-input {
+  position: absolute;
+  z-index: 21;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ff0303;
+  font-family: jgs5, monospace;
+  text-align: center;
+}
+.figma-route-scroll { overflow-x: hidden; }
+
+/* Keep the Figma artboard physically centred while the mobile viewport crops it
+   exactly at the same 440px design width. */
+.figma-route-frame { flex: 0 0 auto; }
+.figma-route-frame > .frame { width: 440px; }
+
+/* Functional controls remain transparent so the Figma artwork is the visual source of truth. */
+.figma-route-qr {
+  position: absolute;
+  object-fit: contain;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 3;
+}
+.figma-route-overlay-text {
+  position: absolute;
+  z-index: 4;
+  text-align: center;
+  font-size: 16px;
+  line-height: 1.25;
+  color: #1317e4;
+  pointer-events: none;
+}
+
+/* Transparent interaction targets over immutable Figma artwork. */
+.figma-hit-grid,
+.figma-people-hit-grid { position: absolute; inset: 0; pointer-events: none; }
+.figma-hit { position: absolute; z-index: 10; pointer-events: auto; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.figma-hit:focus-visible { outline: 2px solid #1317e4; outline-offset: 2px; border-radius: 18px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+.figma-inline-error {
+  position: sticky;
+  bottom: 12px;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  margin: -120px 16px 24px;
+  pointer-events: none;
+}
+.figma-inline-error > * { pointer-events: auto; }

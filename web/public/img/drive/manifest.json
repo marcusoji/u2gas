@@ -1,0 +1,390 @@
+{
+  "folder": "https://drive.google.com/drive/folders/1f8uGtpwTZfXnv5oGfuOB19X9K476zNB-",
+  "note": "Re-exports of Figma layers. See docs/DESIGN-SYSTEM.md 'Drive originals' for how each is placed.",
+  "files": {
+    "image 3": {
+      "id": "1DWC9tMjjn_jPBhh8763pUtLVZKXsn5V1",
+      "saveAs": "web/public/img/drive/image-3.png",
+      "usedBy": [
+        {
+          "node": "1:318",
+          "layer": "image 3",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            90,
+            119
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1448",
+          "layer": "image 3",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            160,
+            212
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1453",
+          "layer": "image 3",
+          "mode": "CROP",
+          "rotation": -180,
+          "box": [
+            160,
+            212
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "image 4": {
+      "id": "1pqXVCCzr-0daGkaSGs9R_kFIfsN3pkRi",
+      "saveAs": "web/public/img/drive/image-4.png",
+      "usedBy": [
+        {
+          "node": "1:324",
+          "layer": "image 4",
+          "mode": "FILL",
+          "rotation": 0,
+          "box": [
+            116,
+            116
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1446",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": -90,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1451",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": -90,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1477",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            250,
+            168
+          ],
+          "accepts": "render or source"
+        }
+      ]
+    },
+    "image 4-1": {
+      "id": "1JBQJJAnbz_XFi7LVwBx1-1Jk7PoMJqhZ",
+      "saveAs": "web/public/img/drive/image-4-1.png",
+      "usedBy": [
+        {
+          "node": "1:324",
+          "layer": "image 4",
+          "mode": "FILL",
+          "rotation": 0,
+          "box": [
+            116,
+            116
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1446",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": -90,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1451",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": -90,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1477",
+          "layer": "image 4",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            250,
+            168
+          ],
+          "accepts": "render or source"
+        }
+      ]
+    },
+    "image 5": {
+      "id": "1dHZyX-R3Exl_56kH1uY-lItweNgLHjkc",
+      "saveAs": "web/public/img/drive/image-5.png",
+      "usedBy": [
+        {
+          "node": "1:322",
+          "layer": "image 5",
+          "mode": "FILL",
+          "rotation": 0,
+          "box": [
+            134,
+            135
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1445",
+          "layer": "image 5",
+          "mode": "CROP",
+          "rotation": -180,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1450",
+          "layer": "image 5",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            200,
+            200
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1478",
+          "layer": "image 5",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            126,
+            84
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "image 7": {
+      "id": "1E2hSmseOrelKQudP_ZTQ8yLJiYy2Hu-M",
+      "saveAs": "web/public/img/drive/image-7.png",
+      "usedBy": [
+        {
+          "node": "1:320",
+          "layer": "image 7",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            96,
+            109
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1447",
+          "layer": "image 7",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            200,
+            226
+          ],
+          "accepts": "source only"
+        },
+        {
+          "node": "1:1452",
+          "layer": "image 7",
+          "mode": "CROP",
+          "rotation": -180,
+          "box": [
+            200,
+            226
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "image 9": {
+      "id": "18EzShicBBvVc4drZeKsvrdMHneT6YSoQ",
+      "saveAs": "web/public/img/drive/image-9.png",
+      "usedBy": [
+        {
+          "node": "1:1588",
+          "layer": "image 9",
+          "mode": "CROP",
+          "rotation": 17.54,
+          "box": [
+            96.95,
+            146.63
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1551",
+          "layer": "image 14",
+          "mode": "CROP",
+          "rotation": 4,
+          "box": [
+            60,
+            90.75
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "image 10": {
+      "id": "11D_1Tajz0JqFlXqbMGr7bnLLxct7ioiR",
+      "saveAs": "web/public/img/drive/image-10.png",
+      "usedBy": [
+        {
+          "node": "1:1586",
+          "layer": "image 10",
+          "mode": "FILL",
+          "rotation": 14.16,
+          "box": [
+            140,
+            158
+          ],
+          "accepts": "render or source"
+        }
+      ]
+    },
+    "image 11": {
+      "id": "1lvIQUuhZEiWhev5z5on9btvzsMYkZhvc",
+      "saveAs": "web/public/img/drive/image-11.png",
+      "usedBy": [
+        {
+          "node": "1:1587",
+          "layer": "image 11",
+          "mode": "FILL",
+          "rotation": -90,
+          "box": [
+            136,
+            136
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1571",
+          "layer": "image 14",
+          "mode": "FILL",
+          "rotation": -83.46,
+          "box": [
+            70,
+            70
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "image 13": {
+      "id": "1t_Tkk3U3OpfdAVWP3CSIdQUeP980UOOk",
+      "saveAs": "web/public/img/drive/image-13.png",
+      "usedBy": [
+        {
+          "node": "1:1591",
+          "layer": "image 13",
+          "mode": "FILL",
+          "rotation": -180,
+          "box": [
+            124,
+            124
+          ],
+          "accepts": "render or source"
+        },
+        {
+          "node": "1:1531",
+          "layer": "image 14",
+          "mode": "FILL",
+          "rotation": -180,
+          "box": [
+            70,
+            70
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "shopping basket 3 1": {
+      "id": "18BX9in0BQoViG1bGc3mR1U46NZTCTiBm",
+      "saveAs": "web/public/img/drive/shopping-basket-3-1.png",
+      "usedBy": [
+        {
+          "node": "1:1585",
+          "layer": "shopping basket 3 1",
+          "mode": "CROP",
+          "rotation": 0,
+          "box": [
+            356,
+            516
+          ],
+          "accepts": "render or source"
+        }
+      ]
+    },
+    "TWO TONE THUMBS UP 1": {
+      "id": "12yCqdRzyMlUtle_WTRK9AermyIrqi3wa",
+      "saveAs": "web/public/img/drive/two-tone-thumbs-up-1.png",
+      "usedBy": [
+        {
+          "node": "1:577",
+          "layer": "TWO TONE THUMBS UP 1",
+          "mode": "FILL",
+          "rotation": 0,
+          "box": [
+            266,
+            266
+          ],
+          "accepts": "source only"
+        }
+      ]
+    },
+    "TWO TONE THUMBS UP 2": {
+      "id": "1dZA3LdJMfmjNQv5kRq0fF_n5SIAXlMv0",
+      "saveAs": "web/public/img/drive/two-tone-thumbs-up-2.png",
+      "usedBy": [
+        {
+          "node": "1:496",
+          "layer": "TWO TONE THUMBS UP 2",
+          "mode": "FILL",
+          "rotation": 0,
+          "box": [
+            266,
+            266
+          ],
+          "accepts": "source only"
+        }
+      ]
+    }
+  },
+  "unplaced": {
+    "image PIPE PURPLE": "1dWj4Uw84l1DQKiEBYp870bDqg2wVbp-E",
+    "image PIPDE BLACK": "1YxcvAkwXkWCqz7f6mtIx2JzyJXSgNX5I"
+  }
+}

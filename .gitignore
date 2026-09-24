@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
+coverage/
+.lighthouseci/
+*.tsbuildinfo

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1317D1" />
+<title>U2GAS — U2 Oil and Gas</title>
+
+<!-- The pixel face is the brand. Preload the one weight used above the fold so
+     it never flashes a fallback, and never blocks render either. -->
+<!-- The pixel face is the brand and is on every screen, so it is preloaded.
+     Homemade Apple is not: it renders four words on one route, and preloading
+     it would spend critical-path bandwidth on something most visits never see. -->
+<link rel="preload" href="/fonts/jgs7.woff2" as="font" type="font/woff2" crossorigin />
+
+<!-- VITE_API_ORIGIN is set at build time and used by scripts/build-headers.mjs
+     to name the API origin in the Content-Security-Policy.
+
+     Do not reference it here with percent delimiters. Vite substitutes those
+     tokens across the whole file, comments included: with the variable unset
+     the build fails with "URI malformed", and with it set the comment silently
+     becomes the live API origin, shipped to every visitor. -->
+</head>
+<body>
+<div id="root"></div>
+<noscript>U2GAS needs JavaScript to reach the depot.</noscript>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

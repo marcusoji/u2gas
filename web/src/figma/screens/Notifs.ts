@@ -1,0 +1,7 @@
+// Generated from the HTML screen by build/gen_react.py. Do not edit.
+// Screen: notifs  node 88:55  app FILE
+import * as A from "../assets";
+
+export const node = "88:55";
+export const height = 50;
+export const html = `<div style="position:absolute;inset:0;background:#fff"></div><div data-node="88:61" style="position:absolute;left:15px;top:11px;width:20px;height:27px"><svg width="20" height="27" viewBox="0 0 20 27" fill="none" aria-hidden="true"><path d="M10 0C10.5523 0 11 0.447715 11 1V3L10.9971 3.0498C16.0518 3.5502 20 7.81367 20 13V22L19.9951 22.1025C19.9472 22.573 19.573 22.9472 19.1025 22.9951L19 23H8.82617C8.93694 23.3131 9 23.649 9 24C9 25.6569 7.65685 27 6 27C4.34315 27 3 25.6569 3 24C3 23.649 3.06306 23.3131 3.17383 23H1C0.482323 23 0.0562145 22.6067 0.00488281 22.1025L0 22V13C0 7.814 3.94772 3.55065 9.00195 3.0498C9.00114 3.03329 9 3.01671 9 3V1C9 0.447715 9.44771 0 10 0ZM6 23C5.44772 23 5 23.4477 5 24C5 24.5523 5.44772 25 6 25C6.55228 25 7 24.5523 7 24C7 23.4477 6.55228 23 6 23ZM10 5C5.58172 5 2 8.58172 2 13V21H18V13C18 8.58172 14.4183 5 10 5Z" fill="black"/></svg></div>`;

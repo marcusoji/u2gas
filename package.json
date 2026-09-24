@@ -1,0 +1,12 @@
+{
+  "name": "u2gas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "U2 Gas frontend and Cloudflare Worker",
+  "scripts": {
+    "dev": "cd web && npm run dev -- --host 0.0.0.0",
+    "build": "cd web && npm run build",
+    "typecheck": "cd web && npm run typecheck",
+    "check:frontend": "cd web && npm run check:frontend"
+  }
+}

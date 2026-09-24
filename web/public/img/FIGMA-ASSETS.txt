@@ -1,0 +1,99 @@
+Vector assets exported from the U2 GAS Figma file
+=================================================
+
+  receipt_union.svg    node 1:301   263 x 163.001   the printed receipt
+  led_leg_left.svg     node 1:253    22 x 35        left wire of the LED strip
+  led_leg_right.svg    node 1:254    22 x 36        right wire
+  delete_button.svg    node 1:287    49 x 39        keypad delete key
+
+How these were obtained
+-----------------------
+The Figma asset host (www.figma.com) is not reachable from the build sandbox,
+so the usual export URLs return 403. These were pulled instead through the
+Figma plugin API, which runs inside Figma itself: exportAsync() produces the
+bytes and returns them through the tool channel.
+
+Notes worth keeping
+-------------------
+receipt_union   The torn lower edge is NOT a scallop. It is a nib shape:
+                13 teeth, 21.24px pitch, dipping 3.379px below the 159.622
+                baseline, each tooth flat-topped with a rounded dip. An
+                earlier CSS radial-gradient mask had it as circles, which
+                reads wrong at any size above thumbnail.
+
+delete_button   Not a text glyph. The X is drawn as pixel blocks so it sits on
+                the same grid as jgs7. Rendering it as "x" in a text node
+                gives a visibly different shape.
+
+led legs        4px stroke, 5.58px corner radius. The SVG is 24 wide for a
+                22-wide node because the stroke needs the extra room.
+
+Product photos — LICENSING PROBLEMS FOUND
+-----------------------------------------
+Two of the four shop-grid photos cannot ship as they are.
+
+  image 3  (1:1448, 1:318)  red gas cylinder
+           *** CARRIES A VISIBLE "dreamstime" STOCK WATERMARK ***
+           Saved here as product-cylinder.jpg so the layout can be checked,
+           but it must be replaced before launch. Either license the photo
+           from Dreamstime or shoot/source a replacement.
+
+  image 7  (1:1447, 1:320)  Energizer 9V battery
+           A branded product photograph. Selling accessories beside a
+           trademarked battery image invites a complaint even when the
+           product itself is genuine. Use a generic battery shot, or one of
+           the depot's own photographs of stock actually carried.
+
+  image 5  (1:1445, 1:322)  stainless hose clamps    — clean, SAVED
+  image 4  (1:1446, 1:324)  coiled yellow hose       — clean, SAVED
+
+Files present
+-------------
+  receipt-qr.png         100x100, constructed — see note below
+  product-cylinder.jpg   image 3, 63x82    WATERMARKED — replace before launch
+  product-clamps.jpg     image 5, 81x81    clean
+  product-hose.jpg       image 4, 62x62    clean
+
+Exported at reduced scale because of a transfer limit (see below) and shown
+upscaled to the designed leaf size. Re-export at 1x or 2x for production.
+
+STILL NEEDED
+------------
+  node 1:319 / 1:320   battery          tile 143 x 153.5, leaf  96 x 109
+  node 1:321 / 1:322   hose clamps      tile 143 x 153.5, leaf 134 x 135
+  node 1:323 / 1:324   coiled hose      tile 143 x 143,   leaf 116 x 116
+
+  image 7 (1:1447, 1:320) — the Energizer battery. Held back deliberately
+  pending a decision on the branding, since transferring a photo that is
+  going to be replaced is wasted effort.
+
+How the others were transferred
+-------------------------------
+The Figma asset host is unreachable from the build sandbox and the plugin
+tool result caps at 20KB, so each photo was exported small, base64-encoded,
+split into chunks, and reassembled with a per-chunk checksum plus a whole-file
+checksum.
+
+That verification was not ceremonial. Two unchunked attempts both produced
+corrupt files — one truncated, one the correct length and correctly terminated
+but wrong in the middle, which is the kind that passes a casual look. At 2200
+characters per chunk, one chunk in three failed. At 1100 characters, none did.
+Use 1100 if this ever needs repeating.
+
+For production, export these from Figma directly at full resolution rather
+than reusing the reduced-scale copies here.
+
+
+The receipt QR
+--------------
+receipt-qr.png is NOT the image from the Figma file. That one is a sample
+('copied_data-8 1') whose payload is arbitrary, so copying its exact pixels
+would have bought nothing and cost a long, error-prone transfer.
+
+This is a correctly-structured QR matrix at the same module density: real
+finder patterns, separators, timing tracks and an alignment block, 25 modules
+at 4px. It reads as a QR and carries the right visual weight at 100x100.
+
+It is not scannable, and it does not need to be — the application issues its
+own codes through issue_qr() and renders them client-side. Nothing should ever
+ship this file; it exists so the receipt layout can be judged.

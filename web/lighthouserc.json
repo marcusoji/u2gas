@@ -1,0 +1,36 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 150,
+          "throughputKbps": 1638,
+          "cpuSlowdownMultiplier": 4
+        }
+      },
+      "url": [
+        "http://localhost:4173/",
+        "http://localhost:4173/shop",
+        "http://localhost:4173/staff",
+        "http://localhost:4173/admin"
+      ]
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", { "maxNumericValue": 1800 }],
+        "interactive":              ["error", { "maxNumericValue": 2000 }],
+        "cumulative-layout-shift":  ["error", { "maxNumericValue": 0.05 }],
+        "total-blocking-time":      ["error", { "maxNumericValue": 200 }],
+        "resource-summary:script:size":     ["error", { "maxNumericValue": 163840 }],
+        "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 30720 }],
+        "resource-summary:font:size":       ["error", { "maxNumericValue": 92160 }],
+        "unused-javascript":       ["warn",  { "maxLength": 1 }],
+        "uses-responsive-images":  ["error", { "maxLength": 0 }],
+        "modern-image-formats":    ["error", { "maxLength": 0 }]
+      }
+    }
+  }
+}

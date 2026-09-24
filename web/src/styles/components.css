@@ -1,0 +1,787 @@
+/* ==========================================================================
+   U2GAS — components
+
+   Class names are flat and prefixed. No nesting deeper than one level, so
+   specificity never fights itself between files.
+   ========================================================================== */
+
+/* --- Screen shell -------------------------------------------------------- */
+
+.screen {
+  min-height: 100dvh;
+  padding: var(--screen-pad);
+  padding-bottom: calc(var(--screen-pad) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+/* figma 1:1335 — jgs7 64px, -5.12px tracking, 39px line height. */
+.screen-title.is-display {
+  font-size: var(--t-display);
+  letter-spacing: var(--track-display);
+  line-height: 39px;
+}
+
+.screen-title {
+  font-size: var(--t-title);
+  font-weight: 700;
+  color: var(--blue);
+  line-height: 1.15;
+  letter-spacing: var(--track);
+  margin: 0;
+}
+
+.label {
+  font-size: var(--t-caption);
+  color: var(--grey);
+  letter-spacing: var(--track-wide);
+  text-align: center;
+  margin: 0;
+}
+
+.signature {
+  font-family: var(--font-script);
+  font-size: var(--t-script);
+  color: var(--blue);
+  text-align: center;
+  /* Homemade Apple has tall, sparse metrics. The file trims the line box to
+     cap height, so the name sits tight to what is above and below it rather
+     than floating in a band of its own leading. */
+  line-height: 1;
+  letter-spacing: var(--track);
+}
+
+/* The profile navigation. Set far larger than an ordinary screen title —
+   these four words are the whole screen. */
+.profile-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.profile-menu a,
+.profile-menu button,
+.profile-menu span {
+  font-family: var(--font-px);
+  font-size: var(--t-menu);
+  line-height: 1;
+  letter-spacing: var(--track);
+  color: var(--blue);
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+}
+
+.profile-menu .is-soon { color: var(--blue-soft); }
+
+/* Figma trims the line box to cap height. text-box is the CSS equivalent and
+   is ignored where unsupported, which is exactly the right fallback — the
+   text still renders, just with normal leading. */
+@supports (text-box: trim-both cap alphabetic) {
+  .screen-title,
+  .signature,
+  .profile-menu a,
+  .profile-menu button,
+  .profile-menu span {
+    text-box: trim-both cap alphabetic;
+  }
+}
+
+/* A 56px pixel face does not fit a narrow phone. The design wraps these
+   rather than shrinking them, so allow the wrap. */
+@media (max-width: 380px) {
+  .profile-menu a,
+  .profile-menu button,
+  .profile-menu span { font-size: 44px; }
+}
+
+.spacer { flex: 1; }
+
+/* --- LED ticker ---------------------------------------------------------- */
+
+.ticker {
+  background: var(--led-bg);
+  border-radius: var(--r-led);
+  height: 26px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px #000;
+}
+
+.ticker-text {
+  white-space: nowrap;
+  font-size: var(--t-card);
+  color: var(--led-red);
+  letter-spacing: .08em;
+  text-shadow: 0 0 6px rgba(255, 42, 26, .75);
+  padding-left: 100%;
+  animation: ticker-scroll var(--ticker);
+}
+
+/* A countdown must not slide off screen mid-read. */
+.ticker-text.is-static {
+  padding-left: 0;
+  animation: none;
+  width: 100%;
+  text-align: center;
+}
+
+@keyframes ticker-scroll { to { transform: translateX(-100%); } }
+
+.ticker-wires {
+  display: flex;
+  justify-content: center;
+  gap: 118px;
+  height: 12px;
+}
+.ticker-wires i { width: 1.5px; background: var(--ink); display: block; }
+
+/* --- Terminal ------------------------------------------------------------ */
+
+/* figma 1:258 "mitre border" — 360x476, radius 16, flat #1317E4 with an inner
+   glow. It is not a gradient; the depth comes from the inset highlight. */
+.terminal {
+  position: relative;
+  width: 360px;
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: var(--r-terminal);
+  background: var(--blue);
+  box-shadow: inset -1px 1px 10px 0 var(--blue-faint);
+  padding: 15px 16px;
+}
+
+/* figma 1:259 "mitre body" — 327x445, radius 8, 1px black border. */
+.terminal-body {
+  /* figma 1:259 — the 1px stroke as an inset shadow. As a border it pushed the
+     keypad, the LED and the slot 1px down and right. */
+  box-shadow: inset 0 0 0 1px #000;
+  border-radius: var(--r-terminal-inner);
+  background: var(--blue);
+  overflow: hidden;
+  padding-bottom: 15px;
+}
+
+.terminal.is-metal {
+  background: linear-gradient(180deg,
+    var(--metal-top) 0%, var(--metal-mid) 55%, var(--metal-low) 100%);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .75);
+}
+
+/* figma 1:262 — Barlow Condensed SemiBold 14px in #D5D4D4. The one place in
+   the whole design that is not the pixel face. */
+.terminal-caption {
+  font-family: var(--font-caption);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--slot);
+  text-align: center;
+  padding: 24px 0 0;
+}
+.terminal.is-metal .terminal-caption { color: #3A3A3A; }
+
+/* figma 1:294 "LED Border" 174x85 radius 4 #1E1E1E, containing
+   1:295 "LED Body" 162x65 radius 6 #1E0E0E. Two nested boxes, not one. */
+.led-window {
+  width: 174px;
+  height: 85px;
+  margin: 12px auto 0;
+  border: 1px solid #000;
+  border-radius: var(--r-led);
+  background: var(--ink);
+  box-shadow: inset 0 1.5px 2px 0 #fff;
+  display: grid;
+  place-items: center;
+}
+
+.led-window > .led-body {
+  width: 162.185px;
+  height: 65.385px;
+  box-shadow: inset 0 0 0 1px #000;
+  border-radius: 6px;
+  background: var(--led-bg);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+/* figma 1:296 — jgs5 48px #FF0303. No glow in the file; the bloom is the
+   red on near-black doing the work. */
+.led-value {
+  font-family: var(--font-led);
+  font-size: 48px;
+  color: var(--led-red);
+  line-height: 1;
+}
+.led-value.is-small { font-size: 16px; }
+.led-value.is-change { color: var(--led-green); text-shadow: 0 0 9px rgba(56, 240, 122, .8); }
+
+/* --- Keypad -------------------------------------------------------------- */
+
+/* figma 1:263 — 211px wide, 3 columns, 32px column gap, 10px row gap. */
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 49px);
+  column-gap: 32px;
+  row-gap: 10px;
+  width: 211px;
+  margin: 30px auto 0;
+}
+
+/* figma 1:265 — 49x39, radius 4, #1E1E1E, 1px black border, jgs7 32px white. */
+.key {
+  width: 49px;
+  height: 39px;
+  background: var(--ink);
+  border: 1px solid #000;
+  border-radius: var(--r-key);
+  color: var(--white);
+  font-family: var(--font-px);
+  font-size: 32px;
+  letter-spacing: var(--track);
+  line-height: 1;
+  box-shadow: inset 0 1.5px 2px 0 #fff;
+  transition: transform 60ms;
+}
+
+/* figma 1:291 — the PAY key is wider and set one step smaller. */
+.key.is-pay { width: 66px; font-size: 30px; grid-column: 3; }
+.key:active { transform: translateY(1px); background: #0F0F10; }
+.key:disabled { opacity: .45; }
+
+/* --- Receipt ------------------------------------------------------------- */
+
+/* figma 1:260 — 284x20 radius 6 in #D5D4D4, with a 271x5 black inner slot. */
+.receipt-slot {
+  width: 284px;
+  height: 20px;
+  margin: 0 auto;
+  border: 1px solid #000;
+  border-radius: 6px;
+  background: var(--slot);
+  box-shadow: inset 0 4px 4px 0 rgba(0, 0, 0, .6);
+  display: grid;
+  place-items: center;
+}
+.receipt-slot::after {
+  content: "";
+  width: 271px;
+  height: 5px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: #000;
+  box-shadow: inset 0 -0.1px 3px 0 #fff;
+}
+
+.receipt {
+  background: var(--white);
+  margin: 0 var(--s-6);
+  padding: var(--s-4) var(--s-3) 22px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .14);
+  /* The torn bottom edge. A border-image would be heavier and less crisp. */
+  -webkit-mask-image:
+    linear-gradient(#000, #000),
+    radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px);
+  mask-image:
+    linear-gradient(#000, #000),
+    radial-gradient(circle at 5px 100%, transparent 4px, #000 4.5px);
+  animation: receipt-feed var(--feed);
+}
+.receipt.is-void { opacity: .55; }
+
+@keyframes receipt-feed {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.receipt-head {
+  font-size: var(--t-micro);
+  color: var(--grey);
+  letter-spacing: .16em;
+  text-align: center;
+}
+.receipt-date {
+  font-size: 15px;
+  color: var(--blue);
+  text-align: center;
+  margin: var(--s-1) 0 var(--s-3);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: var(--t-caption);
+  color: var(--grey-mid);
+}
+.row b { color: var(--blue); font-weight: 400; }
+.row + .row { margin-top: var(--s-1); }
+.row.is-total { font-size: var(--t-card); padding-top: var(--s-2); }
+
+/* --- Controls ------------------------------------------------------------ */
+
+/* figma 1:1341 — 344 wide, radius 64, 20px vertical padding, jgs7 24px with
+   -0.96px tracking, and a 1px #797BF4 border on the filled variant. */
+.pill {
+  display: block;
+  width: 100%;
+  max-width: 344px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid var(--blue-soft);
+  border-radius: var(--r-pill);
+  background: var(--blue);
+  color: var(--white);
+  font-family: var(--font-px);
+  font-size: var(--t-button);
+  line-height: 16px;
+  letter-spacing: var(--track);
+  box-shadow: 0 4px 10px 0 rgba(0, 0, 0, .25);
+  transition: background 80ms;
+}
+.pill:active:not(:disabled) { background: var(--blue-deep); }
+.pill:disabled { background: var(--blue-soft); box-shadow: none; }
+
+/* figma 1:1330 — #EFEFEF with an inset white highlight along the top. */
+.pill.is-ghost {
+  background: var(--field);
+  color: var(--blue);
+  border-color: transparent;
+  box-shadow: 0 4px 10px 0 rgba(0, 0, 0, .15),
+              inset 0 4px 4px 0 rgba(255, 255, 255, .5);
+}
+.pill.is-ghost:disabled { color: var(--blue-soft); }
+.pill.is-danger { background: var(--danger); box-shadow: 0 4px 14px rgba(224, 27, 27, .3); }
+.pill.is-danger:active { background: #B71414; }
+
+.pill + .pill { margin-top: var(--s-2); }
+
+/* figma 1:1328 — same shell as the ghost button; the placeholder is the blue
+   at 30% rather than a grey. */
+.input {
+  width: 100%;
+  max-width: 344px;
+  margin: 0 auto;
+  padding: 20px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--field);
+  color: var(--blue);
+  font-family: var(--font-px);
+  font-size: var(--t-button);
+  line-height: 16px;
+  letter-spacing: var(--track);
+  box-shadow: 0 4px 10px 0 rgba(0, 0, 0, .15),
+              inset 0 4px 4px 0 rgba(255, 255, 255, .5);
+}
+.input::placeholder { color: var(--placeholder); }
+.input[aria-invalid="true"] { box-shadow: inset 0 0 0 1px var(--danger); }
+
+.field-error {
+  font-size: var(--t-caption);
+  color: var(--danger);
+  margin: var(--s-1) 0 0 var(--s-5);
+}
+
+/* --- Segmented toggle ---------------------------------------------------- */
+
+.segmented {
+  display: flex;
+  background: var(--field);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  gap: 3px;
+}
+.segmented button {
+  flex: 1;
+  height: 26px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: none;
+  font-size: var(--t-caption);
+  letter-spacing: .09em;
+  color: var(--ink);
+}
+.segmented button[aria-selected="true"] { background: var(--blue); color: var(--white); }
+
+/* --- Tabs ---------------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: var(--s-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.tabs button {
+  border: none;
+  background: none;
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  color: var(--grey);
+  padding: 3px var(--s-2);
+  border-radius: var(--r-key);
+}
+.tabs button[aria-selected="true"] { background: var(--blue); color: var(--white); }
+.tabs.is-secondary button[aria-selected="true"] {
+  background: none;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Payment chips ------------------------------------------------------- */
+
+.chips {
+  display: flex;
+  gap: var(--s-4);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.chip {
+  background: var(--white);
+  border: 1px dashed var(--grey);
+  border-radius: var(--r-key);
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--t-card);
+  line-height: 1.4;
+  text-align: center;
+}
+/* Hand-cut feel. Rotation is per-position, not random, so it stays stable
+   across re-renders. */
+.chip:nth-child(3n+1) { transform: rotate(-3.5deg); }
+.chip:nth-child(3n+2) { transform: rotate(2.5deg); }
+.chip:nth-child(3n+3) { transform: rotate(-1.5deg); }
+.chip[aria-pressed="true"] {
+  border-style: solid;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+.chip:disabled { opacity: .4; }
+
+/* --- Cards --------------------------------------------------------------- */
+
+.card {
+  border: 1px dashed var(--grey);
+  border-radius: var(--r-card);
+  padding: var(--s-3);
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.card + .card { margin-top: var(--s-2); }
+.card.is-open { border-color: var(--blue); flex-direction: column; align-items: stretch; }
+
+.card-thumb { width: 28px; height: 36px; flex: none; }
+.card-body { flex: 1; min-width: 0; }
+.card-title {
+  font-size: var(--t-caption);
+  color: var(--blue);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-sub { font-size: 7px; color: var(--grey-mid); margin: 3px 0 0; }
+.card-go {
+  width: 18px; height: 18px; flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--grey);
+  background: none;
+}
+
+/* --- Stamp --------------------------------------------------------------- */
+
+.stamp {
+  display: inline-block;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: var(--t-caption);
+  padding: 3px var(--s-2);
+  letter-spacing: .08em;
+  transform: rotate(-2deg);
+  background: none;
+}
+.stamp.is-ok   { border-color: var(--live);  color: var(--live); }
+.stamp.is-loud { font-size: var(--t-card); padding: var(--s-1) var(--s-3); transform: rotate(-7deg); }
+
+.stamp-wrap { text-align: center; }
+
+/* --- Sheet + modal ------------------------------------------------------- */
+
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .28);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+
+.sheet {
+  background: var(--white);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow: var(--shadow-sheet);
+  padding: var(--s-5) var(--s-4) calc(var(--s-6) + env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  animation: sheet-up var(--sheet);
+}
+
+.sheet-grab {
+  width: 38px; height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--grey);
+  margin: 0 auto var(--s-4);
+}
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+
+.modal {
+  background: var(--white);
+  border-radius: var(--r-modal);
+  box-shadow: var(--shadow-modal);
+  padding: var(--s-5) var(--s-4);
+  width: min(340px, 88vw);
+}
+
+/* --- Loading, empty ------------------------------------------------------ */
+
+/* The design has no spinner. Loading is the LED bar. */
+.loadbar { display: flex; gap: 3px; justify-content: center; }
+.loadbar i {
+  width: 13px; height: 8px;
+  border-radius: 1px;
+  background: var(--blue-soft);
+}
+.loadbar i:nth-child(-n+2) { background: var(--blue); animation: loadbar-blip 1.1s steps(1) infinite; }
+.loadbar i:nth-child(2) { animation-delay: .36s; }
+
+@keyframes loadbar-blip { 50% { background: var(--blue-soft); } }
+
+.empty {
+  padding: var(--s-10) var(--s-4);
+  text-align: center;
+}
+
+/* --- Scanner ------------------------------------------------------------- */
+
+.scanner {
+  aspect-ratio: 1 / 1.15;
+  border-radius: 26px;
+  border: 2px dashed var(--ink);
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(circle, #D9D9DB, #ADADB0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scanner video { width: 100%; height: 100%; object-fit: cover; }
+.scanner.is-ok   { background: radial-gradient(circle, #8BE8A8, #2FA95C); border-color: #1E7A40; }
+.scanner.is-fail { background: radial-gradient(circle, #F0A19B, #C4352C); border-color: #8E241D; }
+
+.scanner-glyph { width: 56%; filter: grayscale(1) contrast(1.6); }
+
+/* --- Tank gauge ---------------------------------------------------------- */
+
+.tank-row { display: flex; gap: var(--s-3); align-items: flex-end; justify-content: center; }
+
+.tank {
+  width: 132px; height: 224px;
+  border: 3px solid var(--ink);
+  border-radius: var(--r-terminal);
+  position: relative;
+  overflow: hidden;
+  background: #3D3D4A;
+}
+.tank-cap {
+  position: absolute; top: -12px; left: 50%;
+  transform: translateX(-50%);
+  width: 42px; height: 10px;
+  background: var(--ink);
+  border-radius: 3px 3px 0 0;
+}
+.tank-label {
+  position: absolute; top: 10px; left: 0; right: 0;
+  text-align: center;
+  font-size: var(--t-micro);
+  color: #E6E6EA;
+  letter-spacing: .13em;
+  line-height: 1.7;
+}
+.tank-fill {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(180deg, rgba(191, 192, 243, .95), rgba(147, 148, 222, .95));
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  transition: height 400ms cubic-bezier(.2, .8, .2, 1);
+}
+.tank-numeral {
+  font-size: 44px; font-weight: 700; color: var(--white);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .22);
+}
+.tank-unit { font-size: 8px; color: var(--white); letter-spacing: .2em; }
+
+.ruler {
+  height: 224px;
+  display: flex; flex-direction: column-reverse;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+.ruler div { display: flex; align-items: center; gap: 4px; font-size: var(--t-micro); color: var(--grey-mid); }
+.ruler i { width: 9px; height: 1px; background: var(--grey-mid); display: block; }
+
+/* --- Wire basket --------------------------------------------------------- */
+
+.basket { position: relative; padding: var(--s-6) 0; }
+.basket-frame { width: 100%; display: block; }
+.basket-items {
+  position: absolute; inset: 18% 18% 26%;
+  display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: center;
+  gap: var(--s-3);
+}
+.basket-item { position: relative; }
+.basket-step {
+  position: absolute;
+  width: 17px; height: 17px;
+  border-radius: 50%;
+  border: 1px solid var(--grey);
+  background: var(--white);
+  font-size: 9px;
+  line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.basket-step.is-plus  { top: -6px; right: -8px; }
+.basket-step.is-minus { bottom: -6px; left: -8px; }
+
+/* --- Product grid -------------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s-5) var(--s-4);
+}
+.grid-item { border: none; background: none; padding: 0; text-align: center; }
+.grid-item img { width: 100%; height: 120px; }
+.grid-caption { font-size: var(--t-caption); color: var(--blue); margin-top: var(--s-2); }
+
+/* --- Avatars ------------------------------------------------------------- */
+
+.people { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); }
+.person { border: none; background: none; padding: 0; text-align: center; }
+.person-photo { position: relative; width: 100%; aspect-ratio: 1; }
+.person-dot {
+  position: absolute; top: 2px; right: 6px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--live);
+  border: 1.5px solid var(--white);
+}
+.person-name { font-size: var(--t-caption); color: var(--blue); margin-top: var(--s-1); }
+.person-role { font-size: 7px; color: var(--grey); }
+
+/* --- Footer mark --------------------------------------------------------- */
+
+.u2 { text-align: center; padding-top: var(--s-6); }
+.u2-mark { font-size: 38px; font-weight: 700; color: var(--blue-soft); }
+.u2-copy { font-size: var(--t-micro); color: var(--blue-soft); letter-spacing: .1em; margin-top: 2px; }
+
+/* --- Upload slots -------------------------------------------------------- */
+
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-2); }
+
+.slot {
+  aspect-ratio: 3 / 4;
+  border: 1px dashed var(--grey);
+  border-radius: var(--r-key);
+  background: var(--white);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: var(--s-1);
+  padding: var(--s-2);
+  position: relative;
+}
+.slot.is-filled { border-style: solid; border-color: var(--blue); }
+.slot.is-conflict { border-style: solid; border-color: var(--danger); }
+.slot-index { position: absolute; top: 5px; left: 7px; font-size: var(--t-micro); color: var(--grey); }
+.slot-plus { font-size: 20px; color: var(--blue-soft); }
+.slot-caption { font-size: var(--t-micro); color: var(--grey); text-align: center; line-height: 1.6; }
+.slot img { width: 62%; height: 46%; object-fit: contain; }
+
+.meter { height: 3px; width: 100%; background: var(--field); border-radius: 2px; overflow: hidden; margin-top: var(--s-1); }
+.meter i { display: block; height: 100%; background: var(--blue); transition: width 200ms; }
+
+/* --- Layout helpers ------------------------------------------------------ */
+
+.stack        { display: flex; flex-direction: column; gap: var(--s-4); }
+.stack.is-tight { gap: var(--s-2); }
+.center       { text-align: center; }
+
+@media (min-width: 720px) {
+  /* The design is phone-first. On wider screens it stays a column rather than
+     stretching the terminal into something that was never drawn. */
+  .screen { max-width: 520px; margin: 0 auto; }
+  .grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+
+/* Shop header scrim — figma 1:1456. One element, never two: stacking a second
+   copy doubles the opacity and the title starts to look like it sits on a
+   white block rather than a fade. */
+.shop-scrim {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--scrim-h);
+  background: var(--scrim);
+  pointer-events: none;
+}
+
+/* figma 1:1504 — the unavailable band across a product image. */
+.item-unavailable {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 188px;
+  padding: 5px;
+  background: var(--white);
+  color: var(--danger-red);
+  font-size: 24px;
+  letter-spacing: var(--track);
+  text-align: center;
+}
+
+/* figma 1:1503 / 1:1507 / 1:1588 — an unavailable item keeps its colour and
+   drops its image fill to 40%, with the slight blur added by request. The
+   grayscale filter used before is not in the file. */
+.is-unavailable { opacity: .4; }
+.is-unavailable img,
+img.is-unavailable { filter: blur(1.5px); }
+
+/* figma 1:2302 / 1:2303 — the tank: a #5B5B6F chamber with the gas at 20%
+   of #9596E5 on its floor, not a blue gradient. */
+.tank-chamber { background: #5B5B6F; box-shadow: inset 0 0 0 1px #000; border-radius: 8px; }
+.tank-gas     { background: rgba(149,150,229,.2); box-shadow: inset 0 0 0 1px #000,
+                inset 0 20px 100px rgba(0,0,0,1); border-radius: 8px; }
+
+/* figma: every primary button carries grain at 25%, a white inner highlight
+   (4px, 50%) and a 10px drop shadow at 25%. */
+.btn-primary,
+.btn.is-primary {
+  background-image: var(--noise);
+  border: 1px solid var(--blue-soft);
+  box-shadow: inset 0 4px 4px 0 rgba(255,255,255,.5),
+              0 4px 10px 0 rgba(0,0,0,.25);
+}
+
+/* figma Frame 64 — an opened notification row. */
+.notif-row.is-expanded { border: 2px solid #000; border-radius: 40px; box-sizing: border-box; }

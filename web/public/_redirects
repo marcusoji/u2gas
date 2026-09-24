@@ -1,0 +1,3 @@
+# Client-side routing. Without this, refreshing on /admin/products returns a
+# 404 from the CDN because no such file exists.
+/*  /index.html  200

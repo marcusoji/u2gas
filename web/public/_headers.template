@@ -1,0 +1,59 @@
+# U2GAS — Cloudflare Pages response headers
+#
+# This is a TEMPLATE. __API_ORIGIN__ is substituted from VITE_API_ORIGIN by
+# scripts/build-headers.mjs during the build, and the result is written to
+# dist/_headers. The build fails if the variable is missing, so a placeholder
+# can never reach production. (Items 13, 14)
+#
+# The Worker sets its own headers for /api/*. This file covers the frontend,
+# which the Worker never sees.
+
+/*
+  # The app is a single-page React bundle talking to one API origin. Nothing
+  # else needs to execute, connect, or embed.
+  #
+  # 'unsafe-inline' appears only for style-src: the design sets a handful of
+  # inline styles for things computed at runtime (tank fill height, sheet
+  # transforms). No inline SCRIPT is allowed, which is the one that matters.
+  #
+  # Paystack is not listed because checkout is a full-page redirect to their
+  # domain, not an embedded iframe or script. If you ever switch to Paystack's
+  # inline popup, add https://js.paystack.co to script-src and
+  # https://api.paystack.co to connect-src — and nothing else.
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co __API_ORIGIN__; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  # Guest capability tokens travel in the URL. Without this, every outbound
+  # link and every third-party request leaks one in the Referer header.
+  Referrer-Policy: no-referrer
+  # geolocation is off everywhere. The app never calls navigator.geolocation:
+  # saved_address has optional lat/lng columns, but nothing populates them —
+  # addresses are typed, and the zone is chosen from a list. Enabling it would
+  # be collecting location we have no use for. (Item 15)
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Order pages carry a guest token in the query string. An intermediary cache
+# holding one of these would serve a stranger someone else's order.
+/orders/*
+  Cache-Control: no-store, no-cache, must-revalidate, private
+  Referrer-Policy: no-referrer
+
+# Content-addressed by hash, so these can never go stale.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The scanner needs the camera; nothing else on the site does.
+/staff/*
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
+
+# The driver app scans QR codes, so it needs the camera. It does not track
+# position — the delivery card shows the address and status, not a live pin —
+# so geolocation stays off here too. (Item 15)
+/driver/*
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()

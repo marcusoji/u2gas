@@ -1,0 +1,4 @@
+{
+  "installDependencies": false,
+  "startCommand": "cd web && npm ci && npm run dev -- --host 0.0.0.0"
+}
