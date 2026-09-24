@@ -28,17 +28,21 @@ export default function Profile() {
     }
   }
 
-  if (error && !profile) return <div className="screen"><p role="alert">{error}</p></div>;
-  if (!profile) return <div className="screen"><div className="sr-only">Loading profile…</div></div>;
-
-  const name = profile.display_name || profile.first_name || "YOU";
-  const avatar = profile.avatar_asset?.base_path
-    ? `${import.meta.env.VITE_MEDIA_BASE}/${profile.avatar_asset.base_path}/detail.webp`
-    : null;
+  // Both hooks run before the early returns below: a hook after a return is
+  // skipped on the first pass and then called on the next, which React reports
+  // as "rendered more hooks than during the previous render".
+  const name = profile ? (profile.display_name || profile.first_name || "YOU") : "YOU";
   const values = useMemo(() => ({
     "1:2096": `[ ${name} ]`,
     "1:2097": "EDIT PROFILE",
   }), [name]);
+
+  if (error && !profile) return <div className="screen"><p role="alert">{error}</p></div>;
+  if (!profile) return <div className="screen"><div className="sr-only">Loading profile…</div></div>;
+
+  const avatar = profile.avatar_asset?.base_path
+    ? `${import.meta.env.VITE_MEDIA_BASE}/${profile.avatar_asset.base_path}/detail.webp`
+    : null;
 
   return (
     <div className="screen figma-route-scroll">

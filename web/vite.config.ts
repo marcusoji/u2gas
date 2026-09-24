@@ -43,5 +43,13 @@ export default defineConfig({
     // Fails the build rather than quietly shipping a regression.
     chunkSizeWarningLimit: 180,
   },
-  server: { port: 5173 },
+  server: {
+    port: 5173,
+    // Hosts the dev server is allowed to answer for. The tunnel hostname is
+    // for local preview; it has no effect on a build.
+    allowedHosts: [
+      ".prod-runtime.all-hands.dev",
+      "localhost",
+    ],
+  },
 });

@@ -785,3 +785,79 @@ img.is-unavailable { filter: blur(1.5px); }
 
 /* figma Frame 64 — an opened notification row. */
 .notif-row.is-expanded { border: 2px solid #000; border-radius: 40px; box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------------
+   Demo-mode control. Only rendered when VITE_USE_MOCKS=true; carries no
+   production styling and never appears in a real build.
+   --------------------------------------------------------------------------- */
+.mockbar {
+  position: fixed;
+  right: var(--s-4);
+  bottom: var(--s-4);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-3);
+  font-family: var(--font-led);
+}
+.mockbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-5);
+  border-radius: 999px;
+  border: 1px solid #fff;
+  background: #1e1e1e;
+  color: #ffb020;
+  font-size: 12px;
+  letter-spacing: .12em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+}
+.mockbar-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ffb020;
+  box-shadow: 0 0 6px #ffb020;
+}
+.mockbar-panel {
+  width: min(280px, 80vw);
+  padding: var(--s-5);
+  border-radius: 12px;
+  background: #1e1e1e;
+  color: #fff;
+  border: 1px solid #3a3a3a;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.mockbar-title {
+  margin: 0;
+  color: #ffb020;
+  font-size: 11px;
+  letter-spacing: .14em;
+}
+.mockbar-note {
+  margin: var(--s-3) 0 var(--s-4);
+  font-size: 11px;
+  line-height: 1.6;
+  color: #c9c9c9;
+  font-family: system-ui, sans-serif;
+}
+.mockbar-role {
+  display: block;
+  width: 100%;
+  margin-bottom: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border-radius: 8px;
+  border: 1px solid #3a3a3a;
+  background: #2b2b2b;
+  color: #fff;
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-align: left;
+  cursor: pointer;
+}
+.mockbar-role:hover { background: #383838; }
+.mockbar-role.is-active {
+  background: #1317e4;
+  border-color: #797bf4;
+}

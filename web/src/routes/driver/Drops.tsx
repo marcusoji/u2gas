@@ -27,7 +27,9 @@ export default function Drops() {
     }
   }, [scope]);
 
-  useEffect(load, [load]);
+  // Not `useEffect(load, …)`: load is async, so it returns a Promise, which
+  // React would take as the cleanup function and call on unmount.
+  useEffect(() => { void load(); }, [load]);
 
   const first = drops?.[0];
   const second = drops?.[1];

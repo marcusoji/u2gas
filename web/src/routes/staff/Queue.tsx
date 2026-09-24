@@ -33,7 +33,9 @@ export default function Queue() {
     }
   }, [kind]);
 
-  useEffect(load, [load]);
+  // Not `useEffect(load, …)`: load is async, so it returns a Promise, which
+  // React would take as the cleanup function and call on unmount.
+  useEffect(() => { void load(); }, [load]);
 
   // A depot counter is a live surface. Refresh while it's on screen, and stop
   // the moment it isn't — a tab left open overnight should not keep polling.

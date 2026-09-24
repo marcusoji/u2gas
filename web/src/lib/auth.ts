@@ -1,5 +1,8 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  MOCKS_ENABLED, mockHome, mockSession, onMockRoleChange, setMockRole,
+} from "../mocks/gate";
 
 /**
  * Supabase Auth only. No second authentication system — the spec is explicit,
@@ -21,7 +24,10 @@ const browserKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!browserKey) {
+// Demo mode runs with no Supabase project at all, so the guard below would
+// abort the import. Keys are not read in this mode — see the mock branch of
+// AuthProvider. Never enabled in a real build.
+if (!MOCKS_ENABLED && !browserKey) {
   throw new Error(
     "VITE_SUPABASE_PUBLISHABLE_KEY is not set. The app cannot reach Supabase.",
   );
@@ -29,15 +35,15 @@ if (!browserKey) {
 
 // A secret key in the browser bundle is a total compromise, so refuse to start
 // rather than ship one by accident.
-if (/^sb_secret_|^service_role/.test(browserKey)) {
+if (!MOCKS_ENABLED && /^sb_secret_|^service_role/.test(browserKey!)) {
   throw new Error(
     "A Supabase SECRET key is configured in the frontend. Use the publishable key.",
   );
 }
 
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  browserKey,
+  import.meta.env.VITE_SUPABASE_URL || "http://localhost",
+  browserKey || "sb_publishable_mock",
   {
     auth: {
       persistSession: true,
@@ -73,6 +79,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
+
+    // Demo mode has no Supabase project to ask, so identity comes straight
+    // from the mock store. Switching role there re-runs this, which is what
+    // lets the role switcher move you between the four apps.
+    if (MOCKS_ENABLED) {
+      const sync = async () => {
+        const { mockProfile } = await import("../mocks");
+        setState({
+          session: mockSession() as Session,
+          profile: mockProfile(),
+          loading: false,
+          home: mockHome(),
+        });
+      };
+      void sync();
+      return onMockRoleChange(() => void sync());
+    }
 
     async function load(session: Session | null) {
       if (!session) {
@@ -113,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext);
 
 export async function signInWithEmail(email: string, next?: string) {
+  // Demo mode has no mail server. Report success so the "check your mail"
+  // screen is reachable; there is nothing to send.
+  if (MOCKS_ENABLED) return { data: {}, error: null };
   return supabase.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: buildRedirect(next) },
@@ -120,6 +146,7 @@ export async function signInWithEmail(email: string, next?: string) {
 }
 
 export async function signInWithProvider(provider: "google" | "apple", next?: string) {
+  if (MOCKS_ENABLED) return { data: {}, error: null };
   return supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo: buildRedirect(next) },
@@ -127,6 +154,7 @@ export async function signInWithProvider(provider: "google" | "apple", next?: st
 }
 
 export async function signOut() {
+  if (MOCKS_ENABLED) { setMockRole("customer"); return; }
   await supabase.auth.signOut();
 }
 

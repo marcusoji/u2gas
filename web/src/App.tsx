@@ -6,6 +6,7 @@ import { AuthProvider, useAuth, type Role } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
 import { LoadBar } from "./components/primitives";
 import { OfflineBanner, PermissionDenied, ScreenBoundary } from "./components/states";
+import { MockBar } from "./components/MockBar";
 
 /* ---------------------------------------------------------------------------
    Routing (addendum 74).
@@ -140,6 +141,7 @@ export default function App() {
       <CartProvider>
         <OfflineBanner />
         <RouterProvider router={router} />
+        <MockBar />
       </CartProvider>
     </AuthProvider>
   );
