@@ -878,6 +878,16 @@ img.is-unavailable { filter: blur(1.5px); }
 .screen > .stack,
 .screen > .chips { width: 440px; max-width: 100%; }
 
+/* App-rendered list switch for the driver's drops. The drawing has no control
+   that changes lists, so this sits above the plate as chrome and never reaches
+   inside `.frame`. */
+.driver-scope {
+  width: 440px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px 4px;
+}
+
 /* A desktop is not a phone. Left unbounded the plate floats in a void; the
    backdrop keeps it looking deliberate, and the shadow lifts it off the page
    the way the design already lifts its sheets and modals. */

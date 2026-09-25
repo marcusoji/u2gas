@@ -8,18 +8,33 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 /**
  * Gas tank with its measuring ruler. The fill height is the live availability
  * as a share of total received — the same derivation the database uses.
+ *
+ * `labelLines` and `ariaLabel` exist because Reports reuses the same
+ * fill-and-ruler language for a different quantity. Left hardcoded, the meter
+ * announced "Gas remaining: 1 percent" and printed "AVAILABLE QUANTITY" above
+ * an order count, which reads as a stock figure on a fulfilment screen.
  */
-export function TankGauge({ availableKg, totalKg, unit = "TONS", note }: {
+export function TankGauge({ availableKg, totalKg, unit = "TONS", note,
+  labelLines = ["AVAILABLE", "QUANTITY"], ariaLabel }: {
   availableKg: number;
   totalKg: number;
   unit?: string;
   note?: string;
+  labelLines?: [string, string];
+  ariaLabel?: string;
 }) {
   const percent = totalKg > 0
     ? Math.min(100, Math.max(0, Math.round((availableKg / totalKg) * 100)))
     : 0;
 
-  const display = unit === "TONS" ? (availableKg / 1000).toFixed(0) : String(Math.round(availableKg));
+  // The artboard draws its own figure as a big whole number with a smaller
+  // decimal beside it — `6` then `.5` — so one decimal place is the design's
+  // convention, not an invention. Rounding to a whole ton here made the gauge
+  // disagree with the ticker and the breakdown on the same screen: 3,590kg
+  // read as "3 TONS" above "3.5 TONS" and "3.5T", three numbers for one value.
+  const display = unit === "TONS"
+    ? (availableKg / 1000).toFixed(1)
+    : String(Math.round(availableKg));
 
   return (
     <div>
@@ -30,10 +45,10 @@ export function TankGauge({ availableKg, totalKg, unit = "TONS", note }: {
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label={`Gas remaining: ${percent} percent`}
+          aria-label={ariaLabel ?? `Gas remaining: ${percent} percent`}
         >
           <div className="tank-cap" aria-hidden="true" />
-          <div className="tank-label">AVAILABLE<br />QUANTITY</div>
+          <div className="tank-label">{labelLines[0]}<br />{labelLines[1]}</div>
           <div className="tank-fill" style={{ height: `${percent}%` }}>
             <span className="tank-numeral">{display}</span>
             <span className="tank-unit">{unit}</span>

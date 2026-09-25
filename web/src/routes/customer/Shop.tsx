@@ -3,15 +3,14 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type ShopItem } from "../../lib/api";
 import { BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
+import { mediaUrl } from "../../lib/media";
 
 const IMAGE_NODES = [
   "1:1448", "1:1446", "1:1447", "1:1445",
   "1:1451", "1:1453", "1:1452", "1:1450",
 ];
 
-function imageUrl(basePath?: string | null) {
-  return basePath ? `${import.meta.env.VITE_MEDIA_BASE}/${basePath}/grid.webp` : "";
-}
+const imageUrl = (basePath?: string | null) => mediaUrl(basePath, "grid");
 
 export default function Shop() {
   const nav = useNavigate();

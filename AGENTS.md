@@ -158,3 +158,45 @@ Compare `[data-node]` boxes, not whole-page screenshots: the reference HTML
 wraps each artboard in viewer chrome that renders off-viewport, so a naive
 pixel diff of the two pages is meaningless. Force a common font on both sides
 while measuring so font-availability differences do not read as layout bugs.
+
+## What the four parity checks cannot see
+
+All four pass on a screen that is still wrong, in two ways worth knowing.
+
+**A value that is right but *formatted* differently.** The ticker read
+`Today's Rate` while the file draws `Today&rsquo;s Rate`. A straight `'` and a
+curly `’` are different characters; the substitution list even reported the
+swap as "live data substituted", so it looked intentional. It is not — the
+design's glyph was replaced. Match the file's punctuation exactly (`&middot;`,
+`&rsquo;`, `&mdash;`). `FigmaScreen` decodes those named entities before
+matching, so a route can key on the character a reader sees.
+
+**Text no `[data-node]` covers.** The driver's drop rows are plain `<p>` with no
+id. An unbound row therefore compared *nothing*: the geometry walk only visits
+ids, so `/driver` reported CLEAN while still showing Figma's sample order number
+and address. `dom-token-diff.mjs` now collects every leaf string in document
+order, tags whether an id covers it, and pairs the two sides **positionally**.
+Matching on text alone is not enough — the first active drop's real order number
+*is* the `U2-100045` the file also draws in its third row — so only a pair that
+is orphan on both sides, at the same index, still holding the file's string,
+counts as stale. When adding a screen with unbound sample text, verify the
+detector fires by temporarily reverting the binding.
+
+Two related traps in the same code:
+
+- `el.closest("[data-node]")` always matches, because the artboard root is
+  itself `[data-node]`. Test against the root explicitly.
+- A drawn row is `<p>U2-100045<br>19 Bode Thomas</p>`; the `<br>` is an element
+  child, so a "no children" leaf test skips exactly these nodes. Tolerate `<br>`
+  and split on it, or the joined string matches no order-number pattern.
+
+## Demo fixtures are part of the design
+
+The drawing always shows three rows in each driver list. With two active and one
+finished delivery the spare rows had nothing to bind, so the screen repeated an
+order or printed a placeholder. `orders` now carries one delivery per drop so
+each list fills from real records. Do not pad a list by repeating a record:
+`withDeliveryOrder` used to fall back to `orders[0]` for an unmatched id, which
+made every row show the same order number and customer, and no caller could tell
+the lookup had failed. It now 404s. `flaggedQueue`'s `failed_deliveries` had the
+same hardcoded-order defect.

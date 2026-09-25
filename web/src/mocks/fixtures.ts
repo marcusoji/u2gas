@@ -237,6 +237,118 @@ export const orders: Order[] = [
     fulfilled_at: null, delivery_address: null, rate_at_purchase: RATE_KOBO_PER_KG,
     items: [], payments: [], delivery: null,
   },
+  // One order per delivery. Each driver drop used to fall back to `orders[0]`
+  // when no order matched its delivery id, so every row showed the same order
+  // number and the same customer, and the third row kept the file's sample
+  // address because its lookup never resolved. These carry their own delivery so
+  // the drop list binds three distinct records.
+  {
+    order_id: "o-dl2", order_number: "U2-100046", order_type: "gas",
+    status: "processing", payment_status: "paid", fulfillment_type: "delivery",
+    gas_amount_kg: 10, gas_subtotal_kobo: 10 * RATE_KOBO_PER_KG,
+    items_subtotal_kobo: 0, delivery_fee_kobo: 200_000,
+    total_kobo: 10 * RATE_KOBO_PER_KG + 200_000,
+    hold_expires_at: iso(-1 * HOUR), created_at: iso(-5 * HOUR),
+    fulfilled_at: null, delivery_address: "4 Marina Street, Yaba",
+    rate_at_purchase: RATE_KOBO_PER_KG,
+    items: [],
+    payments: [{ method: "cash", status: "success", amount_kobo: 10 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-4 * HOUR) }],
+    delivery: {
+      delivery_id: "dl-2", status: "assigned",
+      delivery_address: "4 Marina Street, Yaba",
+      failure_reason: null, eta_minutes: null, attempt_count: 0,
+      assigned_at: iso(-1 * HOUR), en_route_at: null, delivered_at: null,
+      zone: { name: "Yaba", fee_kobo: 200_000 },
+      driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
+    },
+  },
+  {
+    order_id: "o-dl3", order_number: "U2-100047", order_type: "gas",
+    status: "fulfilled", payment_status: "paid", fulfillment_type: "delivery",
+    gas_amount_kg: 12, gas_subtotal_kobo: 12 * RATE_KOBO_PER_KG,
+    items_subtotal_kobo: 0, delivery_fee_kobo: 200_000,
+    total_kobo: 12 * RATE_KOBO_PER_KG + 200_000,
+    hold_expires_at: iso(-2 * DAY), created_at: iso(-2 * DAY),
+    fulfilled_at: iso(-2 * DAY + 40 * 60_000), delivery_address: "19 Bode Thomas, Surulere",
+    rate_at_purchase: RATE_KOBO_PER_KG,
+    items: [],
+    payments: [{ method: "card", status: "success", amount_kobo: 12 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-2 * DAY) }],
+    delivery: {
+      delivery_id: "dl-3", status: "delivered",
+      delivery_address: "19 Bode Thomas, Surulere",
+      failure_reason: null, eta_minutes: null, attempt_count: 1,
+      assigned_at: iso(-2 * DAY), en_route_at: iso(-2 * DAY),
+      delivered_at: iso(-2 * DAY + 40 * 60_000),
+      zone: { name: "Yaba", fee_kobo: 200_000 },
+      driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
+    },
+  },
+  // The drawing always shows three rows in each driver list. With only two
+  // active and one finished delivery the spare rows could not be filled from
+  // real records, so the screen either repeated an order or printed a
+  // placeholder. These two give each list a third distinct drop.
+  {
+    order_id: "o-dl4", order_number: "U2-100048", order_type: "gas",
+    status: "processing", payment_status: "paid", fulfillment_type: "delivery",
+    gas_amount_kg: 5, gas_subtotal_kobo: 5 * RATE_KOBO_PER_KG,
+    items_subtotal_kobo: 0, delivery_fee_kobo: 200_000,
+    total_kobo: 5 * RATE_KOBO_PER_KG + 200_000,
+    hold_expires_at: iso(-1 * HOUR), created_at: iso(-4 * HOUR),
+    fulfilled_at: null, delivery_address: "7 Kingsway Road, Ikoyi",
+    rate_at_purchase: RATE_KOBO_PER_KG,
+    items: [],
+    payments: [{ method: "card", status: "success", amount_kobo: 5 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-3 * HOUR) }],
+    delivery: {
+      delivery_id: "dl-4", status: "assigned",
+      delivery_address: "7 Kingsway Road, Ikoyi",
+      failure_reason: null, eta_minutes: null, attempt_count: 0,
+      assigned_at: iso(-45 * 60_000), en_route_at: null, delivered_at: null,
+      zone: { name: "Ikoyi", fee_kobo: 200_000 },
+      driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
+    },
+  },
+  {
+    order_id: "o-dl5", order_number: "U2-100039", order_type: "gas",
+    status: "fulfilled", payment_status: "paid", fulfillment_type: "delivery",
+    gas_amount_kg: 8, gas_subtotal_kobo: 8 * RATE_KOBO_PER_KG,
+    items_subtotal_kobo: 0, delivery_fee_kobo: 200_000,
+    total_kobo: 8 * RATE_KOBO_PER_KG + 200_000,
+    hold_expires_at: iso(-3 * DAY), created_at: iso(-3 * DAY),
+    fulfilled_at: iso(-3 * DAY + 30 * 60_000), delivery_address: "22 Bourdillon Road, Ikoyi",
+    rate_at_purchase: RATE_KOBO_PER_KG,
+    items: [],
+    payments: [{ method: "cash", status: "success", amount_kobo: 8 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-3 * DAY) }],
+    delivery: {
+      delivery_id: "dl-5", status: "delivered",
+      delivery_address: "22 Bourdillon Road, Ikoyi",
+      failure_reason: null, eta_minutes: null, attempt_count: 1,
+      assigned_at: iso(-3 * DAY), en_route_at: iso(-3 * DAY),
+      delivered_at: iso(-3 * DAY + 30 * 60_000),
+      zone: { name: "Ikoyi", fee_kobo: 200_000 },
+      driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
+    },
+  },
+  {
+    order_id: "o-dl6", order_number: "U2-100035", order_type: "gas",
+    status: "fulfilled", payment_status: "refunded", fulfillment_type: "delivery",
+    gas_amount_kg: 10, gas_subtotal_kobo: 10 * RATE_KOBO_PER_KG,
+    items_subtotal_kobo: 0, delivery_fee_kobo: 200_000,
+    total_kobo: 10 * RATE_KOBO_PER_KG + 200_000,
+    hold_expires_at: iso(-4 * DAY), created_at: iso(-4 * DAY),
+    fulfilled_at: null, delivery_address: "5 Glover Road, Ikoyi",
+    rate_at_purchase: RATE_KOBO_PER_KG,
+    items: [],
+    payments: [{ method: "card", status: "refunded", amount_kobo: 10 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-4 * DAY) }],
+    delivery: {
+      delivery_id: "dl-6", status: "returned",
+      delivery_address: "5 Glover Road, Ikoyi",
+      failure_reason: "no answer", eta_minutes: null, attempt_count: 2,
+      assigned_at: iso(-4 * DAY), en_route_at: iso(-4 * DAY),
+      delivered_at: null,
+      zone: { name: "Ikoyi", fee_kobo: 200_000 },
+      driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
+    },
+  },
 ];
 
 /** `Delivery.delivery_id` is optional on the wire; every row here has one. */
@@ -244,22 +356,11 @@ export type DemoDelivery = Delivery & { delivery_id: string };
 
 export const deliveries: DemoDelivery[] = [
   orders[2].delivery as DemoDelivery,
-  {
-    delivery_id: "dl-2", status: "assigned",
-    delivery_address: "4 Marina Street, Yaba", failure_reason: null,
-    eta_minutes: null, attempt_count: 0, assigned_at: iso(-1 * HOUR),
-    en_route_at: null, delivered_at: null,
-    zone: { name: "Yaba", fee_kobo: 200_000 },
-    driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
-  },
-  {
-    delivery_id: "dl-3", status: "delivered",
-    delivery_address: "19 Bode Thomas, Surulere", failure_reason: null,
-    eta_minutes: null, attempt_count: 1, assigned_at: iso(-2 * DAY),
-    en_route_at: iso(-2 * DAY), delivered_at: iso(-2 * DAY + 40 * 60_000),
-    zone: { name: "Yaba", fee_kobo: 200_000 },
-    driver: { phone: "+2348030000003", profile: { display_name: "Ajao Caleb" } },
-  },
+  orders[5].delivery as DemoDelivery,
+  orders[6].delivery as DemoDelivery,
+  orders[7].delivery as DemoDelivery,
+  orders[8].delivery as DemoDelivery,
+  orders[9].delivery as DemoDelivery,
 ];
 
 /* --- Customer-adjacent ---------------------------------------------------- */
@@ -400,11 +501,14 @@ export function flaggedQueue() {
       created_at: e.created_at, note: e.note,
       after: { amount_kobo: Number(e.after?.expected ?? 0) },
     })),
-    failed_deliveries: failed.map((d) => ({
-      delivery_id: d.delivery_id, status: d.status,
-      failure_reason: d.failure_reason, attempt_count: d.attempt_count,
-      order: { order_id: "o-delivery", order_number: "U2-100045" },
-    })),
+    failed_deliveries: failed.map((d) => {
+      const order = orders.find((o) => o.delivery?.delivery_id === d.delivery_id);
+      return {
+        delivery_id: d.delivery_id, status: d.status,
+        failure_reason: d.failure_reason, attempt_count: d.attempt_count,
+        order: { order_id: order?.order_id ?? "", order_number: order?.order_number ?? "—" },
+      };
+    }),
     stale_unpaid: [{
       order_id: "o-unpaid", order_number: "U2-100042",
       total_kobo: 10 * RATE_KOBO_PER_KG, created_at: iso(-2 * HOUR),

@@ -32,7 +32,7 @@ const FORCE_FAMILY = "DejaVu Sans";
 
 /** Every route that renders an artboard, with the role gate it sits behind. */
 const TARGETS = [
-  { route: "/", role: "customer" },
+  { route: "/", role: "auth" },                             // LOG IN 1
   { route: "/home", role: "customer" },
   { route: "/shop", role: "customer" },
   { route: "/shop/product/pr-cylinder", role: "customer" },
@@ -41,16 +41,18 @@ const TARGETS = [
   { route: "/shop/product/pr-clamp", role: "customer" },   // out of stock -> unavailable state
   { route: "/shop/product/pr-battery", role: "customer" },
   { route: "/shop/product/pr-burner", role: "customer" },
+  { route: "/shop/bundle/bu-combo", role: "customer" },     // bundle uses the same 1:1462 frame
   { route: "/cart", role: "customer" },                     // empty cart
   { route: "/cart?add=pr-hose", role: "customer" },         // filled cart
   { route: "/orders/o-unpaid", role: "customer" },
   { route: "/orders/o-paid", role: "customer" },
   { route: "/orders/o-delivery", role: "customer" },
   { route: "/orders/o-expired", role: "customer" },
+  { route: "/orders/verify", role: "customer" },            // 1:502 while a verification fails
   { route: "/history", role: "customer" },
   { route: "/profile", role: "customer" },
   { route: "/profile/details", role: "customer" },
-  { route: "/auth/login", role: "customer" },
+  { route: "/auth/login", role: "auth" },
   { route: "/staff", role: "staff" },
   { route: "/staff/walk-in", role: "staff" },
   { route: "/staff/collect/o-paid", role: "staff" },
@@ -80,6 +82,7 @@ const CAPTURE = (forceFamily) => {
     .filter((el) => !el.parentElement?.closest(".frame"));
 
   const out = [];
+  const leafByRoot = {};
   for (const root of artboards) {
     const base = root.getBoundingClientRect();
     const rootNode = root.getAttribute("data-node") || "";
@@ -133,11 +136,60 @@ const CAPTURE = (forceFamily) => {
         // Number of element children, so a "text leaf" can be told from a
         // container: only a leaf's text is a value slot the routes may rewrite.
         kids: el.childElementCount,
+        // The element's own direct text, excluding descendants. A stale sample
+        // can sit on a container too: /driver's third drop row has no data-node
+        // of its own, so its order number is direct text on a plain div. Using
+        // `text` there would match the whole row and every order number on the
+        // screen at once, so own text is what the stale check needs.
+        ownText: [...el.childNodes]
+          .filter((n) => n.nodeType === 3)
+          .map((n) => n.textContent)
+          .join(" ").replace(/\s+/g, " ").trim(),
       };
       out.push(entry);
     }
+    // Text that lives outside every `[data-node]`. The driver's drop rows are
+    // plain `<p>` with no id, so an unbound row was invisible to the walk above:
+    // it compared nothing, and the screen kept Figma's sample order number and
+    // address while still reporting clean. `leafTexts` is every leaf string in
+    // document order, tagged with whether an id covers it, so the two sides can
+    // be paired positionally.
+    const leafTexts = [];
+    for (const el of root.querySelectorAll("*")) {
+      // A drawn row is `<p>U2-100045<br>19 Bode Thomas · 12KG</p>`: the `<br>`
+      // is an element child, so a plain "no children" test skipped exactly the
+      // nodes this check exists for. Only `<br>` children are tolerated; any
+      // real child means the text belongs to a nested block.
+      if ([...el.children].some((c) => c.tagName !== "BR")) continue;
+      // Lines are split on the drawn `<br>` rather than joined, so the app's
+      // single `<p>` yields "U2-100045" and "19 Bode Thomas · 12KG" as two
+      // strings — the same two the reference draws as sibling `<p>`s. Joining
+      // instead would produce "U2-10004519 Bode…", which no order-number or
+      // address pattern can recognise, so the leak would go unreported.
+      const lines = [];
+      let cur = "";
+      for (const n of el.childNodes) {
+        if (n.nodeType === 1 && n.tagName === "BR") {
+          if (cur.trim()) lines.push(cur.trim());
+          cur = "";
+        } else {
+          cur += n.textContent || "";
+        }
+      }
+      if (cur.trim()) lines.push(cur.trim());
+      for (const line of lines) {
+        const t = line.replace(/\s+/g, " ").trim();
+        if (!t) continue;
+        // The artboard root is itself `[data-node]`, so `closest` always finds
+        // something; only an intermediate id means a drawn sub-node covers it.
+        const covered = el.hasAttribute("data-node")
+          || (el.closest("[data-node]") && el.closest("[data-node]") !== root);
+        leafTexts.push({ t, orphan: !covered });
+      }
+    }
+    leafByRoot[rootNode] = leafTexts;
   }
-  return out;
+  return { nodes: out, leafByRoot };
 };
 
 async function snap(page, url, wait) {
@@ -165,7 +217,6 @@ async function snap(page, url, wait) {
   await page.evaluate(() => document.fonts.ready);
   return page.evaluate(CAPTURE, FORCE_FAMILY);
 }
-
 /* ------------------------------------------------------------------- compare */
 
 const TOKEN_FIELDS = [
@@ -186,6 +237,24 @@ const GEOM_TOL = 0.6; // CSS px — sub-pixel rasteriser noise, not a design gap
 // markup must stay the file's.
 const STATE_TOGGLED = new Set(["1:4643"]);
 
+// The artboards are Figma's *frozen example* of each screen — the gallery
+// literally contains `U2-100031`, `17 MAR` and `[ Caleb ]`. Those are sample
+// values, not copy: a real user must never see them. A node whose live text is
+// byte-identical to the reference sample *and* looks like volatile data was
+// simply never bound, which is a wrong-value bug the geometry check cannot see
+// (the box still matches, because the drawn text is still there).
+const SAMPLE_PATTERNS = [
+  [/\bU2-\d{4,}\b/, "order number"],
+  [/\b\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b/, "date"],
+  [/\[\s*[A-Za-z][A-Za-z .'-]{2,20}\s*\]/, "bracketed name"],
+  [/\b\d+\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*\s+(?:Street|Road|Avenue|Close|Crescent)\b/, "street address"],
+  [/\b0\d{3}\s?\d{3}\s?\d{4}\b/, "phone number"],
+];
+function sampleKind(text) {
+  for (const [re, kind] of SAMPLE_PATTERNS) if (re.test(text)) return kind;
+  return null;
+}
+
 function index(list) {
   const map = new Map();
   for (const e of list) {
@@ -195,7 +264,7 @@ function index(list) {
   return map;
 }
 
-function compare(refList, appList, label, report, live) {
+function compare(refList, appList, label, report, live, stale) {
   const ref = index(refList);
   const app = index(appList);
   const refRoots = [...new Set(refList.map((e) => e.root))].filter(Boolean);
@@ -275,6 +344,18 @@ function compare(refList, appList, label, report, live) {
       } else {
         live.push({ artboard, node: e.id || e.key, detail: `«${e.text}» → «${a.text}»` });
       }
+    } else {
+      // Text is unchanged, so whatever the file drew is still on screen. If
+      // that text is volatile sample data, no route ever bound it. A leaf is
+      // checked on its whole text; a container only on its own direct text, so
+      // a sample sitting on a wrapper without a data-node is still caught
+      // without matching the whole subtree.
+      const probe = e.kids === 0 ? e.text : (e.ownText ?? "");
+      const kind = sampleKind(probe);
+      if (kind && !e.animating) {
+        stale.push({ artboard, node: e.id || e.key, kind: "stale-sample-data",
+          detail: `still shows the file's sample ${kind}: «${e.text}»` });
+      }
     }
   }
   for (const a of appList) {
@@ -291,6 +372,12 @@ const refOnly = argv.includes("--ref");
 const wanted = argv.filter((a) => a.startsWith("/"));
 
 const refByRoot = new Map();
+// Every leaf string the reference draws, in document order, with a flag for
+// whether a `[data-node]` covers it. The app side is paired against this
+// positionally: an app leaf that no id covers, sitting at the same index as a
+// reference leaf that no id covers, and still carrying the reference's text, is
+// text the route never bound.
+const refLeafByRoot = new Map();
 const browser = await puppeteer.launch({
   executablePath: "/usr/bin/chromium",
   headless: true,
@@ -299,34 +386,82 @@ const browser = await puppeteer.launch({
 
 const report = [];
 const live = [];
+const stale = [];
+/** Registry route -> the artboards it is supposed to render, keyed by shape. */
+const REGISTRY_ARTBOARD_ROUTES = new Map();
+/** Target routes whose artboard did not render in this state. */
+const noArtboardStates = [];
+/** Registry shapes that did render an artboard somewhere. */
+const renderedShapes = new Set();
+
+/** Fold a concrete route to the registry's `:id` shape. */
+const targetShape = (route) => route.split("?")[0]
+  .replace(/^\/shop\/[^/]+\/[^/]+$/, "/shop/:id/:id")
+  .replace(/\/(pr-[a-z]+|o-[a-z]+|dl-\d+|bu-[a-z]+)\b/g, "/:id");
 
 if (refOnly) {
   const page = await browser.newPage();
   await page.setViewport({ width: 1400, height: 1000, deviceScaleFactor: 1 });
-  const all = await snap(page, REF);
+  const { nodes: all } = await snap(page, REF);
   fs.writeFileSync("/tmp/ref-tokens.json", JSON.stringify(all, null, 1));
   console.log(`reference nodes: ${all.length}`);
   await browser.close();
   process.exit(0);
 }
 
-// Index the reference once, keyed by artboard root node.
+// Index the reference once, keyed by artboard root node. The reference's own
+// orphan text is kept too: a sample string that appears verbatim on the app
+// side outside every `[data-node]` is text no route bound.
 {
   const page = await browser.newPage();
   await page.setViewport({ width: 1400, height: 1000, deviceScaleFactor: 1 });
   await page.setRequestInterception(true);
   page.on("request", (r) =>
     /googleusercontent\.com|drive\.google\.com/.test(r.url()) ? r.abort() : r.continue());
-  const all = await snap(page, REF);
+  const { nodes: all, leafByRoot } = await snap(page, REF);
   for (const e of all) {
     if (!refByRoot.has(e.root)) refByRoot.set(e.root, []);
     refByRoot.get(e.root).push(e);
+  }
+  for (const [root, leaves] of Object.entries(leafByRoot)) {
+    refLeafByRoot.set(root, leaves);
   }
   console.log(`reference artboards: ${refByRoot.size}  nodes: ${all.length}`);
   await page.close();
 }
 
 const targets = wanted.length ? TARGETS.filter((t) => wanted.includes(t.route)) : TARGETS;
+
+// Coverage guard. The run used to print "STRUCTURAL + TOKEN PARITY: CLEAN"
+// having compared only the routes someone remembered to list here, so a screen
+// that rendered the wrong artboard, or an artboard added to the registry and
+// never checked, read as a pass. The registry in src/figma/routeRegistry.ts is
+// the source of truth for which routes carry an artboard; every one of them
+// must be in TARGETS or this fails before it can claim a clean run.
+{
+  const reg = fs.readFileSync(path.join(ROOT, "web/src/figma/routeRegistry.ts"), "utf8");
+  const entries = [...reg.matchAll(
+    /\{\s*route:\s*"([^"]+)",\s*role:\s*"([^"]+)",\s*artboards:\s*\[([^\]]*)\]/g)];
+  const misses = [];
+  for (const [, route, role, boards] of entries) {
+    if (!boards.trim()) continue;                 // route draws no artboard
+    // Keyed by shape so a concrete target route (/orders/o-unpaid) can find its
+    // registry pattern (/orders/:id).
+    REGISTRY_ARTBOARD_ROUTES.set(route.replace(/:[A-Za-z]+/g, ":id"), boards.trim());
+    // TARGETS uses concrete ids for :id routes; match on the shape.
+    const shape = route.replace(/:[A-Za-z]+/g, ":id");
+    const hit = TARGETS.some((t) => targetShape(t.route) === shape && t.role === role);
+    if (!hit) misses.push(`${route} (${role})`);
+  }
+  if (misses.length) {
+    console.log("COVERAGE FAIL — registry routes with artboards that TARGETS never checks:");
+    for (const m of misses) console.log(`  ✗ ${m}`);
+    console.log("Add them to TARGETS in dom-token-diff.mjs so a clean run means all of them.");
+    process.exit(1);
+  }
+  console.log(`coverage: all ${entries.filter((e) => e[3].trim()).length} artboard routes in the registry are in TARGETS`);
+}
+
 const page = await browser.newPage();
 // Wide enough that `--plate-fit` is 1, so the plate is not `zoom`ed and the
 // boxes are the artboard's own CSS px on both sides.
@@ -344,17 +479,47 @@ page.on("pageerror", (e) => consoleErrors.push("PAGEERROR " + e.message));
 for (const t of targets) {
   const url = `${BASE}${t.route}${t.route.includes("?") ? "&" : "?"}as=${t.role}`;
   let appList;
+  let appLeaves = {};
   try {
-    appList = await snap(page, url, 600);
+    ({ nodes: appList, leafByRoot: appLeaves } = await snap(page, url, 600));
   } catch (e) {
     report.push({ artboard: t.route, node: "-", kind: "load", detail: e.message });
     continue;
   }
+  // Text the per-node walk cannot see: leaves no `[data-node]` covers. The two
+  // sides are paired positionally, and a pair counts as unbound only when the
+  // app still shows the reference's exact string. Matching on text alone is not
+  // enough — the first active drop's live order number really is `U2-100045`,
+  // which the file also draws in its third row — and pairing by index is what
+  // keeps that legitimate value from being reported as a stale sample.
+  for (const [root, refLeaves] of refLeafByRoot) {
+    const appLeavesForRoot = appLeaves[root];
+    if (!appLeavesForRoot) continue;
+    const n = Math.min(refLeaves.length, appLeavesForRoot.length);
+    for (let i = 0; i < n; i++) {
+      const ref = refLeaves[i];
+      const app = appLeavesForRoot[i];
+      if (!ref.orphan || !app.orphan) continue;
+      if (ref.t !== app.t) continue;
+      if (!sampleKind(ref.t)) continue;
+      stale.push({ artboard: t.route, node: `(no data-node in ${root})`,
+        kind: "stale-sample-data", detail: `still shows the file's sample text: «${ref.t}»` });
+    }
+  }
   const roots = [...new Set(appList.map((e) => e.root))].filter(Boolean);
   if (!roots.length) {
-    console.log(`${t.route.padEnd(34)} no artboard rendered`);
+    // A route can be mapped to an artboard and still render a functional screen
+    // in one state: /orders/:id draws 1:762 once paid but the unpaid and expired
+    // states have no artboard. That is a legitimate per-state choice, so an
+    // individual skip is only recorded. What must never happen is a registry
+    // route where *no* state renders its artboard — that is a missing screen,
+    // and it is failed after the loop.
+    const mapped = REGISTRY_ARTBOARD_ROUTES.get(targetShape(t.route));
+    if (mapped) noArtboardStates.push(`${t.route} (mapped to ${mapped})`);
+    else console.log(`${t.route.padEnd(34)} no artboard (functional screen, none expected)`);
     continue;
   }
+  renderedShapes.add(targetShape(t.route));
   for (const root of roots) {
     const refList = refByRoot.get(root);
     if (!refList) {
@@ -362,7 +527,7 @@ for (const t of targets) {
         detail: "app rendered an artboard that is not in the gallery" });
       continue;
     }
-    compare(refList, appList.filter((e) => e.root === root), t.route, report, live);
+    compare(refList, appList.filter((e) => e.root === root), t.route, report, live, stale);
   }
   console.log(`${t.route.padEnd(34)} artboards: ${roots.join(", ")}`);
 }
@@ -408,9 +573,41 @@ if (live.length) {
   if (plain.length > 200) console.log(`    … and ${plain.length - 200} more`);
 }
 
+// Sample data that was never bound is a wrong-value bug, not drawing drift:
+// the geometry still matches because the file's own text is still on screen.
+// It is printed separately and fails the run, because a real user seeing
+// Figma's example order number is exactly the kind of error that reads as
+// "the checks passed" while the screen is wrong.
+if (stale.length) {
+  console.log("\n" + "─".repeat(72));
+  console.log(`STALE SAMPLE DATA (${stale.length} — the file's example values are still on screen):`);
+  for (const r of stale.slice(0, 100)) {
+    console.log(`  ✗ ${String(r.artboard).padEnd(12)} ${String(r.node).padEnd(10)} ${r.detail}`);
+  }
+  if (stale.length > 100) console.log(`  … and ${stale.length - 100} more`);
+}
+
 if (consoleErrors.length) {
   console.log(`\nconsole errors (${consoleErrors.length}):`);
   for (const e of consoleErrors.slice(0, 20)) console.log("  " + e);
   process.exit(1);
 }
-process.exit(report.length ? 1 : 0);
+
+// A registry route whose artboard never rendered in any checked state is a
+// missing screen, not a pass. Routes that simply have a functional state
+// alongside an artboard state are listed for visibility but do not fail.
+// Only meaningful on a full run: a filtered run by definition checks a subset.
+const missing = wanted.length ? []
+  : [...REGISTRY_ARTBOARD_ROUTES.keys()].filter((s) => !renderedShapes.has(s));
+if (noArtboardStates.length) {
+  console.log("\n" + "─".repeat(72));
+  console.log("FUNCTIONAL STATES OF ARTBOARD ROUTES (expected — no drawing in this state):");
+  for (const s of noArtboardStates) console.log(`    ${s}`);
+}
+if (missing.length) {
+  console.log("\n" + "─".repeat(72));
+  console.log(`MISSING ARTBOARDS (${missing.length} — registry maps these routes to a drawing that never rendered):`);
+  for (const s of missing) console.log(`  ✗ ${s} → ${REGISTRY_ARTBOARD_ROUTES.get(s)}`);
+}
+
+process.exit(report.length || stale.length || missing.length ? 1 : 0);

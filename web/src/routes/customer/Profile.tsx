@@ -5,6 +5,7 @@ import { signOut } from "../../lib/auth";
 import { BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { ImagePicker } from "../../components/ImagePicker";
+import { mediaUrl } from "../../lib/media";
 
 export default function Profile() {
   const nav = useNavigate();
@@ -42,7 +43,7 @@ export default function Profile() {
   if (!profile) return <div className="screen"><div className="sr-only">Loading profile…</div></div>;
 
   const avatar = profile.avatar_asset?.base_path
-    ? `${import.meta.env.VITE_MEDIA_BASE}/${profile.avatar_asset.base_path}/detail.webp`
+    ? mediaUrl(profile.avatar_asset.base_path, "detail")
     : null;
 
   return (

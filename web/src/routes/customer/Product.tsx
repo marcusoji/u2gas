@@ -5,10 +5,9 @@ import { useCart } from "../../lib/cart";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { CompleteTheSet } from "../../components/CompleteTheSet";
 import { useBackTo } from "../../components/primitives";
+import { mediaUrl } from "../../lib/media";
 
-function imageUrl(basePath?: string | null) {
-  return basePath ? `${import.meta.env.VITE_MEDIA_BASE}/${basePath}/detail.webp` : "";
-}
+const imageUrl = (basePath?: string | null) => mediaUrl(basePath, "detail");
 
 export default function ProductPage() {
   const { kind, id } = useParams<{ kind: "product" | "bundle"; id: string }>();

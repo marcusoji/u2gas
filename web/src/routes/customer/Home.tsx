@@ -195,6 +195,11 @@ export default function Home() {
 
         1:257 is the ticker text, 1:296 the LED readout — the only two spots
         with live data. Everything else is the file's own placement.
+
+        The ticker is one message. It used to be written twice
+        (`${ticker} · ${ticker}`), which is 570px of text in the 151px LED
+        window — the rate scrolled past once and then repeated, which reads as a
+        stutter, not a ticker. The file draws the string once.
       */}
       <div className="frame-plate" onClick={onTerminalClick}>
         <FigmaScreen
@@ -203,7 +208,7 @@ export default function Home() {
             "1:257": home
               ? looksShort
                 ? `ONLY ${home.available_kg}KG LEFT \u00b7 ${home.ticker}`
-                : `${home.ticker} \u00b7 ${home.ticker}`
+                : home.ticker
               : "CHECKING THE DEPOT",
             "1:296": digits ? `${digits}KG` : "0KG",
           }}

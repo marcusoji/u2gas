@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, ApiError, type AdminProduct } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { useImageCompressor } from "../../lib/useImageCompressor";
+import { mediaUrl } from "../../lib/media";
 import {
   Input, LoadBar, Pill, Stamp, money,
 } from "../../components/primitives";
@@ -157,7 +158,7 @@ export default function BundleUpload() {
       name: p?.name ?? "",
       priceKobo: p?.price_kobo ?? 0,
       previewUrl: p?.image_asset?.base_path
-        ? `${import.meta.env.VITE_MEDIA_BASE}/${p.image_asset.base_path}/thumb.webp`
+        ? mediaUrl(p.image_asset.base_path, "thumb")
         : undefined,
       progress: 1,
     });

@@ -191,7 +191,10 @@ async function route(
   if (method === "GET" && rawPath === "/catalog/home") {
     return {
       ok: true, rate_kobo_per_kg: state.rateKoboPerKg,
-      ticker: `Today's Rate: 1kg at ₦${(state.rateKoboPerKg / 100).toLocaleString("en-NG")}`,
+      // The file draws `Today&rsquo;s Rate` — a typographic apostrophe. A
+      // straight `'` is a different character, so the bound ticker replaced the
+      // drawing's glyph and the live value no longer matched the design.
+      ticker: `Today\u2019s Rate: 1kg at ₦${(state.rateKoboPerKg / 100).toLocaleString("en-NG")}`,
       available_kg: availableKg(),
       unread_notifications: fx.notifications.filter((n) => !("read_at" in n && n.read_at)).length,
       signed_in: true,
@@ -887,8 +890,12 @@ async function route(
 /* --- Helpers that read live state ----------------------------------------- */
 
 function withDeliveryOrder(deliveryId: string) {
-  const order =
-    fx.orders.find((o) => o.delivery?.delivery_id === deliveryId) ?? fx.orders[0];
+  // Every delivery belongs to one order. Falling back to `orders[0]` meant an
+  // unmatched id silently answered with a different order's number, customer
+  // and address, so the drop list showed the same order on every row and no
+  // caller could tell the lookup had failed. Failing loudly is the point.
+  const order = fx.orders.find((o) => o.delivery?.delivery_id === deliveryId);
+  if (!order) throw fail("NOT_FOUND", 404, "NO ORDER FOR DELIVERY");
   return {
     ...order,
     guest_name: "Walk-in customer",
@@ -903,11 +910,14 @@ function flaggedQueueLive() {
   const failed = fx.deliveries.filter((d) => ["failed", "rescheduled", "returned"].includes(d.status));
   return {
     ...queue,
-    failed_deliveries: failed.map((d) => ({
-      delivery_id: d.delivery_id, status: d.status,
-      failure_reason: d.failure_reason, attempt_count: d.attempt_count,
-      order: { order_id: fx.orders[0].order_id, order_number: fx.orders[0].order_number },
-    })),
+    failed_deliveries: failed.map((d) => {
+      const order = fx.orders.find((o) => o.delivery?.delivery_id === d.delivery_id);
+      return {
+        delivery_id: d.delivery_id, status: d.status,
+        failure_reason: d.failure_reason, attempt_count: d.attempt_count,
+        order: { order_id: order?.order_id ?? "", order_number: order?.order_number ?? "—" },
+      };
+    }),
     total: queue.refunds_owed.length + failed.length + queue.stale_unpaid.length,
   };
 }

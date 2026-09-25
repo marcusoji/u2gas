@@ -91,6 +91,8 @@ export default function Reports() {
             availableKg={report.orders_fulfilled}
             totalKg={Math.max(report.orders_total, 1)}
             unit="DONE"
+            labelLines={["ORDERS", "FULFILLED"]}
+            ariaLabel={`${report.orders_fulfilled} of ${report.orders_total} orders fulfilled`}
             note={`${report.orders_fulfilled} OF ${report.orders_total} ORDERS FULFILLED`}
           />
 

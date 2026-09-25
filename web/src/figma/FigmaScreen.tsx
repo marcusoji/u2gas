@@ -64,25 +64,56 @@ export function FigmaScreen({
       const re = new RegExp(`(data-node="${id}"[^>]*--src:url\\(')([^']*)('\\))`);
       out = out.replace(re, (_match, open, _old, close) => `${open}${escapeAttribute(src)}${close}`);
     }
-    for (const [from, replacement] of Object.entries(textReplacements ?? {})) {
-      // Some generated Figma text nodes intentionally have no data-node id.
-      // Replace only their literal text, never attributes or styles. Arrays
-      // are consumed left-to-right so repeated Figma sample strings can carry
-      // distinct live values without changing the generated artboard itself.
-      const replacements = Array.isArray(replacement) ? replacement : [replacement];
-      if (replacements.length === 1) {
-        out = out.split(from).join(escapeText(replacements[0]));
-      } else {
-        let offset = 0;
-        let next = "";
-        for (const value of replacements) {
-          const index = out.indexOf(from, offset);
-          if (index < 0) break;
-          next += out.slice(offset, index) + escapeText(value);
-          offset = index + from.length;
-        }
-        if (next) out = next + out.slice(offset);
+    // Some generated Figma text nodes intentionally have no data-node id.
+    // Replace only their literal text, never attributes or styles.
+    //
+    // The artboards are the gallery's markup, so a middle dot in a route's key
+    // is `&middot;` in the file. Routes write the readable character, so the
+    // file's named punctuation entities are decoded before searching. Without
+    // this a key like "12 Awolowo Road, Ikoyi · 10KG" never matched, the file's
+    // sample address stayed on screen, and the geometry check still passed
+    // because the drawn text was still there.
+    //
+    // One left-to-right pass, not `split().join()` per key: a replacement value
+    // that equals another key would otherwise be rewritten again by that key.
+    // Binding three drop rows to U2-100045/6/39 against samples 042/044/045 used
+    // to cascade, so the first and third rows both came out as the same order.
+    // A single scan also means an inserted value is never re-matched.
+    const entries = Object.entries(textReplacements ?? {}).filter(([k]) => k);
+    if (entries.length) {
+      const queues = new Map<string, string[]>();
+      const cursor = new Map<string, number>();
+      for (const [key, value] of entries) {
+        queues.set(key, Array.isArray(value) ? [...value] : [value]);
+        cursor.set(key, 0);
       }
+      // Longest key first, so a key that is a prefix of another cannot win.
+      const keys = entries.map(([k]) => k).sort((a, b) => b.length - a.length);
+      const hay = decodeEntities(out);
+      let result = "";
+      let i = 0;
+      while (i < hay.length) {
+        let key: string | null = null;
+        for (const k of keys) {
+          if (hay.startsWith(k, i)) { key = k; break; }
+        }
+        if (!key) { result += hay[i]; i += 1; continue; }
+        const q = queues.get(key)!;
+        // A single value means "replace every occurrence"; a list is consumed
+        // left-to-right so repeated samples can carry distinct live values, and
+        // once it runs out the file's own text is left alone.
+        const at = cursor.get(key)!;
+        if (q.length === 1) {
+          result += escapeText(q[0]);
+        } else if (at < q.length) {
+          result += escapeText(q[at]);
+          cursor.set(key, at + 1);
+        } else {
+          result += hay.slice(i, i + key.length);
+        }
+        i += key.length;
+      }
+      out = result;
     }
     return out;
   }, [board, values, images, textReplacements]);
@@ -107,6 +138,28 @@ export function FigmaScreen({
 /** Values come from our own API, but they land in markup — escape anyway. */
 function escapeText(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Decode the named/numeric punctuation entities the gallery's markup uses, so a
+ * route can key a replacement on the character a reader sees (`·`) rather than
+ * the file's `&middot;`. Deliberately excludes `&lt;`, `&gt;` and `&amp;`: they
+ * are structural, and decoding them would let a replacement value introduce a
+ * tag or break an existing escape.
+ */
+const PUNCT_ENTITIES: Record<string, string> = {
+  "&middot;": "·", "&times;": "×", "&mdash;": "—", "&ndash;": "–",
+  "&ldquo;": "\u201c", "&rdquo;": "\u201d", "&lsquo;": "\u2018", "&rsquo;": "\u2019",
+  "&hellip;": "…", "&nbsp;": "\u00a0", "&bull;": "•",
+  "&#39;": "'", "&#8217;": "\u2019", "&#8220;": "\u201c", "&#8221;": "\u201d",
+  "&#8211;": "–", "&#8212;": "—", "&#183;": "·", "&#215;": "×",
+};
+function decodeEntities(s: string): string {
+  let out = s;
+  for (const [entity, char] of Object.entries(PUNCT_ENTITIES)) {
+    if (out.includes(entity)) out = out.split(entity).join(char);
+  }
+  return out;
 }
 
 function escapeAttribute(s: string): string {

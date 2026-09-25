@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, ApiError, type AdminStaff, type AdminDriver } from "../../lib/api";
 import { Empty, ErrorState, LoadBar, Pill, Tabs } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
+import { mediaUrl } from "../../lib/media";
 
 type View = "staff" | "drivers";
 type Person = AdminStaff | AdminDriver;
@@ -30,11 +31,43 @@ export default function People() {
 
   useEffect(load, [load]);
 
+  // The grid artboard draws six sample people — SMITH/MANAGER, SARA/CASHIER,
+  // JOHN/DRIVER — and none of those nodes has an id, so an admin was reading
+  // invented colleagues as if they were real records. The names are swapped by
+  // their exact drawn text instead: a repeated string takes an array consumed
+  // in document order, and the file's order is row by row, three across.
+  //
+  // Every array is padded back to the number of times the sample is drawn. A
+  // short array would fall back to the single-value path, which replaces *all*
+  // occurrences — three records would fill all six slots and repeat the last
+  // name into the empty ones. Padding leaves an unfilled slot showing the file's
+  // own sample, which is the honest state for "no record here".
+  const gridValues = useMemo(() => {
+    const people = (rows ?? []).slice(0, 6);
+    // Drawn sample text -> the slots that draw it, in document order.
+    const slots: [sample: string, at: number[], isName: boolean][] = [
+      ["SMITH", [0, 3], true], ["SARA", [1, 2, 4], true], ["JOHN", [5], true],
+      ["MANAGER", [0, 3], false], ["CASHIER", [1, 2, 4], false], ["DRIVER", [5], false],
+    ];
+    const values: Record<string, string | string[]> = {};
+    for (const [sample, at, isName] of slots) {
+      const filled = at.map((i) => {
+        const p = people[i];
+        if (!p) return sample;
+        if (isName) return p.profile?.display_name ?? "—";
+        return view === "drivers" ? "DRIVER" : ((p as AdminStaff).role ?? "STAFF").toUpperCase();
+      });
+      if (filled.every((v) => v === sample)) continue;   // nothing bound
+      values[sample] = filled;
+    }
+    return values;
+  }, [rows, view]);
+
   if (error) return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
 
   const avatar = (p: Person) =>
     p.profile?.avatar_asset?.base_path
-      ? `${import.meta.env.VITE_MEDIA_BASE}/${p.profile.avatar_asset.base_path}/grid.webp`
+      ? mediaUrl(p.profile.avatar_asset.base_path, "grid")
       : null;
 
   const available = rows?.filter((p) =>
@@ -87,7 +120,7 @@ export default function People() {
 
   return (
     <div className="screen figma-route-scroll">
-      <FigmaRouteFrame node="1:2747">
+      <FigmaRouteFrame node="1:2747" textReplacements={gridValues}>
         <div className="figma-people-hit-grid">
           {rows.slice(0, 6).map((person, index) => (
             <button

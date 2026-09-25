@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
 import { signOut } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
+import { mediaUrl } from "../../lib/media";
 import {
   ErrorState, LoadBar, Pill, Segmented, Stamp, U2Mark,
 } from "../../components/primitives";
@@ -68,7 +69,7 @@ export default function DriverMe() {
       <FigmaRouteFrame node="1:4968" values={values}>
         {driver.profile?.avatar_asset?.base_path && (
           <img
-            src={`${import.meta.env.VITE_MEDIA_BASE}/${driver.profile.avatar_asset.base_path}/detail.webp`}
+            src={mediaUrl(driver.profile.avatar_asset.base_path, "detail")}
             alt=""
             style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, objectFit: "cover", zIndex: 10 }}
           />

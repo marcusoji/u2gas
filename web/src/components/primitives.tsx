@@ -3,6 +3,7 @@ import {
   useEffect, useRef,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { mediaUrl } from "../lib/media";
 
 /* ---------------------------------------------------------------------------
    Primitives. Each maps to one component in the Figma file. Nothing here
@@ -280,7 +281,7 @@ export function ProductImage({ basePath, alt, tier = "grid", eager, height = 120
     return <div className="product-image" style={{ height }} aria-hidden="true" />;
   }
 
-  const url = (t: string) => `${import.meta.env.VITE_MEDIA_BASE}/${basePath}/${t}.webp`;
+  const url = (t: string) => mediaUrl(basePath, t as "thumb" | "grid" | "detail");
 
   return (
     <img
@@ -302,7 +303,11 @@ export function ProductImage({ basePath, alt, tier = "grid", eager, height = 120
 }
 
 export function money(kobo: number): string {
-  return "₦" + Math.round(kobo / 100).toLocaleString("en-NG");
+  // A negative amount is a shortfall, and it reads as a sign in front of the
+  // whole figure. Naively prefixing the symbol to a negative number gave
+  // "₦-37,600" on the shift reconciliation — the minus belongs before the ₦.
+  const n = Math.round(kobo / 100);
+  return `${n < 0 ? "-" : ""}₦${Math.abs(n).toLocaleString("en-NG")}`;
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   Empty, ErrorState, Input, LoadBar, Modal, Pill, ProductImage, Stamp, money,
 } from "../../components/primitives";
 import { ImagePicker } from "../../components/ImagePicker";
+import { mediaUrl } from "../../lib/media";
 import { Ticker } from "../../components/terminal";
 
 /**
@@ -262,7 +263,7 @@ export default function Products() {
                 busy={imageBusy}
                 preview={
                   editing.image_asset?.base_path
-                    ? `${import.meta.env.VITE_MEDIA_BASE}/${editing.image_asset.base_path}/grid.webp`
+                    ? mediaUrl(editing.image_asset.base_path, "grid")
                     : null
                 }
                 onPicked={(blob) => void saveImage(blob)}
