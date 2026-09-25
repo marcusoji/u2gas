@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError, type Profile as ProfileData } from "../../lib/api";
 import { signOut } from "../../lib/auth";
+import { BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { ImagePicker } from "../../components/ImagePicker";
 
@@ -47,6 +48,7 @@ export default function Profile() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node="1:2090" values={values}>
+        <BackButton to="/home" />
         {avatar && <img src={avatar} alt="" style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, objectFit: "cover", zIndex: 10 }} />}
         <div style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, zIndex: 22 }}>
           <ImagePicker

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type ShopItem } from "../../lib/api";
+import { BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 const IMAGE_NODES = [
@@ -53,6 +54,7 @@ export default function Shop() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node="1:1438" values={values} images={images}>
+        <BackButton to="/home" />
         {IMAGE_NODES.map((node, i) => {
           const item = items?.[i];
           return item ? (

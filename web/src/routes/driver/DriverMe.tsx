@@ -90,7 +90,7 @@ export default function DriverMe() {
           {blocked && <div className="stamp-wrap" style={{ marginTop: 16 }}><Stamp>{blocked.toUpperCase()}</Stamp></div>}
           {driver.vehicle_info && <p className="label" style={{ marginTop: 16 }}>{driver.vehicle_info.toUpperCase()}</p>}
           <div style={{ marginTop: 24 }}>
-            <Pill variant="ghost" onClick={async () => { await signOut(); nav("/"); }}>LOG OUT</Pill>
+            <Pill variant="ghost" onClick={async () => { await signOut(); nav("/"); }}>SIGN OUT</Pill>
           </div>
         </div>
       </FigmaRouteFrame>

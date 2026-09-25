@@ -4,6 +4,7 @@ import { api, ApiError, type ShopItem } from "../../lib/api";
 import { useCart } from "../../lib/cart";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { CompleteTheSet } from "../../components/CompleteTheSet";
+import { useBackTo } from "../../components/primitives";
 
 function imageUrl(basePath?: string | null) {
   return basePath ? `${import.meta.env.VITE_MEDIA_BASE}/${basePath}/detail.webp` : "";
@@ -12,6 +13,7 @@ function imageUrl(basePath?: string | null) {
 export default function ProductPage() {
   const { kind, id } = useParams<{ kind: "product" | "bundle"; id: string }>();
   const nav = useNavigate();
+  const backToShop = useBackTo("/shop");
   const { add } = useCart();
   const [data, setData] = useState<ShopItem | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +74,8 @@ export default function ProductPage() {
         <button
           className="figma-route-interactive"
           style={{ left: 25, top: 70, width: 70, height: 70 }}
-          aria-label="Back"
-          onClick={() => nav(-1)}
+          aria-label="Back to the shop"
+          onClick={backToShop}
         />
         <button
           className="figma-route-interactive"

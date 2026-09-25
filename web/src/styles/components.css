@@ -406,6 +406,14 @@
   color: var(--ink);
 }
 .segmented button[aria-selected="true"] { background: var(--blue); color: var(--white); }
+/* The drawn pill is 26px tall. The hit area grows downward past it so the
+   filter is reliably tappable without the pill changing size. */
+.segmented button::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 -18px;
+}
+.segmented button { position: relative; }
 
 /* --- Tabs ---------------------------------------------------------------- */
 
@@ -416,6 +424,7 @@
   flex-wrap: wrap;
 }
 .tabs button {
+  position: relative;
   border: none;
   background: none;
   font-size: var(--t-caption);
@@ -423,6 +432,14 @@
   color: var(--grey);
   padding: 3px var(--s-2);
   border-radius: var(--r-key);
+}
+/* The drawn tab is only ~15px tall. Rather than grow the design, the hit area
+   extends past it — a filter row you cannot reliably tap is a filter row
+   nobody uses. */
+.tabs button::after {
+  content: "";
+  position: absolute;
+  inset: -15px -10px;
 }
 .tabs button[aria-selected="true"] { background: var(--blue); color: var(--white); }
 .tabs.is-secondary button[aria-selected="true"] {
@@ -493,6 +510,27 @@
   border-radius: 50%;
   border: 1px solid var(--grey);
   background: none;
+  /* A row's edit affordance. The ring stays 18px to match the drawing; the
+     tappable area does not. */
+  position: relative;
+}
+.card-go::after {
+  content: "";
+  position: absolute;
+  inset: -13px -13px;
+}
+
+/* A secondary action inside a card — "make this the default". Small text in
+   the drawing, so the padding supplies the 44px target. */
+.card-action {
+  background: none;
+  border: 0;
+  color: var(--blue-faint);
+  font-size: var(--t-micro);
+  padding: var(--s-4) 0 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: flex-end;
 }
 
 /* --- Stamp --------------------------------------------------------------- */
@@ -785,6 +823,190 @@ img.is-unavailable { filter: blur(1.5px); }
 
 /* figma Frame 64 — an opened notification row. */
 .notif-row.is-expanded { border: 2px solid #000; border-radius: 40px; box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------------
+   Screen backdrop and frame fitting.
+
+   Every artboard is a fixed 440px drawing — it is a Figma frame, and the
+   coordinates inside it are absolute, so it can never reflow to a narrower
+   phone. The screen shell is therefore the backdrop, and the artboard is a
+   plate centred on it: cropped equally on both sides when the viewport is
+   narrower than 440, with room around it on a desktop.
+
+   These rules belong in the shell, not in figma.css, which is the screens'
+   own stylesheet carried over byte for byte and must not gain app rules.
+   figma-route.css has scoped copies for the .figma-route-frame wrapper.
+   --------------------------------------------------------------------------- */
+
+/* One column, and centred.
+   Centring also fixes the crop. A 440px plate in a 390px viewport takes an
+   equal negative margin on both sides, so 25px is trimmed from each edge —
+   whereas a stretch-aligned item overflows entirely to the right and loses
+   50px off one edge while leaving 50px of dead space on the other. */
+.screen {
+  align-items: center;
+  /* How much the plate is scaled to fit. 1 when the viewport is at or above
+     the design width. Interactive elements the app adds on top of an artboard
+     read this to keep their touch target at full size (see .screen-back). */
+  --plate-fit: min(1, calc((100vw - 2 * var(--screen-pad)) / 440px));
+}
+
+/* Every artboard is a fixed 440px drawing: everything inside it is absolutely
+   positioned from Figma's coordinates, so it cannot reflow narrower. Below the
+   design width the plate is therefore scaled, not reflowed — a whole screen at
+   96% reads as the design; a reflowed one reads as a different screen.
+
+   `zoom` is used rather than `transform: scale()` because it also shrinks the
+   layout box, so nothing overflows and no height has to be guessed. Where
+   `zoom` is unsupported the plate stays 440px and crops equally on both
+   sides, which is the old behaviour, not a broken one. */
+.screen > .figma-route-frame,
+.screen > .frame,
+.screen > .frame-plate {
+  flex: none;
+  width: 440px;
+}
+@supports (zoom: 1) {
+  .screen > .figma-route-frame,
+  .screen > .frame-plate {
+    zoom: var(--plate-fit);
+  }
+}
+
+/* Content that should still read as a column takes the full 440 and centres
+   its own children, rather than each child being centred independently. */
+.screen > .stack,
+.screen > .chips { width: 440px; max-width: 100%; }
+
+/* A desktop is not a phone. Left unbounded the plate floats in a void; the
+   backdrop keeps it looking deliberate, and the shadow lifts it off the page
+   the way the design already lifts its sheets and modals. */
+@media (min-width: 560px) {
+  body { background: #e4e4e7; }
+  .screen > .figma-route-frame,
+  .screen > .frame,
+  .screen > .frame-plate {
+    border-radius: var(--r-sheet);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .16);
+    overflow: hidden;
+  }
+  /* The route frame already clips; give it the same plate treatment. */
+  .figma-route-frame { border-radius: var(--r-sheet); }
+}
+
+/* ---------------------------------------------------------------------------
+   Back affordance.
+
+   Deep screens (a single product, an order, a person) are reached from a list
+   and had no way back except the browser button — which does not exist once
+   the app is installed to a home screen.
+   --------------------------------------------------------------------------- */
+.screen-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-2);
+  margin-bottom: var(--s-4);
+  background: none;
+  border: 0;
+  color: var(--blue);
+  font-family: var(--font-px);
+  font-size: var(--t-card);
+  letter-spacing: .1em;
+  cursor: pointer;
+}
+.screen-back::before { content: "\2190"; font-size: 1.4em; line-height: 1; }
+.screen-back:active { color: var(--blue-deep); }
+
+/* The route-level variant sits on the plate, alongside the artwork. */
+.figma-route-frame > .screen-back {
+  position: absolute;
+  z-index: 30;
+  top: var(--s-2);
+  left: var(--s-2);
+  margin: 0;
+  /* The plate is scaled to fit narrow viewports (see --plate-fit). This
+     button is the app's own, not artwork, so it cancels that scale and keeps
+     a full-size touch target at every width. */
+  min-height: calc(44px / var(--plate-fit, 1));
+  font-size: calc(var(--t-card) / var(--plate-fit, 1));
+  background: rgba(255, 255, 255, .86);
+  border-radius: var(--r-pill);
+  padding: 0 calc(var(--s-4) / var(--plate-fit, 1));
+}
+.figma-route-frame > .screen-back::before {
+  font-size: calc(1.4em / var(--plate-fit, 1));
+}
+
+/* ---------------------------------------------------------------------------
+   Page shell for the hand-built screens.
+
+   Artboards position their own footer absolutely, so their screens do not
+   scroll. Screens built from live data (history, notifications, addresses)
+   draw a variable number of rows and previously ran off the bottom with no way
+   to reach the rest. This is the scroll container for those.
+   --------------------------------------------------------------------------- */
+.page-shell {
+  align-items: stretch;
+  /* One column at the artboard's width, so hand-built screens and artboards
+     agree on where the margins are. */
+  padding-left: 0;
+  padding-right: 0;
+}
+.page-shell-inner {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: var(--screen-pad);
+  padding-bottom: calc(var(--s-10) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Bottom navigation the three internal apps share. Kept in the shell rather
+   than inline on each app so all three stay identical, and so the active tab
+   can carry a real touch target. */
+.app-shell {
+  /* The nav is sticky, so the screen above it has to be a row in a column that
+     is at least the viewport tall — otherwise the nav's own height pushes the
+     document past 100dvh and every screen scrolls by a few pixels. */
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-shell > nav { margin-top: auto; }
+/* Inside the shell the screen shares the viewport with the nav instead of
+   claiming all of it — otherwise 100dvh screen + nav is taller than the
+   viewport and the page scrolls by the nav's height. */
+.app-shell > .screen { flex: 1; min-height: auto; }
+.app-nav {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  background: var(--white);
+  border-top: 1px solid var(--field);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+.app-nav a {
+  flex: 1 0 auto;
+  min-height: 56px;
+  display: grid;
+  placeItems: center;
+  padding: var(--s-3) var(--s-4);
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--grey);
+}
+.app-nav a[aria-current="page"] { color: var(--blue); }
 
 /* ---------------------------------------------------------------------------
    Demo-mode control. Only rendered when VITE_USE_MOCKS=true; carries no

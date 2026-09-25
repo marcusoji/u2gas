@@ -14,7 +14,8 @@ export type FigmaRouteDefinition = {
 };
 
 export const figmaRouteRegistry: FigmaRouteDefinition[] = [
-  { route: "/", role: "customer", artboards: ["1:251", "1:175"], notes: "HOME / insufficient gas" },
+  { route: "/", role: "auth", artboards: ["1:1219"], notes: "LOG IN 1 — the entry screen" },
+  { route: "/home", role: "customer", artboards: ["1:251", "1:175"], notes: "HOME / insufficient gas" },
   { route: "/shop", role: "customer", artboards: ["1:1438"] },
   { route: "/shop/:kind/:id", role: "customer", artboards: ["1:1462", "1:1488"] },
   { route: "/cart", role: "customer", artboards: ["1:1517", "1:1624"] },
@@ -24,7 +25,7 @@ export const figmaRouteRegistry: FigmaRouteDefinition[] = [
   { route: "/profile", role: "customer", artboards: ["1:2090", "1:2210", "1:2244"] },
   { route: "/notifications", role: "customer", artboards: [], notes: "88:55 is a FILE icon asset, not a screen artboard; keep the functional notification screen until a matching customer notification artboard is supplied."},
   { route: "/addresses", role: "customer", artboards: [], notes: "1:1952 is CHECKOUT NO DELIVERY ADDRESS, not the saved-address management screen."},
-  { route: "/auth/login", role: "auth", artboards: ["1:1219", "1:1281"] },
+  { route: "/auth/login", role: "auth", artboards: ["1:1281"], notes: "LOG IN 2 — email entry" },
   { route: "/auth/sent", role: "auth", artboards: [], notes: "No dedicated verification-sent artboard." },
   { route: "/auth/callback", role: "auth", artboards: [], notes: "Callback is a transient routing state; do not use the login artboard as a visual substitute." },
   { route: "/driver", role: "driver", artboards: ["1:2274", "1:4683", "1:4803"] },

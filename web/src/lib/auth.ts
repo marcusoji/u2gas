@@ -68,7 +68,8 @@ const AuthContext = createContext<AuthState>({
 });
 
 const HOME: Record<Role, string> = {
-  customer: "/", staff: "/staff", manager: "/staff",
+  // `/` is the entry screen; the customer terminal is `/home`.
+  customer: "/home", staff: "/staff", manager: "/staff",
   driver: "/driver", admin: "/admin",
 };
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError, type SavedAddress, type Zone } from "../../lib/api";
 import {
-  Empty, ErrorState, Input, LoadBar, Modal, Pill, Stamp, money,
+  BackButton, Empty, ErrorState, Input, LoadBar, Modal, PageShell, Pill, Stamp, money,
 } from "../../components/primitives";
 
 /**
@@ -102,11 +102,12 @@ export default function Addresses() {
   }
 
   if (error && !rows) {
-    return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
+    return <PageShell><ErrorState message={error} onRetry={load} /></PageShell>;
   }
 
   return (
-    <div className="screen">
+    <PageShell>
+      <BackButton to="/profile" />
       <h1 className="screen-title">SAVED<br />ADDRESSES</h1>
       <div style={{ height: "var(--s-6)" }} />
 
@@ -143,11 +144,8 @@ export default function Addresses() {
             {a.zone && !a.zone.active && <Stamp>WE DON'T DELIVER HERE NOW</Stamp>}
             {!a.is_default && (
               <button
+                className="card-action"
                 onClick={() => makeDefault(a)}
-                style={{
-                  background: "none", border: "none", color: "var(--blue-faint)",
-                  fontSize: "var(--t-micro)", padding: "var(--s-2) 0 0",
-                }}
               >
                 MAKE THIS THE DEFAULT
               </button>
@@ -205,6 +203,6 @@ export default function Addresses() {
           <Pill variant="ghost" onClick={close}>CANCEL</Pill>
         </div>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

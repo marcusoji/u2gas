@@ -2,6 +2,7 @@ import {
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode,
   useEffect, useRef,
 } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 /* ---------------------------------------------------------------------------
    Primitives. Each maps to one component in the Figma file. Nothing here
@@ -299,4 +300,51 @@ export function ProductImage({ basePath, alt, tier = "grid", eager, height = 120
 
 export function money(kobo: number): string {
   return "₦" + Math.round(kobo / 100).toLocaleString("en-NG");
+}
+
+/**
+ * Back navigation.
+ *
+ * Deep screens are reached from a list and previously had no way back but the
+ * browser button — which an installed PWA does not show. `fallback` is the
+ * list the screen belongs to, used when there is no history to pop (a deep
+ * link opened cold, or a reload): history.length is 1 in that case, so going
+ * back would leave the app entirely.
+ */
+export function useBackTo(to: string) {
+  const nav = useNavigate();
+  const location = useLocation();
+  return () => {
+    // `location.key` is "default" only for the entry the router booted on.
+    // That is the signal that this screen was opened cold — a deep link or a
+    // reload — where popping history would leave the app (or land on an
+    // unrelated page), so the known parent is used instead.
+    if (location.key !== "default" && window.history.length > 1) nav(-1);
+    else nav(to, { replace: true });
+  };
+}
+
+export function BackButton({ to, label = "BACK" }: { to: string; label?: string }) {
+  const back = useBackTo(to);
+  return (
+    <button className="screen-back" onClick={back}>
+      {label}
+    </button>
+  );
+}
+
+/**
+ * The scrollable column the hand-built screens sit in.
+ *
+ * Artboards place their own footer at a fixed y, so they need no scroll
+ * container. Screens built from live data do — a long receipt list simply ran
+ * off the bottom with no way to reach the rest. The drawing's own safe area is
+ * kept at the end so the last row clears the home indicator.
+ */
+export function PageShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="screen page-shell">
+      <div className="page-shell-inner">{children}</div>
+    </div>
+  );
 }

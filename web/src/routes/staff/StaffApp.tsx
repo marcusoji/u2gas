@@ -17,7 +17,7 @@ const Shift      = lazy(() => import("./Shift"));
  */
 export default function StaffApp() {
   return (
-    <div>
+    <div className="app-shell">
       <Suspense fallback={
         <div className="screen" style={{ justifyContent: "center" }}>
           <LoadBar label="OPENING THE TILL" />
@@ -54,30 +54,9 @@ function StaffNav() {
   ];
 
   return (
-    <nav style={{
-      position: "sticky", bottom: 0,
-      background: "var(--white)",
-      borderTop: "1px solid var(--field)",
-      display: "flex",
-      paddingBottom: "env(safe-area-inset-bottom)",
-    }}>
+    <nav className="app-nav">
       {items.map((i) => (
-        <NavLink
-          key={i.to}
-          to={i.to}
-          end={i.end}
-          style={({ isActive }) => ({
-            flex: 1,
-            textAlign: "center",
-            padding: "var(--s-3) 0",
-            fontSize: "var(--t-caption)",
-            letterSpacing: ".1em",
-            textDecoration: "none",
-            color: isActive ? "var(--blue)" : "var(--grey)",
-          })}
-        >
-          {i.label}
-        </NavLink>
+        <NavLink key={i.to} to={i.to} end={i.end}>{i.label}</NavLink>
       ))}
     </nav>
   );

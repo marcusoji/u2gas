@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError, type NotificationRow } from "../../lib/api";
-import { Empty, ErrorState, LoadBar, Tabs } from "../../components/primitives";
+import { BackButton, Empty, ErrorState, LoadBar, PageShell, Tabs } from "../../components/primitives";
 
 type Filter = "all" | "orders" | "delivery" | "stock";
 
@@ -31,10 +31,11 @@ export default function Notifications() {
   const shown = items?.filter(
     (n) => filter === "all" || GROUPS[filter].includes(String(n.kind))) ?? [];
 
-  if (error) return <div className="screen"><ErrorState message={error} /></div>;
+  if (error) return <PageShell><ErrorState message={error} /></PageShell>;
 
   return (
-    <div className="screen">
+    <PageShell>
+      <BackButton to="/profile" />
       <h1 className="screen-title">NOTIFS</h1>
       <div style={{ height: "var(--s-4)" }} />
 
@@ -94,6 +95,6 @@ export default function Notifications() {
       }}>
         BACK
       </Link>
-    </div>
+    </PageShell>
   );
 }

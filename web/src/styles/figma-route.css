@@ -1,7 +1,13 @@
+/* `.figma-route-frame` is the clipping wrapper that the React interaction
+   layer is positioned inside, so it has to stay exactly as wide as the
+   artboard. `max-width: 100%` used to clamp it to the viewport while its
+   440px child did not shrink — the artwork then spilled 50px past the right
+   edge, which is the horizontal scroll this removes. The plate is centred and
+   fitted by the shell (see components.css, "Screen backdrop and frame
+   fitting"), at the same 440px design width. */
 .figma-route-frame {
   position: relative;
   width: 440px;
-  max-width: 100%;
   margin: 0 auto;
   overflow-x: hidden;
   background: #fff;
@@ -31,9 +37,13 @@
 }
 .figma-route-scroll { overflow-x: hidden; }
 
-/* Keep the Figma artboard physically centred while the mobile viewport crops it
-   exactly at the same 440px design width. */
-.figma-route-frame { flex: 0 0 auto; }
+/* The artboard keeps its drawn 440px: everything inside it is absolutely
+   positioned from Figma's coordinates, so it cannot reflow narrower, and the
+   shell centres it so the crop is symmetric. */
+.figma-route-frame {
+  flex: 0 0 auto;
+  width: 440px;
+}
 .figma-route-frame > .frame { width: 440px; }
 
 /* Functional controls remain transparent so the Figma artwork is the visual source of truth. */

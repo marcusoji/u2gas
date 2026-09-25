@@ -185,7 +185,7 @@ export default function Home() {
         1:257 is the ticker text, 1:296 the LED readout — the only two spots
         with live data. Everything else is the file's own placement.
       */}
-      <div onClick={onTerminalClick}>
+      <div className="frame-plate" onClick={onTerminalClick}>
         <FigmaScreen
           node="1:251"
           values={{

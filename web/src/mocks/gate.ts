@@ -17,7 +17,8 @@ export const MOCK_ROLES: Role[] = ["customer", "staff", "driver", "manager", "ad
 export const ROLE_KEY = "u2gas.mock.role";
 
 export const ROLE_HOME: Record<Role, string> = {
-  customer: "/", staff: "/staff", manager: "/staff", driver: "/driver", admin: "/admin",
+  // `/` is the entry screen (LOG IN 1); the customer terminal is `/home`.
+  customer: "/home", staff: "/staff", manager: "/staff", driver: "/driver", admin: "/admin",
 };
 
 export function getMockRole(): Role {

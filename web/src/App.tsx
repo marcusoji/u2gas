@@ -28,6 +28,7 @@ const Notifications = lazy(() => import("./routes/customer/Notifications"));
 const Addresses    = lazy(() => import("./routes/customer/Addresses"));
 
 // --- Auth -------------------------------------------------------------------
+const Landing      = lazy(() => import("./routes/auth/Landing"));
 const Login        = lazy(() => import("./routes/auth/Login"));
 const VerifySent   = lazy(() => import("./routes/auth/VerifySent"));
 const Callback     = lazy(() => import("./routes/auth/Callback"));
@@ -91,7 +92,10 @@ function NotFound() {
 }
 
 const router = createBrowserRouter([
-  { path: "/", element: <CustomerHome /> },
+  // The front door is LOG IN 1 (figma 1:1219), not the terminal. `/home` is
+  // the guest/customer terminal; `/auth/login` is LOG IN 2.
+  { path: "/", element: <Boundary><Landing /></Boundary> },
+  { path: "/home", element: <CustomerHome /> },
   { path: "/shop", element: <Boundary><Shop /></Boundary> },
   { path: "/shop/:kind/:id", element: <Boundary><ProductPage /></Boundary> },
   { path: "/cart", element: <Boundary><Cart /></Boundary> },

@@ -13,7 +13,7 @@ const Reports      = lazy(() => import("./Reports"));
 
 export default function AdminApp() {
   return (
-    <div>
+    <div className="app-shell">
       <Suspense fallback={
         <div className="screen" style={{ justifyContent: "center" }}>
           <LoadBar label="OPENING THE OFFICE" />
@@ -32,13 +32,7 @@ export default function AdminApp() {
         </Routes>
       </Suspense>
 
-      <nav style={{
-        position: "sticky", bottom: 0,
-        background: "var(--white)",
-        borderTop: "1px solid var(--field)",
-        display: "flex", overflowX: "auto",
-        paddingBottom: "env(safe-area-inset-bottom)",
-      }}>
+      <nav className="app-nav">
         {[
           { to: "/admin", label: "TANK", end: true },
           { to: "/admin/products", label: "STOCK" },
@@ -48,16 +42,7 @@ export default function AdminApp() {
           { to: "/admin/reports", label: "REPORTS" },
           { to: "/admin/audit", label: "LOG" },
         ].map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.end}
-            style={({ isActive }) => ({
-              flex: "1 0 auto", textAlign: "center",
-              padding: "var(--s-3) var(--s-3)",
-              fontSize: "var(--t-caption)", letterSpacing: ".1em",
-              textDecoration: "none", whiteSpace: "nowrap",
-              color: isActive ? "var(--blue)" : "var(--grey)",
-            })}>
-            {i.label}
-          </NavLink>
+          <NavLink key={i.to} to={i.to} end={i.end}>{i.label}</NavLink>
         ))}
       </nav>
     </div>

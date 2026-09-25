@@ -284,7 +284,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
           <button
             className="figma-route-interactive"
             aria-label="Keep receipt"
-            onClick={() => nav("/")}
+            onClick={() => nav("/home")}
             style={{ left: 168, top: 705, width: 103, height: 60 }}
           />
         </FigmaRouteFrame>
@@ -394,7 +394,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
       )}
 
       {(expired || cancelled) && (
-        <Pill onClick={() => nav("/")}>ORDER AGAIN</Pill>
+        <Pill onClick={() => nav("/home")}>ORDER AGAIN</Pill>
       )}
 
       {refundNote && (

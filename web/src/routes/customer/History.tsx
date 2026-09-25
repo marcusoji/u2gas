@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError, type Order } from "../../lib/api";
 import {
-  Empty, ErrorState, LoadBar, Pill, Stamp, Tabs, money,
+  BackButton, Empty, ErrorState, LoadBar, PageShell, Pill, Stamp, Tabs, money,
 } from "../../components/primitives";
 import { Receipt, receiptDate } from "../../components/terminal";
 
@@ -40,11 +40,12 @@ export default function History() {
   }, [orders, month]);
 
   if (error) {
-    return <div className="screen"><ErrorState message={error} /></div>;
+    return <PageShell><ErrorState message={error} /></PageShell>;
   }
 
   return (
-    <div className="screen">
+    <PageShell>
+      <BackButton to="/profile" />
       <h1 className="screen-title">HISTORY</h1>
       <div style={{ height: "var(--s-4)" }} />
 
@@ -66,7 +67,7 @@ export default function History() {
       )}
 
       {orders && shown.length === 0 && (
-        <Empty action={<Link to="/" className="pill" style={{
+        <Empty action={<Link to="/home" className="pill" style={{
           textDecoration: "none", display: "grid", placeItems: "center",
         }}>ORDER SOME GAS</Link>}>
           NOTHING PRINTED YET
@@ -127,6 +128,6 @@ export default function History() {
       }}>
         BACK TO YOUR PROFILE
       </Link>
-    </div>
+    </PageShell>
   );
 }

@@ -7,6 +7,7 @@ import { rememberGuestOrder } from "../../lib/guest";
 import { AddressPicker, maybeSaveAddress } from "../../components/AddressPicker";
 import {
   Chip, Input, Pill, ProductImage, Segmented, Sheet, Stamp, money,
+  BackButton,
 } from "../../components/primitives";
 import { BasketItem, WireBasket } from "../../components/illustrated";
 import { CompleteTheSet } from "../../components/CompleteTheSet";
