@@ -46,6 +46,28 @@
   font-display: swap;
 }
 
+/* The file's second face: Barlow Condensed SemiBold, the terminal caption
+   ("AMOUNT IN NAIRA") and the small labels on the admin/people screens. The
+   reference loads it from Google Fonts, so it was the one face the app named
+   but never shipped — every one of those strings fell back to Arial Narrow and
+   measured wide ("AMOUNT IN NAIRA" 145px against the file's 86px). Barlow Semi
+   Condensed appears once, on a single admin heading. */
+@font-face {
+  font-family: "Barlow Condensed";
+  src: url("/fonts/barlow-condensed-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  src: url("/fonts/barlow-semi-condensed-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* jgs7 covers everything the app renders except two characters: the naira
    sign and the em dash. Both are all over the interface — every price is a
    naira sign — so without this they fall through to the next family in the
