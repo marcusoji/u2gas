@@ -61,7 +61,7 @@ export default function Profile() {
           />
         </div>
         <button className="figma-route-interactive" style={{ left: 0, top: 350, width: 440, height: 70 }} onClick={() => nav("/history")} aria-label="History" />
-        <button className="figma-route-interactive" style={{ left: 0, top: 425, width: 440, height: 70 }} onClick={() => nav("/profile")} aria-label="Personal details" />
+        <button className="figma-route-interactive" style={{ left: 0, top: 425, width: 440, height: 70 }} onClick={() => nav("/profile/details")} aria-label="Personal details" />
         <button className="figma-route-interactive" style={{ left: 0, top: 500, width: 440, height: 70 }} onClick={() => nav("/addresses")} aria-label="Saved addresses" />
         <button className="figma-route-interactive" style={{ left: 0, top: 575, width: 440, height: 70 }} onClick={() => nav("/notifications")} aria-label="Notifications" />
         <button className="figma-route-interactive" style={{ left: 20, top: 700, width: 400, height: 70 }} onClick={async () => { await signOut(); nav("/"); }} aria-label="Log out" />

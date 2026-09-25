@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signInWithProvider } from "../../lib/auth";
+import { signInWithProvider, mockLanding } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { Stamp } from "../../components/primitives";
 
@@ -27,8 +27,9 @@ export default function Landing() {
     setBusy(which);
     setError(null);
     const { error: authError } = await signInWithProvider(which);
-    setBusy(null);
-    if (authError) setError("THAT DIDN'T WORK — TRY AGAIN");
+    if (authError) { setBusy(null); setError("THAT DIDN'T WORK — TRY AGAIN"); return; }
+    // Demo mode resolves synchronously above; land the way /auth/callback does.
+    nav(mockLanding(), { replace: true });
   }
 
   function click(e: MouseEvent<HTMLDivElement>) {

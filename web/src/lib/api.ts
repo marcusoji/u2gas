@@ -486,6 +486,7 @@ export interface NotificationRow {
   emailed_at?: string | null;
   send_status?: "pending" | "claimed" | "sent" | "failed" | "abandoned";
   order_id?: string | null;
+  read_at?: string | null;
 }
 
 export interface GasEntry {

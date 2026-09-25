@@ -20,7 +20,17 @@ const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
 export const RATE_KOBO_PER_KG = 140_000; // ₦1,400.00
-export const HOLD_HOURS = 6;
+
+/**
+ * How long an unpaid order holds stock, in minutes.
+ *
+ * Minutes, not hours: this is the `app_setting` row the admin TIMINGS screen
+ * edits (`hold_minutes`), and that screen's stepper moves in 5-minute steps. It
+ * was six hours under the key `hold_hours`, which the real Worker and the seed
+ * migration both spell `hold_minutes` — so the stepper wrote a row the screen
+ * did not read, and looked dead.
+ */
+export const HOLD_MINUTES = 30;
 
 /** Media base for the placeholder art in public/mock-media. */
 export const MEDIA = "/mock-media";
@@ -288,7 +298,7 @@ export const stockEntries: GasEntry[] = [
 ];
 
 export const settings: AdminSetting[] = [
-  { key: "hold_hours", value: String(HOLD_HOURS), description: "How long an unpaid order holds stock" },
+  { key: "hold_minutes", value: String(HOLD_MINUTES), description: "How long an unpaid order holds stock" },
   { key: "qr_valid_hours", value: "72", description: "How long a collection code stays good" },
   { key: "max_gas_kg_per_order", value: "50", description: "Most gas in one order" },
 ];

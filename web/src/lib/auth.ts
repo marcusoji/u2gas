@@ -147,11 +147,24 @@ export async function signInWithEmail(email: string, next?: string) {
 }
 
 export async function signInWithProvider(provider: "google" | "apple", next?: string) {
+  // Demo mode has no OAuth round trip. Callers land on mockLanding() — the
+  // real provider returns by way of /auth/callback, and without this the
+  // buttons set a busy flag and then stopped, which read as broken.
   if (MOCKS_ENABLED) return { data: {}, error: null };
   return supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo: buildRedirect(next) },
   });
+}
+
+/**
+ * Where a successful demo sign-in lands.
+ *
+ * Mirrors what /auth/callback does with a real session: the validated deep link
+ * if there is one, otherwise this role's own app root.
+ */
+export function mockLanding(next?: string | null): string {
+  return safeNext(next ?? null) ?? mockHome();
 }
 
 export async function signOut() {

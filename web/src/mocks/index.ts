@@ -76,6 +76,18 @@ function findOrder(id: string) {
   return fx.orders.find((o) => o.order_id === id);
 }
 
+/**
+ * The live `hold_minutes` setting, as the admin TIMINGS stepper edits it.
+ *
+ * The seeded orders carry a fixed expiry, which is what makes their states
+ * readable at a glance; orders placed from here on follow the setting, so
+ * moving the stepper changes what the next order actually gets.
+ */
+function holdMinutes(): number {
+  const row = fx.settings.find((s) => s.key === "hold_minutes");
+  return Number(row?.value ?? 30);
+}
+
 /* --- Shipping shapes ------------------------------------------------------ */
 
 function shopItems() {
@@ -102,7 +114,7 @@ function newOrder(fields: Partial<import("../lib/api").Order>): import("../lib/a
     order_type: "gas", status: "pending", payment_status: "pending",
     fulfillment_type: "pickup", gas_amount_kg: 0, gas_subtotal_kobo: 0,
     items_subtotal_kobo: 0, delivery_fee_kobo: 0, total_kobo: 0,
-    hold_expires_at: new Date(Date.now() + fx.HOLD_HOURS * 3_600_000).toISOString(),
+    hold_expires_at: new Date(Date.now() + holdMinutes() * 60_000).toISOString(),
     created_at: new Date().toISOString(), fulfilled_at: null,
     delivery_address: null, rate_at_purchase: state.rateKoboPerKg,
     items: [], payments: [], delivery: null,
@@ -144,7 +156,25 @@ function markPaid(order: import("../lib/api").Order, method: string) {
 
 /* --- The router ----------------------------------------------------------- */
 
+/**
+ * The mock's response boundary.
+ *
+ * A real HTTP layer hands back a fresh parse of the wire, so no two responses
+ * ever share structure. This layer reads the fixture objects directly, and
+ * several handlers returned the live arrays themselves. React compares state by
+ * identity, so a handler that mutated a fixture in place and then handed the
+ * same array back was seen as "no change" and skipped the re-render — the screen
+ * kept showing the state from before the write. Cloning on the way out restores
+ * the wire's isolation without touching any handler.
+ */
 export async function mockRequest(
+  path: string,
+  init: RequestInit = {},
+): Promise<any> {
+  return structuredClone(await route(path, init));
+}
+
+async function route(
   path: string,
   init: RequestInit = {},
 ): Promise<any> {
@@ -265,7 +295,11 @@ export async function mockRequest(
     return { notifications: fx.notifications };
   }
   if (method === "POST" && rawPath === "/notifications/read") {
-    return { ok: true };
+    // Clears the unread badge the terminal reads from /catalog/home. Without
+    // this the count never moved and the "unread" dot stayed on forever.
+    const at = new Date().toISOString();
+    fx.notifications.forEach((n) => { if (!n.read_at) n.read_at = at; });
+    return { ok: true, read_at: at };
   }
 
   /* ---- Orders --------------------------------------------------------- */

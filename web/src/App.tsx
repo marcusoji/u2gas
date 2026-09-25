@@ -24,6 +24,7 @@ const Cart         = lazy(() => import("./routes/customer/Cart"));
 const OrderStatus  = lazy(() => import("./routes/customer/OrderStatus"));
 const History      = lazy(() => import("./routes/customer/History"));
 const Profile      = lazy(() => import("./routes/customer/Profile"));
+const PersonalDetails = lazy(() => import("./routes/customer/PersonalDetails"));
 const Notifications = lazy(() => import("./routes/customer/Notifications"));
 const Addresses    = lazy(() => import("./routes/customer/Addresses"));
 
@@ -108,6 +109,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/history", element: <Boundary><History /></Boundary> },
       { path: "/profile", element: <Boundary><Profile /></Boundary> },
+      { path: "/profile/details", element: <Boundary><PersonalDetails /></Boundary> },
       { path: "/notifications", element: <Boundary><Notifications /></Boundary> },
       { path: "/addresses", element: <Boundary><Addresses /></Boundary> },
     ],

@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { safeNext, signInWithEmail, signInWithProvider } from "../../lib/auth";
+import { safeNext, signInWithEmail, signInWithProvider, mockLanding } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /** Login uses the exact Figma LOG IN 2 artboard; only live input/interaction is overlaid. */
@@ -25,11 +25,18 @@ export default function Login() {
     nav(`/auth/sent?email=${encodeURIComponent(trimmed)}`);
   }
 
+  async function provider(which: "google" | "apple") {
+    setBusy(true); setError(null);
+    const { error: authError } = await signInWithProvider(which, next ?? undefined);
+    if (authError) { setBusy(false); setError("WE COULDN'T OPEN THAT — TRY AGAIN"); return; }
+    nav(mockLanding(next), { replace: true });
+  }
+
   function click(e: MouseEvent<HTMLDivElement>) {
     const id = (e.target as HTMLElement).closest<HTMLElement>("[data-node]")?.dataset.node;
     if (id === "1:1341") void send();
-    if (id === "1:1330") void signInWithProvider("google", next ?? undefined);
-    if (id === "1:1332") void signInWithProvider("apple", next ?? undefined);
+    if (id === "1:1330") void provider("google");
+    if (id === "1:1332") void provider("apple");
   }
 
   return (
