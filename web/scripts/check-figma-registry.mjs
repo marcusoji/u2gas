@@ -37,4 +37,33 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Figma route registry OK: ${routeBlocks.length} routes, ${refs.length} visual mappings.`);
+// The check above only proves each claimed artboard *exists*. It cannot tell a
+// mapping the app honours from one that was written down and never wired up:
+// `1:2107` and `1:1344` were listed for months while no route rendered them, so
+// the registry read as complete coverage of screens that were simply absent.
+// Require every claimed artboard to be named in the route code that would draw
+// it — a route that selects a state at runtime names each candidate, so a
+// literal is the honest signal. An entry that only exists on paper now fails.
+const routeDir = path.join(root, "src/routes");
+const routeSources = new Map();
+for (const f of fs.readdirSync(routeDir, { recursive: true })) {
+  const full = path.join(routeDir, f);
+  if (!fs.statSync(full).isFile()) continue;
+  if (!/\.(ts|tsx)$/.test(f)) continue;
+  routeSources.set(f, fs.readFileSync(full, "utf8"));
+}
+routeSources.set("App.tsx", fs.readFileSync(path.join(root, "src/App.tsx"), "utf8"));
+
+const unwired = [];
+for (const { route, node } of refs) {
+  const drawn = [...routeSources.values()].some((src) => src.includes(`"${node}"`));
+  if (!drawn) unwired.push(`${route}: ${node} is claimed but no route renders it`);
+}
+if (unwired.length) {
+  console.error("Figma route registry check failed — claimed artboards that no route draws:");
+  for (const f of unwired) console.error(` - ${f}`);
+  console.error("Remove the claim, or render the artboard. Do not leave it listed.");
+  process.exit(1);
+}
+
+console.log(`Figma route registry OK: ${routeBlocks.length} routes, ${refs.length} visual mappings, all wired to a route.`);

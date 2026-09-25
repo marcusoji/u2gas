@@ -40,10 +40,13 @@ export default function Shop() {
     return out;
   }, [items]);
 
-  const values = useMemo(() => ({
-    "1:1457": "SHOP FOR\nACCESSORIES",
-    "1:1460": `${items?.length ?? 0} ITEMS`,
-  }), [items]);
+  // The heading (`1:1457`) and the price readout (`1:1460`) are drawn into the
+  // artboard: the heading carries its own `<br>` and the readout is the rate,
+  // not the result count. Both are containers, so writing a value into either
+  // would replace the file's own markup with a single string — the heading lost
+  // its line break and the readout grew past its 82px LED. The artwork already
+  // says what it should, so nothing is substituted here.
+  const values = undefined;
 
   const setQuery = (value: string) => {
     const next = new URLSearchParams(params);

@@ -88,9 +88,12 @@ function product(
 }
 
 export const products: Product[] = [
-  product("pr-cylinder", "Gas Cylinder 12.5kg", "EMPTY · REFILLABLE", 4_500_000, 24, 3, "cylinder", "catalog/cylinder"),
+  // Subtitles render into the artboard's own `1:1474` slot, which the file
+  // draws at 32px inside a 440px board. The file clips anything longer, so
+  // keep each under about 11 characters — a longer string is cut off mid-word.
+  product("pr-cylinder", "Gas Cylinder 12.5kg", "REFILLABLE", 4_500_000, 24, 3, "cylinder", "catalog/cylinder"),
   product("pr-hose", "High Pressure Hose", "1.5M · RUBBER", 250_000, 40, 5, "hose", "catalog/hose"),
-  product("pr-regulator", "Brass Regulator", "FITS ALL CYLINDERS", 850_000, 30, 2, "regulator", "catalog/regulator"),
+  product("pr-regulator", "Brass Regulator", "UNIVERSAL", 850_000, 30, 2, "regulator", "catalog/regulator"),
   product("pr-clamp", "Hose Clamp Pair", "STAINLESS", 120_000, 60, 0, "clamp", "catalog/clamp"),
   product("pr-battery", "Ignition Battery", "1.5V · SINGLE", 45_000, 120, 12, "battery", "catalog/battery"),
   product("pr-burner", "Tabletop Burner", "SINGLE RING", 3_200_000, 8, 1, "burner", "catalog/burner"),

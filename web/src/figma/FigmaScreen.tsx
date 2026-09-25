@@ -37,10 +37,26 @@ export function FigmaScreen({
     if (!values && !images && !textReplacements) return board.html;
     let out = board.html;
     for (const [id, text] of Object.entries(values ?? {})) {
-      // Only the text content of that node — never its attributes, so a value
-      // cannot reach into the styling.
-      const re = new RegExp(`(data-node="${id}"[^>]*>)([^<]*)`);
-      out = out.replace(re, (_match: string, open: string) => `${open}${escapeText(text)}`);
+      // Replace the text of a node that directly holds text — `<p …>OLD</p>`.
+      // Requiring the node to be a text leaf (text immediately followed by its
+      // own closing tag) matters: the file has nodes that *look* like a value
+      // slot but are laid out as several styled spans (`1:2750` is
+      // `<span>6</span><span>.5</span><span>4</span>`; `1:1460` wraps the
+      // price). A looser pattern that matched the empty text before the first
+      // child would silently *prepend* the live value to the drawn one —
+      // "3" + "6.54" reads as "36.54" and "8 ITEMS" + "₦1,400" overflows the
+      // LED. Those are drawings, not placeholders, so they are left alone.
+      const re = new RegExp(
+        `(<[a-z0-9]+\\b[^>]*data-node="${id}"[^>]*>)([^<]*)(</[a-z0-9]+>)`,
+      );
+      if (!re.test(out)) {
+        // The node is absent, or it is a container rather than a text leaf.
+        // Saying so is the difference between a wrong value and a silent one.
+        console.warn(`[figma] value for ${id} was not applied — not a text node in the artboard`);
+        continue;
+      }
+      out = out.replace(re, (_match: string, open: string, _old: string, close: string) =>
+        `${open}${escapeText(text)}${close}`);
     }
     for (const [id, src] of Object.entries(images ?? {})) {
       // Pictures are the file's `.asset-img` spans; the picture itself lives in

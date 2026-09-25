@@ -120,6 +120,40 @@ so LED readouts fall back to jgs7 and render wider than the file.
 
 ## Verifying visual parity
 
+`npm run check:dom-parity` (`dom-token-diff.mjs`) is the gate that renders the
+*demo* — not the generated markup — and compares each route's live DOM against
+the same artboard in the gallery: structure, geometry and computed tokens
+(font, colour, weight, tracking, radius, opacity, transform). The dev server
+must be on :12001. It prints `STRUCTURAL + TOKEN PARITY: CLEAN` or the offending
+`[data-node]`. Run it after any change to a route, a `.frame`-scoped rule, or a
+font.
+
+The other three checks each prove less than they appear to, and all four are
+needed:
+
+- `check:figma-parity.sh` — the generated markup equals the gallery, byte for
+  byte. Nothing about the cascade or the live data.
+- `check:figma-pixels` — the app's artboard *rendering* matches the gallery.
+  Still not the demo: it renders the markup on its own, with one stylesheet.
+- `check:frontend` — assets exist and every artboard the registry *names* is a
+  real screen. It now also fails when a route lists an artboard that no route
+  code draws, because the registry used to claim 15 artboards (`1:2107`,
+  `1:1344`, `1:1517`, …) that no route rendered — the coverage read as complete
+  for screens that were absent. Removing a claim needs the same note the empty
+  entries carry: say which artboard and why it is not used.
+
+Two things that make the demo differ from the file without being drift, and how
+the harness handles them: a route may swap live data into a text leaf (the box
+follows the text, so geometry on a changed leaf is not compared, only whether
+the value escapes the 440px board), and a route may toggle a state the file
+draws in one composite (`1:4643` in the walk-in frame is hidden until PAY;
+`STATE_TOGGLED`). Anything else is a real difference.
+
+`FigmaScreen` warns when a `values` key does not resolve to a text leaf. The
+harness treats a console warning as a failure, so a value bound to a container
+(the bug where a heading's live text was injected over its children) is caught
+rather than silently leaving the drawn sample on screen.
+
 Compare `[data-node]` boxes, not whole-page screenshots: the reference HTML
 wraps each artboard in viewer chrome that renders off-viewport, so a naive
 pixel diff of the two pages is meaningless. Force a common font on both sides

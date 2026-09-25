@@ -41,10 +41,12 @@ export default function People() {
     view === "drivers" ? p.status === "available" : p.status === "active",
   ).length ?? 0;
 
-  const topValues = {
-    "1:2750": rows ? String(rows.length) : "0",
-    "1:2627": rows ? String(rows.length) : "0",
-  };
+  // `1:2750` is the tank's AVAILABLE QUANTITY figure (laid out as three spans:
+  // `<span>6</span><span>.5</span><span>4</span>`) and `1:2627` is the same
+  // drawing on the other staff artboard. Neither is a count of people, and
+  // neither is a single text node, so a headcount written into them would
+  // prepend to the quantity ("3" + "6.54"). The file's own figure is left as
+  // drawn; the real headcount is shown in the ticker below the artboard.
 
   if (selected) {
     const isDriver = view === "drivers";
@@ -85,10 +87,7 @@ export default function People() {
 
   return (
     <div className="screen figma-route-scroll">
-      <FigmaRouteFrame
-        node="1:2747"
-        values={{ "1:2750": String(rows.length) }}
-      >
+      <FigmaRouteFrame node="1:2747">
         <div className="figma-people-hit-grid">
           {rows.slice(0, 6).map((person, index) => (
             <button
