@@ -5,7 +5,7 @@ import { useAuth } from "../../lib/auth";
 import { rememberGuestOrder } from "../../lib/guest";
 import { AddressPicker, maybeSaveAddress } from "../../components/AddressPicker";
 import {
-  Chip, ErrorState, Input, Pill, Segmented, Sheet, Stamp, money,
+  BackButton, Chip, ErrorState, Input, Pill, Segmented, Sheet, Stamp, money,
 } from "../../components/primitives";
 import { FigmaScreen } from "../../figma/FigmaScreen";
 
@@ -168,13 +168,24 @@ export default function Home() {
   }
 
   if (loadError) {
-    return <div className="screen"><ErrorState message={loadError} onRetry={load} /></div>;
+    return (
+      <div className="screen">
+        <BackButton to="/" />
+        <ErrorState message={loadError} onRetry={load} />
+      </div>
+    );
   }
 
   const shortfall = orderError?.partialGasAvailable;
 
   return (
     <div className="screen">
+      {/* The terminal is the first screen a guest sees and the artboard draws no
+          way off it, so the app adds one. It sits above the plate, in the empty
+          band the design leaves between the frame top and the LED readout at
+          y=101, rather than over any artwork. */}
+      <BackButton to="/" />
+
       {/*
         figma 1:251 — the whole terminal (ticker, LED readout, keypad,
         receipt slot, watermark) as the file draws it. See

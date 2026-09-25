@@ -7,7 +7,7 @@ import { rememberGuestOrder } from "../../lib/guest";
 import { AddressPicker, maybeSaveAddress } from "../../components/AddressPicker";
 import {
   Chip, Input, Pill, ProductImage, Segmented, Sheet, Stamp, money,
-  BackButton,
+  useBackTo,
 } from "../../components/primitives";
 import { BasketItem, WireBasket } from "../../components/illustrated";
 import { CompleteTheSet } from "../../components/CompleteTheSet";
@@ -18,6 +18,7 @@ type Method = "bank_transfer" | "opay" | "card" | "depot";
 
 export default function Cart() {
   const nav = useNavigate();
+  const backToShop = useBackTo("/shop");
   const { session } = useAuth();
   const { lines, count, subtotalKobo, setQuantity, remove, clear } = useCart();
 
@@ -114,11 +115,13 @@ export default function Cart() {
     return (
       <div className="screen">
         <FigmaRouteFrame node="1:1624">
+          {/* The artboard draws its own back arrow at (12,28) and (8,30);
+              this hotspot sits over it. */}
           <button
             className="figma-route-interactive"
             aria-label="Back to shop"
-            onClick={() => nav("/shop")}
-            style={{ left: 20, top: 20, width: 52, height: 52 }}
+            onClick={backToShop}
+            style={{ left: 8, top: 15, width: 70, height: 90 }}
           />
         </FigmaRouteFrame>
       </div>
@@ -131,7 +134,7 @@ export default function Cart() {
         className="card-go"
         style={{ width: 28, height: 28, background: "var(--field)", border: "none" }}
         aria-label="Close"
-        onClick={() => nav("/shop")}
+        onClick={backToShop}
       >
         ×
       </button>

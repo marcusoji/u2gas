@@ -27,6 +27,23 @@ greater than 1 in a fresh tab, so a cold deep link pops out of the app.
 `useBackTo` checks `location.key === "default"` — true only for the entry the
 router booted on — and otherwise falls back to the screen's known parent.
 
+A back control must be *visible*. `figma-route-interactive` is deliberately
+transparent (`background: transparent; border: 0`), so a back hotspot only
+reads as a button when it lands on artwork the file already draws:
+
+- `CartEmpty` (`1:1624`) draws its arrow at (12,28) and (8,30) — put the
+  hotspot on those, not at the artboard's nominal top-left.
+- `ShopSingleItem` / `ShopItemUnavailable` draw theirs at (32,80) 52x52
+  (`1:1483`), not at (25,70) where the hotspot used to sit.
+- `Home` (`1:251`) and `WalkInPayment` (`1:4592`) draw no back control at all.
+  `Home` gets an app-rendered `BackButton` in the clear band above the LED
+  readout (top y=101); the Collect screen gets a hotspot in the band above its
+  first element (top y=52). Neither artboard may be edited to add one — that
+  would break `check-figma-parity.sh`.
+
+When adding a back affordance, confirm it overlaps something drawn, or render a
+`BackButton` instead of a bare hotspot.
+
 ## Viewport fitting
 
 The artboards are a fixed 440px wide with absolutely positioned children, so

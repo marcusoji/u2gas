@@ -306,10 +306,10 @@ export function money(kobo: number): string {
  * Back navigation.
  *
  * Deep screens are reached from a list and previously had no way back but the
- * browser button — which an installed PWA does not show. `fallback` is the
- * list the screen belongs to, used when there is no history to pop (a deep
- * link opened cold, or a reload): history.length is 1 in that case, so going
- * back would leave the app entirely.
+ * browser button — which an installed PWA does not show. `to` is the list the
+ * screen belongs to, used when there is no history to pop: a deep link opened
+ * cold, or a reload, land on the router's initial entry rather than on a
+ * screen this app pushed, so popping would leave the site entirely.
  */
 export function useBackTo(to: string) {
   const nav = useNavigate();
@@ -317,9 +317,12 @@ export function useBackTo(to: string) {
   return () => {
     // `location.key` is "default" only for the entry the router booted on.
     // That is the signal that this screen was opened cold — a deep link or a
-    // reload — where popping history would leave the app (or land on an
-    // unrelated page), so the known parent is used instead.
-    if (location.key !== "default" && window.history.length > 1) nav(-1);
+    // reload — where popping history would leave the app, so the known parent
+    // is used instead. Every other entry was reached by a tap, and popping can
+    // only return to a screen this app pushed. `history.length` is deliberately
+    // not consulted: it already counts the entry the tab booted on, so it reads
+    // as "there is somewhere to go back to" in a brand-new tab.
+    if (location.key !== "default") nav(-1);
     else nav(to, { replace: true });
   };
 }

@@ -71,9 +71,11 @@ export default function ProductPage() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node={node} values={values} images={images}>
+        {/* 1:1483 draws the back button at (32,80) 52x52. The hotspot matches
+            those coordinates so the tap lands on the button a person can see. */}
         <button
           className="figma-route-interactive"
-          style={{ left: 25, top: 70, width: 70, height: 70 }}
+          style={{ left: 32, top: 80, width: 52, height: 52 }}
           aria-label="Back to the shop"
           onClick={backToShop}
         />

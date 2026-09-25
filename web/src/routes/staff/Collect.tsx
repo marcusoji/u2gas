@@ -115,7 +115,15 @@ export default function Collect() {
 
         {/* The Figma keypad has no per-key node ids; delegated interaction keeps its exact geometry. */}
         <button className="figma-route-interactive" aria-label="Confirm payment" disabled={!enough || busy} style={{ left: 89, top: 580, width: 173, height: 72 }} onClick={takePayment} />
-        <button className="figma-route-interactive" aria-label="Back" style={{ left: 25, top: 760, width: 100, height: 60 }} onClick={() => nav(-1)} />
+        {/* The artboard draws no back control and its topmost element starts at
+            y=52, so this sits in the clear band above the artwork rather than
+            in the empty space below it, where nothing would look tappable. */}
+        <button
+          className="figma-route-interactive"
+          aria-label="Back"
+          style={{ left: 12, top: 6, width: 48, height: 44 }}
+          onClick={() => nav("/staff/walk-in")}
+        />
 
         {/* Payment-method controls are intentionally invisible: the artwork's visual selector stays authoritative. */}
         <div style={{ position: "absolute", left: 110, top: 420, width: 220, height: 150, zIndex: 30 }}>
