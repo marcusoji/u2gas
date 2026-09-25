@@ -8,7 +8,7 @@ React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
 - `npm run check:frontend` — asset + Figma route registry guards
 - `npm run check:assets` — fails if a font/image referenced by CSS is missing
 - `bash scripts/check-figma-parity.sh` (repo root) — proves `web/src/figma/screens/`
-  still matches `docs/u2gas-batch*-exact.html` byte for byte
+  still matches `docs/u2gas-all-screens.html` byte for byte (generator `--check`)
 - `npm run build` currently fails at `tsc -b` on pre-existing type errors in
   `Product.tsx`, `DriverScan.tsx`, `Collect.tsx`. `vite build` alone succeeds.
 
@@ -73,11 +73,26 @@ with the inverse zoom.
 
 ## The artboard styling invariant (easy to break)
 
-`docs/u2gas-batch*-exact.html` are the design source of truth. The app renders
+`docs/u2gas-all-screens.html` is the design source of truth. The app renders
 that markup verbatim via `FigmaScreen` / `FigmaRouteFrame` (root class `.frame`),
 and every artboard child is **absolutely positioned from the file's own
 coordinates**. Nothing in the app may reach inside `.frame` and change layout,
 colour, or text metrics.
+
+`web/src/figma/{assets,screens,artboards}.ts` are generated files — run
+`python3 build/gen_react.py` from the repo root to regenerate them after the
+gallery changes, and never hand-edit a screen. The gallery draws each picture as
+`<span class="asset-img" style="--src:var(--aN)">`, painted by
+`.frame .asset-img { background-image: var(--src); background-size: contain }`.
+The generator only repoints `--src` at the imported asset and leaves the span
+alone, because an `<img object-fit: contain>` is **not** equivalent: Chromium
+centres the scaled picture at a different subpixel offset, which put every
+cropped photo a pixel out (worst board 0.88%). Keep the span, and keep the
+modifier classes (`is-unavailable`, opacity .4) on it — they must not be dropped.
+
+`npm run check:figma-pixels` renders every app artboard with `genboards.mjs` and
+pixel-compares it against the gallery (`static-diff.mjs`, needs the dev server
+on :12001). All 63 artboards must report 0%.
 
 Two real leaks existed, both fixed by keeping the app's styles out of the frame:
 

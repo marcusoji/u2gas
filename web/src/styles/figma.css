@@ -49,6 +49,35 @@
   overflow: hidden;
 }
 
+/* The artboard root is a hard typographic boundary. The app sets its own
+   font-size, letter-spacing, font-family and colour on `body`; every text node
+   inside an artboard inherits them unless the file restates the property, and
+   the file only restates what its nodes need. Seventeen nodes in the gallery
+   are left at the gallery's own body defaults, so those are restated here — a
+   live-data route rendered them at 20px / -0.04em against the file's 16px /
+   normal, and the text measured wide.
+
+   The gallery's body never sets a colour, so an artboard node without one
+   paints in Chromium's initial black. Pin that rather than the app's --ink,
+   which is #1E1E1E. `.asset-img` is the file's picture mechanism and had no
+   colour of its own, so it must not have one here either. */
+.frame { font-size: 16px; font-family: "jgs7", ui-monospace, monospace; color: #000; }
+
+/* The file draws every picture as a `.asset-img` span that paints its `--src`
+   custom property with `background-size: contain` and centres it. The app
+   imports the same bytes and points `--src` at the import, so the file's own
+   rule is restated here — scoped to `.frame` so it cannot reach the app's own
+   thumbnails. An `<img object-fit: contain>` is not a substitute: Chromium
+   centres the scaled picture at a different subpixel offset, which desynced
+   every cropped photo (1:2210 by 0.88%). */
+.frame .asset-img {
+  display: block;
+  background-image: var(--src);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 /* ---- assets the sandbox cannot fetch ----
    Held at the exact designed dimensions so the real export is a drop-in. */
 /* The LED ticker scrolls from where Figma captured it, off the right edge. */

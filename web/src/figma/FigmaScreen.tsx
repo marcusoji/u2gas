@@ -43,8 +43,10 @@ export function FigmaScreen({
       out = out.replace(re, (_match: string, open: string) => `${open}${escapeText(text)}`);
     }
     for (const [id, src] of Object.entries(images ?? {})) {
-      const re = new RegExp(`(data-node="${id}"[^>]*\\bsrc=")([^"]*)(")`);
-      out = out.replace(re, (_match: string, open: string, _old: string, close: string) => `${open}${escapeAttribute(src)}${close}`);
+      // Pictures are the file's `.asset-img` spans; the picture itself lives in
+      // the `--src` custom property, so a live image replaces the url() there.
+      const re = new RegExp(`(data-node="${id}"[^>]*--src:url\\(')([^']*)('\\))`);
+      out = out.replace(re, (_match, open, _old, close) => `${open}${escapeAttribute(src)}${close}`);
     }
     for (const [from, replacement] of Object.entries(textReplacements ?? {})) {
       // Some generated Figma text nodes intentionally have no data-node id.

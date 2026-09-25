@@ -292,7 +292,10 @@ export function ProductImage({ basePath, alt, tier = "grid", eager, height = 120
       height={height}
       loading={eager ? "eager" : "lazy"}
       // The first few tiles are the LCP candidates; the rest can wait.
-      fetchPriority={eager ? "high" : undefined}
+      // Lowercase: React 18 passes unknown all-lowercase attributes straight
+      // through, while the camelCase `fetchPriority` is unrecognised on 18 and
+      // logs a warning per render without reaching the DOM.
+      {...(eager ? { fetchpriority: "high" } : {})}
       decoding="async"
     />
   );
