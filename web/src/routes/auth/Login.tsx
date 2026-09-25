@@ -2,6 +2,7 @@ import { useState, type MouseEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { safeNext, signInWithEmail, signInWithProvider, mockLanding } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
+import { BackButton } from "../../components/primitives";
 
 /** Login uses the exact Figma LOG IN 2 artboard; only live input/interaction is overlaid. */
 export default function Login() {
@@ -46,6 +47,7 @@ export default function Login() {
         values={{ "1:1329": email || "EXAMPLE@GMAIL.COM", "1:1342": busy ? "SENDING" : "CONTINUE" }}
         onClick={click}
       >
+        <BackButton to="/" label="BACK" />
         <input
           className="figma-route-input"
           aria-label="Email address"

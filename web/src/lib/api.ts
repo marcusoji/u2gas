@@ -489,16 +489,6 @@ export interface NotificationRow {
   read_at?: string | null;
 }
 
-export interface GasEntry {
-  entry_id: string;
-  photo?: ImageRef | null;
-  kind: "addition" | "removal" | "adjustment";
-  quantity_kg: number;
-  note?: string | null;
-  created_at: string;
-  actor?: { display_name: string | null } | null;
-}
-
 export interface AdminZone {
   zone_id: string;
   name: string;

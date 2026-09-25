@@ -670,10 +670,10 @@ async function route(
       else state.stockReceivedKg += amount;
       const entry = {
         entry_id: `e-${nextId()}`,
-        kind: body?.move === "removal" ? "removal" as const : "addition" as const,
-        quantity_kg: amount, note: body?.note ?? null,
-        created_at: new Date().toISOString(),
-        actor: { display_name: mockProfile().display_name },
+        move: body?.move === "removal" ? "removal" as const : "addition" as const,
+        amount_kg: amount, note: body?.note ?? null,
+        entry_date: new Date().toISOString(),
+        admin: { display_name: mockProfile().display_name },
       };
       fx.stockEntries.unshift(entry);
       return { entry_id: entry.entry_id };

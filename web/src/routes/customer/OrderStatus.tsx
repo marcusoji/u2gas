@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { api, ApiError, type Order } from "../../lib/api";
 import { guestTokenFor, rememberGuestOrder } from "../../lib/guest";
-import { ErrorState, LoadBar, Pill, Stamp, money } from "../../components/primitives";
+import { ErrorState, LoadBar, Pill, Stamp, money, BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import {
   HoldCountdown, LedWindow, Receipt, ReceiptSlot, Terminal, Ticker, receiptDate,
@@ -273,6 +273,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
     return (
       <div className="screen">
         <FigmaRouteFrame node="1:762" values={displayValues} textReplacements={textReplacements}>
+          <BackButton to="/history" />
           {qrDataUrl && (
             <img
               src={qrDataUrl}
@@ -294,6 +295,8 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
 
   return (
     <div className="screen">
+      <BackButton to="/history" />
+
       {holding ? (
         <HoldCountdown expiresAt={order.hold_expires_at!} onExpire={load} />
       ) : (

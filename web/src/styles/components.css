@@ -1023,6 +1023,14 @@ img.is-unavailable { filter: blur(1.5px); }
   gap: var(--s-3);
   font-family: var(--font-led);
 }
+
+/* The staff, driver and admin shells put a sticky tab bar along the bottom
+   edge, and this control is fixed to the same corner — it used to sit on top
+   of the last tabs and swallow their taps. Lift it clear of the bar whenever
+   one is on screen. */
+body:has(.app-nav) .mockbar {
+  bottom: calc(56px + var(--s-4) + env(safe-area-inset-bottom));
+}
 .mockbar-toggle {
   display: inline-flex;
   align-items: center;

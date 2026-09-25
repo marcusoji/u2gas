@@ -44,6 +44,23 @@ reads as a button when it lands on artwork the file already draws:
 When adding a back affordance, confirm it overlaps something drawn, or render a
 `BackButton` instead of a bare hotspot.
 
+Screens with no artboard (or no drawn back control) get `BackButton to="<parent>"`
+as the first child of `.screen`: `OrderStatus` (both the app-drawn receipt and the
+`1:762` paid frame, since `/orders/:id` is deep-linked from mail), `Login`,
+`VerifySent`, `Drop`, and `StockHistory`. `/`, `/staff/*`, `/driver` and the other
+admin tabs are top-level tabs, so they get none.
+
+## The tank is a functional screen, not an artboard
+
+`/admin` used to render `1:3887` / `1:3075` / `1:2847` and recover interaction by
+hit-testing raw click coordinates (`x >= 120 && x <= 260 && y >= 610`) against
+the drawing. Nothing in the drawing said which region was minus, plus or save, so
+the control that moved the tank had no accessible name and had to be found by
+trial; the rate and the history were unreachable. It is now a normal screen built
+from the primitives that keeps `TankGauge` (the artboard's own gauge language,
+already reused by `Reports`). History moved to `/admin/tank/history` so it has a
+URL. Do not reintroduce coordinate hit-testing to "restore" the artboards.
+
 ## Viewport fitting
 
 The artboards are a fixed 440px wide with absolutely positioned children, so

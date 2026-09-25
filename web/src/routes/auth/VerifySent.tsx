@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { signInWithEmail } from "../../lib/auth";
-import { Pill, Stamp, U2Mark } from "../../components/primitives";
+import { Pill, Stamp, U2Mark, BackButton } from "../../components/primitives";
 import { LedWindow, Terminal, Ticker } from "../../components/terminal";
 
 const COOLDOWN = 60;
@@ -35,6 +35,8 @@ export default function VerifySent() {
 
   return (
     <div className="screen">
+      <BackButton to="/auth/login" label="USE A DIFFERENT ADDRESS" />
+
       <Ticker static>
         {left > 0 ? `YOU CAN ASK AGAIN IN ${left}S` : "READY TO SEND ANOTHER"}
       </Ticker>
@@ -69,12 +71,6 @@ export default function VerifySent() {
       </div>
 
       <div className="spacer" />
-      <Link to="/auth/login" style={{
-        display: "block", textAlign: "center", color: "var(--blue-faint)",
-        textDecoration: "none", padding: "var(--s-5) 0",
-      }}>
-        USE A DIFFERENT ADDRESS
-      </Link>
       <U2Mark />
     </div>
   );

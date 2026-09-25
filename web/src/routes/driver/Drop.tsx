@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
 import {
-  Chip, ErrorState, Input, LoadBar, Pill, Segmented, Sheet, Stamp, money,
+  Chip, ErrorState, Input, LoadBar, Pill, Segmented, Sheet, Stamp, money, BackButton,
 } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
@@ -91,6 +91,8 @@ export default function Drop() {
 
   return (
     <div className="screen">
+      <BackButton to="/driver" label="BACK TO DROPS" />
+
       <Ticker static={drop.status !== "en_route"}>
         {drop.status === "en_route" ? "EN ROUTE"
          : drop.status === "delivered" ? "DELIVERED — THANK YOU"
@@ -175,7 +177,7 @@ export default function Drop() {
         </div>
       )}
 
-      {settled && <Pill variant="ghost" onClick={() => nav("/driver")}>BACK TO DROPS</Pill>}
+      {settled && <Pill variant="ghost" onClick={() => nav("/driver/scan")}>SCAN THE NEXT ONE</Pill>}
 
       {/* --- Failure. Reason chips in the dashed hand-cut style. ------------ */}
       <Sheet open={failSheet} onClose={() => setFailSheet(false)} label="What went wrong">

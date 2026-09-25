@@ -220,13 +220,16 @@
   white-space: nowrap; line-height: 1;
 }
 
-/* Keypad: 211 wide, 3 columns, 32px column gap, 10px row gap. */
-.keypad { position: absolute; width: 211px; display: flex; flex-direction: column;
+/* Keypad: 211 wide, 3 columns, 32px column gap, 10px row gap.
+   Scoped to .frame: the app ships its own .keypad/.key (components/terminal),
+   and these bare artboard rules used to win there because figma.css loads
+   after components.css. See the containment note further down. */
+.frame .keypad { position: absolute; width: 211px; display: flex; flex-direction: column;
   gap: 10px; align-items: flex-end; }
-.key-row { display: flex; gap: 32px; height: 39px; align-items: center; width: 100%; }
-.key-row.is-last { gap: 15px; }
-.key-pair { display: flex; gap: 32px; align-items: center; }
-.key {
+.frame .key-row { display: flex; gap: 32px; height: 39px; align-items: center; width: 100%; }
+.frame .key-row.is-last { gap: 15px; }
+.frame .key-pair { display: flex; gap: 32px; align-items: center; }
+.frame .key {
   height: 39px; width: 49px; background: #1e1e1e;
   border: 1px solid #000; border-radius: 4px; color: #fff;
   display: flex; align-items: center; justify-content: center;
@@ -237,44 +240,47 @@
   background-repeat: repeat;
   font-size: 32px; letter-spacing: -1.28px; line-height: 1;
 }
-.key.is-pay { width: 66px; font-size: 30px; letter-spacing: -1.2px; }
+.frame .key.is-pay { width: 66px; font-size: 30px; letter-spacing: -1.2px; }
 
 /* The cancel key carries its glyph as artwork, so it centres the svg rather
    than a text node. Same body, border, highlight and grain as every other. */
-.key.is-cancel { padding: 0; overflow: hidden; }
-.key.is-cancel svg { width: 49px; height: 39px; }
+.frame .key.is-cancel { padding: 0; overflow: hidden; }
+.frame .key.is-cancel svg { width: 49px; height: 39px; }
 
 /* Receipt slot: 284x20 radius 6 #d5d4d4 with a 271x5 black inner lip. */
-.receipt-slot {
+.frame .receipt-slot {
   position: absolute; left: calc(50% + 0.5px); transform: translateX(-50%);
   width: 284px; height: 20px;
   background: #d5d4d4; border: 1px solid #000; border-radius: 6px;
   box-shadow: inset 0 4px 4px 0 rgba(0,0,0,.6);
   display: grid; place-items: center;
 }
-.receipt-slot::after {
+.frame .receipt-slot::after {
   content: ""; width: 271px; height: 5px;
   background: #000; border: 1px solid #000; border-radius: 2px;
   box-shadow: inset 0 0 3px 0 #fff;   /* figma 1:261, no offset */
 }
 
 /* Pill: radius 64, 20px padding, jgs7 24px at -0.96px, 344 wide.
-   Filled carries a 1px #797bf4 border; ghost carries an inset top highlight. */
-.pill {
+   Filled carries a 1px #797bf4 border; ghost carries an inset top highlight.
+   Scoped to .frame: the app has its own .pill (components/primitives) and the
+   bare `position: absolute; left: 50%` here used to make every app button
+   absolutely positioned, so stacked buttons landed on top of each other. */
+.frame .pill {
   position: absolute; left: 50%; transform: translateX(-50%);
   width: 344px; padding: 20px; border-radius: 64px;
   font-size: 24px; letter-spacing: -0.96px; line-height: 16px;
   text-align: center; white-space: nowrap; border: 1px solid transparent;
 }
-.pill.is-filled {
+.frame .pill.is-filled {
   background: #1317e4; border-color: #797bf4; color: #fff;
   box-shadow: 0 4px 10px 0 rgba(0,0,0,.25);
 }
-.pill.is-ghost {
+.frame .pill.is-ghost {
   background: #efefef; color: #1317e4;
   box-shadow: 0 4px 10px 0 rgba(0,0,0,.15), inset 0 4px 4px 0 rgba(255,255,255,.5);
 }
-.pill.is-input {
+.frame .pill.is-input {
   background: #efefef; color: rgba(19,23,228,.3); text-align: left;
   box-shadow: 0 4px 10px 0 rgba(0,0,0,.15), inset 0 4px 4px 0 rgba(255,255,255,.5);
 }

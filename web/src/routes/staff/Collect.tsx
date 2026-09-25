@@ -23,6 +23,7 @@ export default function Collect() {
   const [tendered, setTendered] = useState("");
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [done, setDone] = useState<{ change: number | null; number: string; orphaned?: boolean } | null>(null);
   const paymentKeyRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
@@ -95,9 +96,10 @@ export default function Collect() {
     const el = (e.target as HTMLElement).closest(".key") as HTMLElement | null;
     if (!el) return;
     const key = el.textContent?.trim();
-    if (!key) return;
-    if (key === "PAY") {
-      if (enough && !busy) void takePayment();
+    if (key === "PAY" || !key) {
+      // PAY opens the confirmation sheet on the same frame (1:4643), matching
+      // the second Figma state; the sheet's own Continue to Pay records it.
+      if (!busy) setSheet(true);
       return;
     }
     if (key === "0" || /^[1-9]$/.test(key)) {
@@ -107,14 +109,21 @@ export default function Collect() {
 
   return (
     <div className="screen">
-      <FigmaRouteFrame node="1:4592" values={values} onClick={handleArtworkClick}>
+      <FigmaRouteFrame
+        node="1:4592"
+        values={values}
+        onClick={handleArtworkClick}
+        className={sheet ? undefined : "is-keypad"}
+      >
         {/* Live LED value: the Figma LED geometry remains untouched. */}
         <div className="figma-route-overlay-text" style={{ left: 138, top: 198, width: 164, color: "#ff0303", fontFamily: "jgs5, monospace", fontSize: 38, lineHeight: 1 }}>
           {paid ? "PAID" : tendered ? `${tendered}NGN` : `${(order.total_kobo / 100).toLocaleString("en-NG")}NGN`}
         </div>
 
         {/* The Figma keypad has no per-key node ids; delegated interaction keeps its exact geometry. */}
-        <button className="figma-route-interactive" aria-label="Confirm payment" disabled={!enough || busy} style={{ left: 89, top: 580, width: 173, height: 72 }} onClick={takePayment} />
+        {sheet && (
+          <button className="figma-route-interactive" aria-label="Confirm payment" disabled={!enough || busy} style={{ left: 89, top: 580, width: 173, height: 72 }} onClick={takePayment} />
+        )}
         {/* The artboard draws no back control and its topmost element starts at
             y=52, so this sits in the clear band above the artwork rather than
             in the empty space below it, where nothing would look tappable. */}
@@ -125,13 +134,14 @@ export default function Collect() {
           onClick={() => nav("/staff/walk-in")}
         />
 
-        {/* Payment-method controls are intentionally invisible: the artwork's visual selector stays authoritative. */}
-        <div style={{ position: "absolute", left: 110, top: 420, width: 220, height: 150, zIndex: 30 }}>
-          <button aria-label="Cash" onClick={() => setMethod("cash")} style={{ position: "absolute", left: 0, top: 0, width: 105, height: 70, opacity: 0, cursor: "pointer" }} />
-          <button aria-label="Bank transfer" onClick={() => setMethod("bank_transfer")} style={{ position: "absolute", left: 105, top: 0, width: 115, height: 70, opacity: 0, cursor: "pointer" }} />
-          <button aria-label="POS" onClick={() => setMethod("card_terminal")} style={{ position: "absolute", left: 0, top: 70, width: 105, height: 70, opacity: 0, cursor: "pointer" }} />
-          <button aria-label="OPAY" onClick={() => setMethod("opay")} style={{ position: "absolute", left: 105, top: 70, width: 115, height: 70, opacity: 0, cursor: "pointer" }} />
-        </div>
+        {/* Payment-method controls are intentionally invisible: the artwork's visual selector stays authoritative.
+            They sit over the sheet's drawn PAY CASH / TRANSFER row (1:4643), not over the keypad (1:4601). */}
+        {sheet && (
+          <div style={{ position: "absolute", left: 145, top: 418, width: 150, height: 30, zIndex: 30, display: "flex" }}>
+            <button aria-label="Cash" onClick={() => setMethod("cash")} style={{ flex: 1, opacity: 0, cursor: "pointer" }} />
+            <button aria-label="Bank transfer" onClick={() => setMethod("bank_transfer")} style={{ flex: 1, opacity: 0, cursor: "pointer" }} />
+          </div>
+        )}
 
         {method === "cash" && (
           <div className="figma-route-overlay-text" style={{ left: 80, top: 910, width: 280, fontSize: 20 }}>

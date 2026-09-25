@@ -3,6 +3,7 @@ import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { LoadBar } from "../../components/primitives";
 
 const Tank         = lazy(() => import("./Tank"));
+const StockHistory = lazy(() => import("./StockHistory"));
 const Products     = lazy(() => import("./Products"));
 const BundleUpload = lazy(() => import("./BundleUpload"));
 const Orders       = lazy(() => import("./Orders"));
@@ -21,6 +22,7 @@ export default function AdminApp() {
       }>
         <Routes>
           <Route index element={<Tank />} />
+          <Route path="tank/history" element={<StockHistory />} />
           <Route path="products" element={<Products />} />
           <Route path="bundles/new" element={<BundleUpload />} />
           <Route path="orders" element={<Orders />} />

@@ -1,8 +1,8 @@
 import type {
   AdminOrder, AdminProduct, AdminSetting, AdminStaff, AdminZone, AuditEntry,
-  Bundle, Delivery, DriverProfile, GasEntry, GasStock, NotificationRow, Order,
+  Bundle, Delivery, DriverProfile, GasStock, NotificationRow, Order,
   OrderSummary, Product, Profile, Refund, ReportSummary, SavedAddress,
-  StaffMember, Zone,
+  StaffMember, StockEntry, Zone,
 } from "../lib/api";
 
 /* ---------------------------------------------------------------------------
@@ -292,9 +292,9 @@ export const auditEntries: AuditEntry[] = [
   { audit_id: 4, action: "product.price_change", entity_type: "product", entity_id: "pr-hose", before: { price_kobo: 220_000 }, after: { price_kobo: 250_000 }, note: null, created_at: iso(-4 * DAY), request_id: null, actor: { display_name: "Uche Obi", role: "admin" } },
 ];
 
-export const stockEntries: GasEntry[] = [
-  { entry_id: "e-1", photo: null, kind: "addition", quantity_kg: 3_000, note: "Truck 24 delivery", created_at: iso(-3 * DAY), actor: { display_name: "Uche Obi" } },
-  { entry_id: "e-2", photo: null, kind: "removal", quantity_kg: 120, note: "Cylinder swap, no note", created_at: iso(-2 * DAY), actor: { display_name: "Ngozi Eze" } },
+export const stockEntries: StockEntry[] = [
+  { entry_id: "e-1", move: "addition", amount_kg: 3_000, note: "Truck 24 delivery", entry_date: iso(-3 * DAY), admin: { display_name: "Uche Obi" } },
+  { entry_id: "e-2", move: "removal", amount_kg: 120, note: "Cylinder swap, no note", entry_date: iso(-2 * DAY), admin: { display_name: "Ngozi Eze" } },
 ];
 
 export const settings: AdminSetting[] = [
