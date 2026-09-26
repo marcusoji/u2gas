@@ -5,10 +5,12 @@ The Figma file specifies two faces. Both are freely licensed, so both can be
 committed here and served from our own origin.
 
   jgs7.woff2 / .woff             the pixel face — every heading, label, button
+  jgs5.woff2                     the LED face — readouts and tickers only
   homemade-apple.woff2 / .woff   the handwriting face — names on profile only
 
 STATUS: present and committed. Nothing to do before a build.
 
+  jgs5.woff2                 5,872 B
   jgs7.woff2                 6,820 B
   jgs7.woff                  9,968 B
   jgs7.ttf                  26,152 B

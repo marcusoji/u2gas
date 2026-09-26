@@ -5,11 +5,9 @@
 # Inter and Barlow Condensed come from Google Fonts; the pages also load them
 # over the network, so this is only needed for an offline/self-hosted build.
 #
-# jgs5 is the LED face. It is part of Velvetyne's Jgs family (SIL OFL) —
-# the same family as the jgs7 already in web/public/fonts. Download it from
+# jgs5, the LED face, is committed alongside jgs7 (both Velvetyne Jgs, SIL OFL).
+# It is fetched here too so a rebuild refreshes both from the same source:
 #   https://velvetyne.fr/fonts/jgs-font/   (or https://gitlab.com/velvetyne/jgs)
-# and save it as web/public/fonts/jgs5.woff2. Until then the LED readouts fall
-# back to jgs7, which renders wider than Figma.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p web/public/fonts
@@ -28,4 +26,4 @@ do
     curl -fsSL "$u" -o "web/public/fonts/$(basename "$u")"
   done
 done
-echo "Done. jgs5.woff2 must be added by hand — see the note above."
+echo "Done."

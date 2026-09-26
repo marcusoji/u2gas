@@ -111,12 +111,19 @@ accordingly.
 ## Fonts
 
 Self-hosted under `web/public/fonts/`, declared in `src/styles/tokens.css`.
-jgs7 is the pixel face; Homemade Apple is the profile name. The reference pulls
-Barlow Condensed SemiBold and Barlow Semi Condensed SemiBold from Google Fonts —
-the app named them but did not ship them until they were added, so any Barlow
-string fell back to Arial Narrow and measured wide. `scripts/fetch-fonts.sh`
-fetches these; jgs5 (the LED face) must be added by hand and is still missing,
-so LED readouts fall back to jgs7 and render wider than the file.
+jgs7 is the pixel face, jgs5 the LED face (readouts and tickers) and Homemade
+Apple the profile name. The reference pulls Barlow Condensed SemiBold and Barlow
+Semi Condensed SemiBold from Google Fonts — the app named them but did not ship
+them until they were added, so any Barlow string fell back to Arial Narrow and
+measured wide. `scripts/fetch-fonts.sh` fetches these.
+
+jgs5 was the last face named-but-not-shipped: `--font-led` had always listed it
+and `figma.css` declared it, but that declaration pointed at a *relative*
+`url("fonts/jgs5.woff2")`, which resolves against the stylesheet rather than the
+document and so 404'd. Every LED readout silently fell back to jgs7. Both files
+now embed the face as a data URI (as jgs7 already did) and `tokens.css` serves
+it from `/fonts/`. jgs5 and jgs7 share advances, so this changes the glyphs, not
+the widths — a width-only check cannot see it.
 
 ## Verifying visual parity
 

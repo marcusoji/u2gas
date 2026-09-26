@@ -64,10 +64,8 @@ import * as CartEmpty from "./screens/CartEmpty";
 import * as CheckoutWalkIn from "./screens/CheckoutWalkIn";
 import * as CheckoutDelivery from "./screens/CheckoutDelivery";
 import * as CheckoutNoDeliveryAddress from "./screens/CheckoutNoDeliveryAddress";
-import * as BlackConcept from "./screens/BlackConcept";
 import * as UserProfile from "./screens/UserProfile";
-import * as PersonalDts from "./screens/PersonalDts";
-import * as PersonalDts2 from "./screens/PersonalDts2";
+import * as PersonalDetails from "./screens/PersonalDetails";
 
 export interface FigmaArtboard {
   name: string;
@@ -137,10 +135,8 @@ export const artboards: Record<string, FigmaArtboard> = {
   "1:1703": { name: "CHECKOUT - WALK-IN", node: "1:1703", app: "CUSTOMER", height: 2000, html: CheckoutWalkIn.html },
   "1:1827": { name: "CHECKOUT - DELIVERY", node: "1:1827", app: "CUSTOMER", height: 2000, html: CheckoutDelivery.html },
   "1:1952": { name: "CHECKOUT NO DELIVERY ADDRESS", node: "1:1952", app: "CUSTOMER", height: 2000, html: CheckoutNoDeliveryAddress.html },
-  "1:2074": { name: "BLACK CONCEPT", node: "1:2074", app: "CUSTOMER", height: 2000, html: BlackConcept.html },
   "1:2090": { name: "USER PROFILE", node: "1:2090", app: "CUSTOMER", height: 1190, html: UserProfile.html },
-  "1:2210": { name: "PERSONAL DTS", node: "1:2210", app: "CUSTOMER", height: 2000, html: PersonalDts.html },
-  "1:2244": { name: "PERSONAL DTS 2", node: "1:2244", app: "CUSTOMER", height: 2000, html: PersonalDts2.html },
+  "1:2244": { name: "PERSONAL DTS 2", node: "1:2244", app: "CUSTOMER", height: 2000, html: PersonalDetails.html },
 };
 
 export const byName = (name: string): FigmaArtboard | undefined =>

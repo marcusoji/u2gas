@@ -29,6 +29,18 @@
    correctly in the meantime, just not in the licensed face.                */
 
 @font-face {
+  /* figma sets every LED readout and ticker in jgs5, the 10px-multiple member
+     of Velvetyne's Jgs family (SIL OFL) — not jgs7. `--font-led` has named it
+     all along, but the face was never served, so the readouts fell back to
+     jgs7 and measured wider than the file. */
+  font-family: "jgs5";
+  src: url("/fonts/jgs5.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: "jgs7";
   src: url("/fonts/jgs7.woff2") format("woff2"),
        url("/fonts/jgs7.woff")  format("woff");

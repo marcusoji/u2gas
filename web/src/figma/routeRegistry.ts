@@ -23,7 +23,7 @@ export const figmaRouteRegistry: FigmaRouteDefinition[] = [
   { route: "/orders/verify", role: "customer", artboards: ["1:502"], notes: "1:421 PAYMENT SUCCESSFUL is not rendered: verification redirects to the order screen, which shows the real result from the API rather than a fixed success frame." },
   { route: "/history", role: "customer", artboards: [], notes: "1:2107 TRANS HISTORY is a fixed list of sample receipts with no data-node ids on its rows, so it cannot carry a real month-filtered history. Retain the functional list until a row template is extracted." },
   { route: "/profile", role: "customer", artboards: ["1:2090"] },
-  { route: "/profile/details", role: "customer", artboards: ["1:2210"] },
+  { route: "/profile/details", role: "customer", artboards: ["1:2244"] },
   { route: "/notifications", role: "customer", artboards: [], notes: "88:55 is a FILE icon asset, not a screen artboard; keep the functional notification screen until a matching customer notification artboard is supplied."},
   { route: "/addresses", role: "customer", artboards: [], notes: "1:1952 is CHECKOUT NO DELIVERY ADDRESS, not the saved-address management screen."},
   { route: "/auth/login", role: "auth", artboards: ["1:1281"], notes: "LOG IN 2 — email entry" },
