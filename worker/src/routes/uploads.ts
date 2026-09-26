@@ -83,7 +83,7 @@ async function storeImage(
       bytes_source: source.bytes.byteLength,
       bytes_grid: grid.bytes.byteLength,
       has_alpha: processed.hasAlpha,
-      uploaded_by: c.get("caller").profileId,
+      uploaded_by: c.get("caller")!.profileId,
     }).select("asset_id, base_path").single(),
   );
 

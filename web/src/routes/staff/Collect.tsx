@@ -35,13 +35,14 @@ export default function Collect() {
   if (error && !order) return <div className="screen"><div className="stamp-wrap"><div className="stamp">{error}</div></div></div>;
   if (!order) return <div className="screen"><div style={{ minHeight: 240, display: "grid", placeItems: "center" }}>FETCHING THE ORDER…</div></div>;
 
-  const paid = order.payment_status === "paid";
+  const current = order;
+  const paid = current.payment_status === "paid";
   const tenderedKobo = Number(tendered || 0) * 100;
-  const changeKobo = tenderedKobo - order.total_kobo;
-  const enough = method !== "cash" || tenderedKobo >= order.total_kobo;
+  const changeKobo = tenderedKobo - current.total_kobo;
+  const enough = method !== "cash" || tenderedKobo >= current.total_kobo;
 
   async function takePayment() {
-    const fingerprint = [order.order_id, method, tenderedKobo, reference.trim()].join("|");
+    const fingerprint = [current.order_id, method, tenderedKobo, reference.trim()].join("|");
     const key = paymentKeyRef.current?.fingerprint === fingerprint
       ? paymentKeyRef.current.key
       : newIdempotencyKey();
@@ -49,14 +50,14 @@ export default function Collect() {
     setBusy(true); setError(null);
     try {
       const r = await api.staff.recordPayment({
-        order_id: order.order_id,
+        order_id: current.order_id,
         method,
         tendered_kobo: method === "cash" ? tenderedKobo : undefined,
         terminal_reference: method === "card_terminal" ? reference || undefined : undefined,
       }, key);
       setDone({ change: r.change_due_kobo, number: r.order_number, orphaned: r.orphaned });
       paymentKeyRef.current = null;
-      const fresh = await api.order(order.order_id);
+      const fresh = await api.order(current.order_id);
       setOrder(fresh.order);
     } catch (e) { setError((e as ApiError).message); }
     finally { setBusy(false); }

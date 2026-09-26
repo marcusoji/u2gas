@@ -40,12 +40,16 @@ export default function Scan() {
     }
     if (id === "1:4465" || id === "1:4406" || id === "1:4436") nav("/staff/shift");
   };
-
   const values = orderNumber ? { "1:4444": orderNumber, "1:4384": orderNumber, "1:4414": orderNumber } : undefined;
 
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node={node} values={values} onClick={handleClick}>
+        {/* The drawing's bell is the notification counter. It has no node id of
+            its own, so the target sits on the group the file draws at (362,63). */}
+        <button className="figma-route-interactive" aria-label="Notifications"
+          onClick={(e) => { e.stopPropagation(); nav("/staff/notifs"); }}
+          style={{ left: 362, top: 63, width: 50, height: 56, zIndex: 25 }} />
         {(state === "scanning" || state === "idle") && (
           <div style={{ position: "absolute", left: 50, top: 140, width: 340, height: 400, zIndex: 15, borderRadius: 64, overflow: "hidden" }}>
             <Scanner state={state} active={state === "scanning"} onResult={onResult} onError={onError} />

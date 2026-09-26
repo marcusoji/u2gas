@@ -201,6 +201,21 @@ const MAP: Record<string, Mapping> = {
     status: 403,
     message: () => "YOUR DRIVER PROFILE ISN'T SET UP — ASK AN ADMIN TO ADD YOU",
   },
+  STAFF_NOT_FOUND: { status: 404, message: () => "THAT PERSON ISN'T ON THE ROSTER" },
+  // The account has to exist before it can be put on the roster; a profile row
+  // with no auth user is one nobody can sign in as. Say which step is missing
+  // rather than creating a dead row.
+  STAFF_ACCOUNT_MISSING: {
+    status: 409,
+    message: (d) =>
+      `NO ACCOUNT FOR ${String(d.email ?? "THAT EMAIL").toUpperCase()} — INVITE THEM FIRST`,
+  },
+  // Refusing the last admin's removal keeps the roster manageable. The message
+  // says what to do instead, because "forbidden" would read as a permission bug.
+  LAST_ADMIN: {
+    status: 409,
+    message: () => "THAT'S THE ONLY ADMIN — ADD ANOTHER BEFORE REMOVING THIS ONE",
+  },
   EMAIL_NOT_VERIFIED: { status: 403, message: () => "CHECK YOUR MAIL TO VERIFY FIRST" },
   RATE_LIMITED: { status: 429, message: () => "TOO MANY TRIES — WAIT A MOMENT" },
 

@@ -25,7 +25,7 @@ staff.use("*", requireRole("staff", "manager", "admin"));
  * the error says exactly what is missing and who can fix it. (Item 4)
  */
 async function staffId(c: Ctx): Promise<string> {
-  const caller = c.get("caller");
+  const caller = c.get("caller")!;
   const row = await select<any>(
     c.get("admin").from("staff_member")
       .select("staff_id, status").eq("profile_id", caller.profileId).maybeSingle(),

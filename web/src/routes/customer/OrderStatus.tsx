@@ -46,6 +46,22 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
   const qrRequested = useRef(false);
   const verifiedPaymentRef = useRef<string | null>(null);
 
+  /**
+   * Which of the file's four paid states is on screen. They are the same
+   * receipt at four moments, so they are one route that advances rather than
+   * four routes: PAYMENT SUCCESSFUL (1:421) as the payment lands, RECEIPT
+   * PRINTING (1:669) while the till prints, then the receipt itself in either
+   * of the two drawings the file keeps (1:762 / 1:989).
+   */
+  const [receiptStage, setReceiptStage] = useState<"success" | "printing" | "receipt" | "alt">(
+    params.get("receipt") === "printing" ? "printing"
+      : params.get("receipt") === "alt" ? "alt"
+      : params.get("receipt") === "success" ? "success"
+      : params.get("receipt") === "receipt" ? "receipt"
+      // Arriving straight from Paystack, the first board the file draws is the
+      // success one; a revisit goes straight to the receipt.
+      : verifying ? "success" : "receipt");
+
   const load = useCallback(async () => {
     setError(null);
     try {
@@ -69,10 +85,6 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
       .catch((e: ApiError) => { setError(e.message); void load(); });
   }, [verifying, paymentReference, orderId, guestToken, load]);
 
-  /**
-   * The QR token is returned exactly once and never stored anywhere. Ask for
-   * it only when the order is actually collectable, and only once per mount.
-   */
   /**
    * The collection code.
    *
@@ -130,6 +142,23 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
 
     return () => { active = false; };
   }, [order, guestToken]);
+
+  /**
+   * Walk the paid states the way the till does: success, then printing, then
+   * the receipt. Only from the success board and only once, so a person who
+   * deep-links a receipt state stays there.
+   */
+  useEffect(() => {
+    if (receiptStage !== "success") return;
+    const t = window.setTimeout(() => setReceiptStage("printing"), 2200);
+    return () => window.clearTimeout(t);
+  }, [receiptStage]);
+
+  useEffect(() => {
+    if (receiptStage !== "printing") return;
+    const t = window.setTimeout(() => setReceiptStage("receipt"), 2600);
+    return () => window.clearTimeout(t);
+  }, [receiptStage]);
 
   async function retryQr() {
     if (!order || busy) return;
@@ -261,18 +290,43 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
     }
     while (receiptLines.length < 2) receiptLines.push({ label: "—", value: "₦0" });
 
-    const displayValues = {
-      "1:773": "TOTAL PAID",
-      "1:806": money(order.total_kobo),
-      "1:866": receiptDate(order.created_at),
-    };
     const textReplacements: Record<string, string | string[]> = {
       "6-pack Energizer<br>ignition batteries": receiptLines.map((line) => line.label),
       "₦1,400": receiptLines.map((line) => line.value),
     };
+    const amount = money(order.total_kobo);
+
+    if (receiptStage === "success") {
+      return (
+        <div className="screen">
+          <FigmaRouteFrame node="1:421" values={{ "1:421f": order.gas_amount_kg > 0 ? `${order.gas_amount_kg}KG` : amount }}>
+            <BackButton to="/history" />
+          </FigmaRouteFrame>
+        </div>
+      );
+    }
+
+    if (receiptStage === "printing") {
+      return (
+        <div className="screen">
+          <FigmaRouteFrame node="1:669" values={{ "1:713": amount }}>
+            <BackButton to="/history" />
+          </FigmaRouteFrame>
+        </div>
+      );
+    }
+
+    // RECEIPT DISPLAY (1:762) and RECEIPT DISPLAY ALT (1:989) are the same
+    // receipt drawn twice. The file keeps both, so the display offers both
+    // rather than dropping one.
+    const alt = receiptStage === "alt";
+    const node = alt ? "1:989" : "1:762";
+    const displayValues: Record<string, string> = alt
+      ? { "1:1000": "TOTAL PAID", "1:1033": amount, "1:1096": receiptDate(order.created_at) }
+      : { "1:773": "TOTAL PAID", "1:806": amount, "1:866": receiptDate(order.created_at) };
     return (
       <div className="screen">
-        <FigmaRouteFrame node="1:762" values={displayValues} textReplacements={textReplacements}>
+        <FigmaRouteFrame node={node} values={displayValues} textReplacements={textReplacements}>
           <BackButton to="/history" />
           {qrDataUrl && (
             <img
@@ -287,6 +341,12 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
             aria-label="Keep receipt"
             onClick={() => nav("/home")}
             style={{ left: 168, top: 705, width: 103, height: 60 }}
+          />
+          <button
+            className="figma-route-interactive"
+            aria-label={alt ? "Standard receipt" : "Alternate receipt display"}
+            onClick={() => setReceiptStage(alt ? "receipt" : "alt")}
+            style={{ left: 150, top: 645, width: 140, height: 34 }}
           />
         </FigmaRouteFrame>
       </div>

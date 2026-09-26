@@ -14,9 +14,15 @@ import { MOCKS_ENABLED } from "../mocks/gate";
 const DEMO_MEDIA_BASE = "/mock-media";
 
 export function mediaBase(): string {
+  // Demo mode owns the media base outright. The shipped `.env` sets
+  // VITE_MEDIA_BASE to a placeholder Supabase host, so honouring it here made
+  // every product tile, avatar and bundle preview a DNS failure while the
+  // markup and layout stayed perfect — invisible to a structural check, but a
+  // broken picture to anyone looking at the demo.
+  if (MOCKS_ENABLED) return DEMO_MEDIA_BASE;
   const configured = import.meta.env.VITE_MEDIA_BASE;
   if (configured) return configured.replace(/\/$/, "");
-  return MOCKS_ENABLED ? DEMO_MEDIA_BASE : "";
+  return "";
 }
 
 /** A picture url for one asset, or "" when the record has no image. */

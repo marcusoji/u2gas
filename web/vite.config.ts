@@ -36,6 +36,16 @@ export default defineConfig({
           if (id.includes("/routes/admin/"))  return "app-admin";
           if (id.includes("/routes/staff/"))  return "app-staff";
           if (id.includes("/routes/driver/")) return "app-driver";
+          // Shared code gets its own chunk. Left unassigned, Rollup swept
+          // primitives/lib/figma into whichever role chunk it built first —
+          // `app-staff` — which then made the entry import that chunk and put
+          // it in the preload set, so a customer downloaded the staff bundle
+          // on first paint. Naming the chunk keeps the role bundles lazy.
+          if (
+            id.includes("/components/") || id.includes("/lib/") ||
+            id.includes("/mocks/") || id.includes("/figma/") ||
+            id.includes("/styles/")
+          ) return "app-shared";
           return undefined;
         },
       },

@@ -1,29 +1,27 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api, ApiError, type GasStock } from "../../lib/api";
 import {
-  ErrorState, Input, LoadBar, Modal, Pill, Segmented, Sheet, Stamp, money,
+  BackButton, ErrorState, Input, LoadBar, Modal, Pill, Segmented, Sheet, Stamp, money,
 } from "../../components/primitives";
-import { TankGauge } from "../../components/illustrated";
-import { Ticker } from "../../components/terminal";
+import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
- * The tank.
+ * The tank (1:3887 GAS LVL CHECK).
  *
  * `available_kg` is read from the server, never computed here and never
  * editable — it is derived from received minus reserved minus used, and the
  * only way to move it is a stock entry. (Spec 29)
  *
- * This screen previously rendered the GAS LVL CHECK / UPDATE GAS artboards and
- * recovered interaction by hit-testing raw click coordinates against the
- * drawing. Nothing in the drawing said which region was minus, which was plus,
- * or which was save, so the control that moved the tank was a rectangle a
- * person had to find by trial, with no accessible name on any of it; the rate
- * and the history were unreachable. The artboard's own gauge is kept
- * (`TankGauge`) so the screen still reads as the same product, and the
- * accounting the drawing collapses into one number is spelled out underneath.
+ * The board draws the gauge, the big available figure, the days-left line and
+ * an UPDATE control, so those are bound to the live tank and the drawing's
+ * geometry is kept. The drawing collapses the accounting into one number and
+ * gives the rate no control at all; both stay as app chrome below the board,
+ * because the number is reconciled against a delivery note and the rate still
+ * has to be changeable.
  */
 export default function Tank() {
+  const nav = useNavigate();
   const [stock, setStock] = useState<GasStock | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,23 +89,31 @@ export default function Tank() {
 
   const tonsAvailable = stock.available_kg / 1000;
   const asTons = (kg: number) => `${(kg / 1000).toFixed(1)}T`;
+  // 1:3902 is one `<p>` split by a `<br>`, so the days are replaced inside the
+  // line rather than by rewriting the node: replacing the whole string would
+  // drop the `<br>` and change the drawn structure.
+  const textReplacements: Record<string, string | string[]> = stock.days_remaining === null
+    ? { "TO LAST 34 MORE DAYS*": "TO LAST AN UNKNOWN NUMBER OF DAYS*" }
+    : { "34 MORE DAYS": `${stock.days_remaining} MORE DAYS` };
 
   return (
-    <div className="screen">
-      <Ticker static>
-        {`${tonsAvailable.toFixed(1)} TONS AVAILABLE · ${stock.fill_percent}% FULL`}
-      </Ticker>
-
-      <div style={{ height: "var(--s-5)" }} />
-
-      <TankGauge
-        availableKg={stock.available_kg}
-        totalKg={stock.total_received_kg}
-        unit="TONS"
-        note={stock.days_remaining !== null
-          ? `ABOUT ${stock.days_remaining} DAYS LEFT AT THE CURRENT RATE`
-          : undefined}
-      />
+    <div className="screen figma-route-scroll">
+      <FigmaRouteFrame
+        node="1:3887"
+        values={{ "1:3904": String(Math.floor(tonsAvailable)) }}
+        textReplacements={textReplacements}
+      >
+        <BackButton to="/admin" />
+        <button className="figma-route-interactive" aria-label="Update stock"
+          onClick={() => nav("/admin/tank/update")}
+          style={{ left: 40, top: 656, width: 200, height: 70 }} />
+        <button className="figma-route-interactive" aria-label="Staff"
+          onClick={() => nav("/admin/people")}
+          style={{ left: 40, top: 834, width: 476, height: 161 }} />
+        <button className="figma-route-interactive" aria-label="Notifications"
+          onClick={() => nav("/admin/notifs")}
+          style={{ left: 362, top: 63, width: 50, height: 56 }} />
+      </FigmaRouteFrame>
 
       {stock.available_kg <= 0 && (
         <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>

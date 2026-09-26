@@ -572,6 +572,52 @@ admin.get("/drivers", async (c) =>
         profile:profile_id ( profile_id, display_name, avatar_asset ( base_path ) )
       `)) }));
 
+/**
+ * Bring somebody onto the roster (1:2686 ADD STAFF).
+ *
+ * The role is the thing that actually grants access, so only a manager or
+ * admin may set it and only to a role the till understands — a client cannot
+ * promote itself by asking. The two rows this writes (profile role and
+ * staff_member) are described in migration 0024; both are needed before the
+ * person can ring up a sale.
+ */
+admin.post("/staff", async (c) => {
+  const body = z.object({
+    email: z.string().email().max(200),
+    display_name: z.string().min(1).max(120),
+    role: z.enum(["staff", "manager", "admin", "driver"]),
+    bank_name: z.string().max(120).optional(),
+    account_number: z.string().regex(/^[0-9]{10}$/).optional(),
+  }).safeParse(await c.req.json());
+  if (!body.success) throw appError("VALIDATION_FAILED");
+
+  const result = await rpc<any>(c.get("admin"), "admin_add_staff", {
+    p_actor: c.get("caller")!.profileId,
+    p_email: body.data.email,
+    p_name: body.data.display_name,
+    p_role: body.data.role,
+    p_bank: body.data.bank_name ?? null,
+    p_account: body.data.account_number ?? null,
+  });
+
+  return c.json({ ok: true, staff_id: result.staff_id, created: result.created }, 201);
+});
+
+/**
+ * Take somebody off the roster (1:2624 STAFF LAYOUT 1, REMOVE STAFF).
+ *
+ * Soft by design: the person is named on every sale they rang up, so the row
+ * and its history stay and only the roster status changes. Migration 0024
+ * refuses the last admin.
+ */
+admin.delete("/staff/:id", async (c) => {
+  const result = await rpc<any>(c.get("admin"), "admin_remove_staff", {
+    p_actor: c.get("caller")!.profileId,
+    p_staff_id: c.req.param("id"),
+  });
+  return c.json({ ok: true, ...result });
+});
+
 admin.get("/settings", async (c) =>
   c.json({ ok: true, settings: await select<any[]>(
     c.get("admin").from("app_setting").select("key, value, updated_at")) }));

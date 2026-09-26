@@ -19,7 +19,7 @@ driver.use("*", requireRole("driver", "manager", "admin"));
  * distinguishes "not finished setting up" from "not allowed". (Item 4)
  */
 async function driverId(c: Ctx): Promise<string> {
-  const caller = c.get("caller");
+  const caller = c.get("caller")!;
   const row = await select<any>(
     c.get("admin").from("driver")
       .select("driver_id").eq("profile_id", caller.profileId).maybeSingle(),

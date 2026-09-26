@@ -830,7 +830,41 @@ async function route(
   }
 
   if (method === "GET" && rawPath === "/admin/staff") {
-    return { staff: fx.staffMembers };
+    return { staff: fx.staffMembers.filter((s) => s.status !== "removed") };
+  }
+
+  if (method === "POST" && rawPath === "/admin/staff") {
+    const email = String(body?.email ?? "").toLowerCase();
+    const existing = fx.staffMembers.find(
+      (s) => s.profile?.email?.toLowerCase() === email && s.status !== "removed",
+    );
+    if (existing) throw fail("DUPLICATE_STAFF", 409, "ALREADY ON THE ROSTER", { email });
+    const role = String(body?.role ?? "staff");
+    const profile = {
+      profile_id: `p-${nextId()}`,
+      role,
+      display_name: String(body?.display_name ?? "NEW STAFF"),
+      email: String(body?.email ?? ""),
+      avatar_asset: null,
+    } as any;
+    const member = {
+      staff_id: `s-${nextId()}`,
+      status: "active",
+      bank_name: body?.bank_name ?? null,
+      account_number: body?.account_number ?? null,
+      hired_at: new Date().toISOString(),
+      profile,
+    } as any;
+    fx.staffMembers.push(member);
+    return { staff_id: member.staff_id, created: true };
+  }
+
+  if (method === "DELETE" && seg[0] === "admin" && seg[1] === "staff" && seg[2]) {
+    const i = fx.staffMembers.findIndex((s) => s.staff_id === seg[2]);
+    if (i < 0) throw fail("STAFF_NOT_FOUND", 404, "THAT PERSON ISN'T ON THE ROSTER");
+    const removed = fx.staffMembers.splice(i, 1)[0];
+    removed.status = "removed";
+    return { staff_id: removed.staff_id, status: "removed" };
   }
 
   if (method === "GET" && rawPath === "/admin/drivers") {

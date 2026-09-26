@@ -35,7 +35,8 @@ export default function DriverScan() {
   const onError = useCallback((m: string) => { setState("fail"); setMessage(m); }, []);
 
   const node = state === "ok" ? "1:4908" : "1:4938";
-  const values = state === "ok" ? { "1:4915": "SCAN SUCCESSFUL" } : { "1:4945": state === "fail" ? "SCAN FAILED" : "SCAN" };
+  const values: Record<string, string> =
+    state === "ok" ? { "1:4915": "SCAN SUCCESSFUL" } : { "1:4945": state === "fail" ? "SCAN FAILED" : "SCAN" };
 
   return (
     <div className="screen figma-route-scroll">

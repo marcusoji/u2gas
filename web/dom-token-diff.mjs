@@ -34,6 +34,10 @@ const FORCE_FAMILY = "DejaVu Sans";
 const TARGETS = [
   { route: "/", role: "auth" },                             // LOG IN 1
   { route: "/home", role: "customer" },
+  { route: "/home?kg=9999", role: "customer" },             // 1:175 over stock
+  { route: "/home?pay=walkin", role: "customer" },          // 1:1344 pay sheet
+  { route: "/home?pay=delivery", role: "customer" },        // 1:326 pay sheet
+  { route: "/home?pay=summary", role: "customer" },         // 1:583 order summary
   { route: "/shop", role: "customer" },
   { route: "/shop/product/pr-cylinder", role: "customer" },
   { route: "/shop/product/pr-hose", role: "customer" },
@@ -44,6 +48,8 @@ const TARGETS = [
   { route: "/shop/bundle/bu-combo", role: "customer" },     // bundle uses the same 1:1462 frame
   { route: "/cart", role: "customer" },                     // empty cart
   { route: "/cart?add=pr-hose", role: "customer" },         // filled cart
+  { route: "/checkout", role: "customer" },                 // 1:1703 walk-in sheet
+  { route: "/checkout?add=pr-hose", role: "customer" },     // 1:1952 no address yet
   { route: "/orders/o-unpaid", role: "customer" },
   { route: "/orders/o-paid", role: "customer" },
   { route: "/orders/o-delivery", role: "customer" },
@@ -56,11 +62,25 @@ const TARGETS = [
   { route: "/staff", role: "staff" },
   { route: "/staff/walk-in", role: "staff" },
   { route: "/staff/collect/o-paid", role: "staff" },
+  { route: "/staff/notifs", role: "staff" },
+  { route: "/staff/notifs?state=completed", role: "staff" },
+  { route: "/staff/notifs?state=expanded", role: "staff" },
+  { route: "/staff/me", role: "staff" },
   { route: "/driver", role: "driver" },
   { route: "/driver/drops/dl-2", role: "driver" },
   { route: "/driver/scan", role: "driver" },
   { route: "/driver/me", role: "driver" },
+  { route: "/admin", role: "admin" },
+  { route: "/admin?layout=blueprint", role: "admin" },
+  { route: "/admin/tank", role: "admin" },
+  { route: "/admin/tank/update", role: "admin" },
+  { route: "/admin/tank/history", role: "admin" },
+  { route: "/admin/notifs", role: "admin" },
+  { route: "/admin/notifs?state=expanded", role: "admin" },
   { route: "/admin/people", role: "admin" },
+  { route: "/admin/people?state=add", role: "admin" },        // 1:2686 ADD STAFF
+  { route: "/admin/people?layout=1", role: "admin" },         // 1:2624 STAFF LAYOUT 1
+  { route: "/admin/staff/d-1/history", role: "admin" },
 ];
 
 /* ------------------------------------------------------------------ capture */
@@ -235,7 +255,31 @@ const GEOM_TOL = 0.6; // CSS px — sub-pixel rasteriser noise, not a design gap
 // intended interaction, not drift, so the box is not compared here. Its
 // structure and tokens are still checked, which is what matters — the sheet's
 // markup must stay the file's.
-const STATE_TOGGLED = new Set(["1:4643"]);
+const STATE_TOGGLED = new Set([
+  // the walk-in confirmation sheet, drawn over the panel and revealed on PAY
+  "1:4643",
+  // 1:1517's ITEM UNAVAILABLE stamp. It is drawn on the board but is a state,
+  // not copy: the route shows it only once the server refuses a line, so at
+  // rest it is hidden and the box cannot be compared.
+  "1:1589", "1:1590",
+]);
+
+// TRANS HISTORY (`1:2107`) draws its content as samples: two receipts
+// (`1:2134`, `1:2170`), a status strip (`1:2199`, with label `1:2200` and slot
+// `1:2201`) and a month strip (`1:2115`) whose chips are `JAN..SEP`. The row
+// text leaves carry no `data-node` id at all, so nothing can bind over them and
+// a real user would read Figma's example order — the drawn sample would simply
+// stay on screen. The route paints the person's own months and receipts at the
+// same coordinates and hides these, which makes them the row template's source
+// rather than content. Same deal as the walk-in sheet: the boxes are not
+// comparable, the structure and tokens still are.
+const TEMPLATE_ROWS_HIDDEN = new Set([
+  // the sample receipts and the status strip
+  "1:2134", "1:2170", "1:2199", "1:2200", "1:2201",
+  // the sample month strip (1:2115) and its nine chips
+  "1:2115", "1:2116", "1:2118", "1:2120", "1:2122", "1:2124",
+  "1:2126", "1:2128", "1:2130", "1:2132",
+]);
 
 // The artboards are Figma's *frozen example* of each screen — the gallery
 // literally contains `U2-100031`, `17 MAR` and `[ Caleb ]`. Those are sample
@@ -292,7 +336,7 @@ function compare(refList, appList, label, report, live, stale) {
     }
 
     const textChanged = a.text !== e.text;
-    const toggled = STATE_TOGGLED.has(e.id);
+    const toggled = STATE_TOGGLED.has(e.id) || TEMPLATE_ROWS_HIDDEN.has(e.id);
     // A live value swaps the sample text, and a centred or nowrap box follows
     // the new text — that is the app working, not drift. So the drawn box is
     // only compared where the text is unchanged; a swapped leaf is instead
@@ -315,6 +359,16 @@ function compare(refList, appList, label, report, live, stale) {
         });
       }
     }
+    // Declaring a template row above must not become a way to skip it: if the
+    // route stops hiding it, the drawn sample is on screen and that has to fail.
+    // `1:4643` is excluded — it is a real state the route reveals on PAY.
+    if (TEMPLATE_ROWS_HIDDEN.has(e.id) && (a.w > 0 || a.h > 0)) {
+      report.push({
+        artboard, node: e.id, kind: "template-row-visible",
+        detail: `the drawn sample row is on screen (${a.w}×${a.h}) — the route must hide it and paint live rows instead`,
+      });
+    }
+
     if (a.fontFamily !== e.fontFamily) {
       report.push({
         artboard, node: e.id || e.key, kind: "font-family",
@@ -397,6 +451,7 @@ const renderedShapes = new Set();
 /** Fold a concrete route to the registry's `:id` shape. */
 const targetShape = (route) => route.split("?")[0]
   .replace(/^\/shop\/[^/]+\/[^/]+$/, "/shop/:id/:id")
+  .replace(/^\/admin\/staff\/[^/]+\//, "/admin/staff/:id/")
   .replace(/\/(pr-[a-z]+|o-[a-z]+|dl-\d+|bu-[a-z]+)\b/g, "/:id");
 
 if (refOnly) {
@@ -547,7 +602,7 @@ if (!report.length) {
   }
   console.log("─".repeat(72));
   const order = ["structure", "geometry", "token", "font-family",
-    "missing", "extra", "tag", "unknown-artboard", "load"];
+    "template-row-visible", "missing", "extra", "tag", "unknown-artboard", "load"];
   const sorted = [...report].sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   for (const r of sorted.slice(0, 300)) {
     console.log(`${r.kind.padEnd(18)} ${String(r.artboard).padEnd(20)} ${String(r.node).padEnd(10)} ${r.detail}`);

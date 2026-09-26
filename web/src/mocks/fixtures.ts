@@ -485,9 +485,12 @@ export function adminOrders(): AdminOrder[] {
 
 export function adminProducts(): AdminProduct[] {
   return products.map((p) => ({
-    product_id: p.product_id, name: p.name, price_kobo: p.price_kobo,
-    stock_qty: p.stock_qty, reserved_qty: p.reserved_qty, active: p.active,
+    product_id: p.product_id, name: p.name, subtitle: p.subtitle,
+    price_kobo: p.price_kobo, stock_qty: p.stock_qty, reserved_qty: p.reserved_qty,
+    available: Math.max(0, p.stock_qty - p.reserved_qty),
+    active: p.active,
     category_id: p.product_category?.slug ?? null,
+    product_category: p.product_category ?? null,
     image_asset: p.image_asset ? { base_path: p.image_asset.base_path } : null,
   }));
 }

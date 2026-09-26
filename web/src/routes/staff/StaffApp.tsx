@@ -8,6 +8,8 @@ const WalkIn     = lazy(() => import("./WalkIn"));
 const Collect    = lazy(() => import("./Collect"));
 const Lookup     = lazy(() => import("./Lookup"));
 const Shift      = lazy(() => import("./Shift"));
+const Notifications = lazy(() => import("./Notifications"));
+const StaffProfile  = lazy(() => import("./StaffProfile"));
 
 /**
  * Cashier app. Same machine as the customer terminal, in industrial grey.
@@ -30,6 +32,8 @@ export default function StaffApp() {
           <Route path="collect/:orderId" element={<Collect />} />
           <Route path="lookup" element={<Lookup />} />
           <Route path="shift" element={<Shift />} />
+          <Route path="notifs" element={<Notifications />} />
+          <Route path="me" element={<StaffProfile />} />
           <Route path="*" element={<Navigate to="/staff" replace />} />
         </Routes>
       </Suspense>
@@ -51,6 +55,7 @@ function StaffNav() {
     { to: "/staff/walk-in", label: "WALK-IN" },
     { to: "/staff/lookup", label: "FIND" },
     { to: "/staff/shift", label: "SHIFT" },
+    { to: "/staff/me", label: "ME" },
   ];
 
   return (

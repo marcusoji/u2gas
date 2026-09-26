@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api, ApiError, type StockEntry } from "../../lib/api";
-import {
-  BackButton, Empty, ErrorState, LoadBar, Stamp, Tabs,
-} from "../../components/primitives";
+import { BackButton, LoadBar, Tabs } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
+import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 
@@ -15,15 +15,15 @@ function label(value: string): string {
 }
 
 /**
- * Stock history. Every entry that has moved the tank, newest first, because
- * the question this screen answers is "why is the number what it is" — which
- * needs the movements, not a single running total.
+ * Stock history (1:2847 GAS HISTORY).
  *
- * It lived inside the tank screen behind a toggle that re-rendered a different
- * artboard in place, so the list had no URL of its own, could not be linked
- * to, and scrolled inside a drawing.
+ * The board draws three movement rows and no month control, so the three rows
+ * are the newest entries and the month filter stays app chrome below the
+ * drawing. Rows carry no node ids and repeat samples, so they are bound by
+ * their exact drawn strings.
  */
 export default function StockHistory() {
+  const nav = useNavigate();
   const [month, setMonth] = useState("");
   const [entries, setEntries] = useState<StockEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,64 +46,66 @@ export default function StockHistory() {
     })),
   ].reverse();
 
+  if (error) {
+    return (
+      <div className="screen" style={{ justifyContent: "center" }}>
+        <div className="stamp-wrap"><div className="stamp">{error}</div></div>
+      </div>
+    );
+  }
+
+  if (!entries) {
+    return (
+      <div className="screen" style={{ justifyContent: "center" }}>
+        <LoadBar label="PULLING ENTRIES" />
+      </div>
+    );
+  }
+
+  // Drawn samples, in document order, paired with the tail sample. Each row is
+  // one text node holding the head, a `<br>`, then the tail, so two keys per
+  // row keep the file's own `<br>` instead of a replacement carrying markup.
+  const samples: [string, string][] = [
+    ["+2 TONS", "17 MAR \u00b7 SMITH"],
+    ["\u22120.86 TONS", "16 MAR \u00b7 sold"],
+    ["RATE \u20a61,400/KG", "16 MAR \u00b7 SMITH"],
+  ];
+  const textReplacements: Record<string, string | string[]> = {};
+  entries.slice(0, 3).forEach((e, i) => {
+    const day = new Date(e.entry_date)
+      .toLocaleDateString("en-GB", { day: "numeric", month: "short" })
+      .toUpperCase();
+    const who = (e.admin?.display_name ?? "STAFF").toUpperCase();
+    const head = e.move === "removal"
+      ? `\u2212${(e.amount_kg / 1000).toFixed(2)} TONS`
+      : `+${(e.amount_kg / 1000).toFixed(2)} TONS`;
+    textReplacements[samples[i][0]] = head;
+    textReplacements[samples[i][1]] = `${day} \u00b7 ${who}`;
+  });
+
   return (
-    <div className="screen">
-      <BackButton to="/admin" label="BACK TO THE TANK" />
+    <div className="screen figma-route-scroll">
+      <FigmaRouteFrame node="1:2847" textReplacements={textReplacements}>
+        <BackButton to="/admin/tank" />
+        <button className="figma-route-interactive" aria-label="Update stock"
+          onClick={() => nav("/admin/tank/update")}
+          style={{ left: 35, top: 656, width: 176, height: 70 }} />
+        <button className="figma-route-interactive" aria-label="Tank level"
+          onClick={() => nav("/admin/tank")}
+          style={{ left: 223, top: 656, width: 181, height: 70 }} />
+        <button className="figma-route-interactive" aria-label="Notifications"
+          onClick={() => nav("/admin/notifs")}
+          style={{ left: 362, top: 63, width: 50, height: 56 }} />
+      </FigmaRouteFrame>
 
-      <Ticker static>
-        {entries ? `${entries.length} ${entries.length === 1 ? "ENTRY" : "ENTRIES"}` : "PULLING ENTRIES"}
-      </Ticker>
-
-      <div style={{ height: "var(--s-5)" }} />
-      <h1 className="screen-title">STOCK HISTORY</h1>
-      <div style={{ height: "var(--s-4)" }} />
-
-      <Tabs
-        label="Month"
-        value={month}
-        onChange={setMonth}
-        options={months}
-      />
-
-      <div style={{ height: "var(--s-6)" }} />
-
-      {error && <ErrorState message={error} onRetry={() => setMonth((m) => m)} />}
-
-      {!error && !entries && (
-        <div style={{ minHeight: 220, display: "grid", placeItems: "center" }}>
-          <LoadBar label="PULLING ENTRIES" />
-        </div>
-      )}
-
-      {entries && entries.length === 0 && (
-        <Empty>{month ? `NOTHING MOVED IN ${label(month)}` : "NOTHING HAS MOVED YET"}</Empty>
-      )}
-
-      {entries?.map((e) => (
-        <div className="card" key={e.entry_id}>
-          <div className="card-body">
-            <p className="card-title">
-              {e.move === "addition" ? "+" : e.move === "removal" ? "−" : ""}
-              {(e.amount_kg / 1000).toFixed(1)} TONS
-            </p>
-            <p className="card-sub">
-              {new Date(e.entry_date).toLocaleDateString("en-GB", {
-                day: "numeric", month: "short", year: "numeric",
-              }).toUpperCase()}
-              {e.admin?.display_name ? ` · ${e.admin.display_name}` : ""}
-            </p>
-            {e.note && <p className="card-sub">{e.note}</p>}
-          </div>
-        </div>
-      ))}
-
-      {entries && entries.length > 0 && month && (
-        <div className="stamp-wrap" style={{ marginTop: "var(--s-6)" }}>
-          <Stamp tone="ok">{label(month)}</Stamp>
-        </div>
-      )}
-
-      <div className="spacer" />
+      <div style={{ marginTop: 18 }}>
+        <Ticker static>
+          {entries.length} {entries.length === 1 ? "ENTRY" : "ENTRIES"}
+          {month ? ` IN ${label(month)}` : ""}
+        </Ticker>
+        <Tabs label="Month" value={month} onChange={setMonth} options={months} />
+      </div>
     </div>
   );
 }
+

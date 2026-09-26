@@ -142,6 +142,7 @@ const post = <T,>(p: string, body?: unknown, idempotencyKey?: string) =>
 export const newIdempotencyKey = () => crypto.randomUUID().replace(/-/g, "");
 const patch = <T,>(p: string, body: unknown) =>
   request<T>(p, { method: "PATCH", body: JSON.stringify(body) });
+const del = <T,>(p: string) => request<T>(p, { method: "DELETE" });
 
 /* --- Types ----------------------------------------------------------------
    These mirror what the Worker actually returns. Keeping them honest is the
@@ -455,25 +456,38 @@ export interface AdminDriver {
   driver_id: string;
   phone: string | null;
   status: "available" | "busy" | "offline";
+  vehicle_info?: string | null;
   completed_deliveries?: number;
-  profile?: { display_name: string | null } | null;
+  profile?: { display_name: string | null; avatar_asset?: ImageRef | null } | null;
 }
 
 export interface AdminStaff {
   staff_id: string;
   status: string;
   role?: string;
-  profile?: { display_name: string | null; email?: string | null } | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  hired_at?: string;
+  profile?: {
+    display_name: string | null;
+    email?: string | null;
+    role?: string;
+    phone?: string | null;
+    avatar_asset?: ImageRef | null;
+  } | null;
 }
 
 export interface AdminProduct {
   product_id: string;
   name: string;
+  subtitle?: string | null;
   price_kobo: number;
   stock_qty: number;
   reserved_qty: number;
+  available: number;
   active: boolean;
   category_id?: string | null;
+  product_category?: { slug: string; name: string } | null;
   image_asset?: { base_path: string } | null;
 }
 
@@ -481,7 +495,7 @@ export interface NotificationRow {
   notification_id: string;
   kind: string;
   title: string;
-  body: string;
+  body: string | null;
   created_at: string;
   emailed_at?: string | null;
   send_status?: "pending" | "claimed" | "sent" | "failed" | "abandoned";
@@ -494,12 +508,13 @@ export interface AdminZone {
   name: string;
   fee_kobo: number;
   active: boolean;
+  coverage_note?: string | null;
   description?: string | null;
 }
 
 export interface AdminSetting {
   key: string;
-  value: string;
+  value: unknown;
   description?: string | null;
 }
 
@@ -728,17 +743,17 @@ export const api = {
       get<{ entries: StockEntry[] }>(`/admin/stock/entries${month ? `?month=${month}` : ""}`),
     setRate:     (rate_kobo_per_kg: number) => patch<{ rate_kobo_per_kg: number }>("/admin/rate", { rate_kobo_per_kg }),
 
-    products:    () => get<{ products: Product[] }>("/admin/products"),
-    createProduct: (body: ProductDraft) => post<{ product: Product }>("/admin/products", body),
+    products:    () => get<{ products: AdminProduct[] }>("/admin/products"),
+    createProduct: (body: ProductDraft) => post<{ product: AdminProduct }>("/admin/products", body),
     updateProduct: (id: string, body: ProductPatch) =>
-      patch<{ product: Product }>(`/admin/products/${id}`, body),
+      patch<{ product: AdminProduct }>(`/admin/products/${id}`, body),
 
     checkBundle: (product_ids: string[]) =>
       post<{ compatible: boolean; violations: { message: string }[] }>(
         "/admin/bundles/check", { product_ids }),
 
     orders:      (status?: string) =>
-      get<{ orders: OrderSummary[] }>(`/admin/orders${status ? `?status=${status}` : ""}`),
+      get<{ orders: AdminOrder[] }>(`/admin/orders${status ? `?status=${status}` : ""}`),
     flagged:     () => get<{ flagged: FlaggedQueue }>("/admin/flagged"),
 
     refunds:     () => get<{ refunds: Refund[] }>("/admin/refunds"),
@@ -751,13 +766,22 @@ export const api = {
     assign:      (id: string, driver_id: string) =>
       post<{ delivery: Delivery }>(`/admin/orders/${id}/assign`, { driver_id }),
 
-    zones:       () => get<{ zones: Zone[] }>("/admin/zones"),
+    zones:       () => get<{ zones: AdminZone[] }>("/admin/zones"),
     createZone:  (body: { name: string; fee_kobo: number; coverage_note?: string }) =>
-      post<{ zone: Zone }>("/admin/zones", body),
-    updateZone:  (id: string, body: Partial<Pick<Zone, "name" | "fee_kobo" | "active">>) =>
-      patch<{ zone: Zone }>(`/admin/zones/${id}`, body),
+      post<{ zone: AdminZone }>("/admin/zones", body),
+    updateZone:  (id: string, body: Partial<Pick<AdminZone, "name" | "fee_kobo" | "active">>) =>
+      patch<{ zone: AdminZone }>(`/admin/zones/${id}`, body),
 
     staff:       () => get<{ staff: StaffMember[] }>("/admin/staff"),
+    addStaff:    (body: {
+      email: string;
+      display_name: string;
+      role: "staff" | "manager" | "admin" | "driver";
+      bank_name?: string;
+      account_number?: string;
+    }) => post<{ staff_id: string; created: boolean }>("/admin/staff", body),
+    removeStaff: (staffId: string) =>
+      del<{ staff_id: string; status: string }>(`/admin/staff/${staffId}`),
     drivers:     () => get<{ drivers: DriverProfile[] }>("/admin/drivers"),
     settings:    () => get<{ settings: { key: string; value: unknown; updated_at: string }[] }>("/admin/settings"),
     setSetting:  (key: string, value: unknown) =>

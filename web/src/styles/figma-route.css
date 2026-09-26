@@ -78,6 +78,198 @@
 .figma-route-frame.is-keypad .frame > [data-node="1:4643"] { display: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
+/* ---------------------------------------------------------------------------
+   Cart + checkout (1:1517 / 1:1624 / 1:1703 / 1:1827 / 1:1952)
+
+   The checkout sheet is drawn inside the cart artboards, so its controls are
+   transparent boxes measured off the drawn nodes (see CheckoutSheet.tsx) and
+   the artwork stays the visual source of truth. `is-on` is the only paint: the
+   drawing has no selected state for a method tile or a toggle chip.
+   --------------------------------------------------------------------------- */
+.figma-route-layer { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+.figma-route-hit {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 12px;
+}
+.figma-route-hit:focus-visible { outline: 2px solid #1317e4; outline-offset: 2px; }
+.figma-route-hit:disabled { cursor: not-allowed; }
+.figma-route-hit.is-on { box-shadow: inset 0 0 0 2px #1317e4; }
+.figma-route-hit.is-cta.is-on { box-shadow: inset 0 0 0 3px #ff0303; border-radius: 64px; }
+
+/* The running total and the submit sit in the band the drawing leaves empty
+   below the panel — the sheet itself has no slot for either. */
+.checkout-foot {
+  position: absolute;
+  z-index: 12;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.checkout-sum { display: flex; gap: 14px; font-family: jgs7, monospace; font-size: 16px; color: #1317e4; }
+.checkout-err { margin: 0; font-family: jgs7, monospace; font-size: 14px; color: #ff0303; text-align: center; }
+.checkout-pay {
+  font-family: jgs7, monospace;
+  font-size: 20px;
+  letter-spacing: -0.8px;
+  color: #fff;
+  background: #1317e4;
+  border: 1px solid #797bf4;
+  border-radius: 64px;
+  padding: 16px 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px 0 rgba(0, 0, 0, .25), inset 0 4px 4px 0 rgba(255, 255, 255, .5);
+}
+.checkout-pay:disabled { opacity: .4; cursor: not-allowed; }
+
+/* 1:1589 stamps the basket once an item has run short. It is drawn as part of
+   1:1517, which also serves as the ordinary filled basket, so it is hidden
+   unless the server actually refused a line. */
+/* The stamp is drawn at the artboard root's own coordinates, so the route
+   toggles it rather than restyling it. It must sit inside the basket, not the
+   panel — `is-short` is set by the route from the server's refusal. */
+.figma-route-frame.is-cart:not(.is-short) [data-node="1:1589"] { display: none; }
+
+
+/* 1:1517 paints its basket as one 356x516 illustration and itemises nothing:
+   the three 400x120 rows further down are the `SHOP OTHER ACCESSORIES` strip.
+   The live lines therefore go in the band the file leaves empty between the
+   Checkout button and that strip, using the drawing's own row design
+   (BasketLine.tsx carries the drawn measurements). The band scrolls because a
+   basket can hold more lines than it has room for. */
+.basket-lines {
+  position: absolute;
+  z-index: 20;
+  left: 20px;
+  top: 872px;
+  width: 400px;
+  height: 244px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+.basket-lines::-webkit-scrollbar { display: none; }
+.basket-line {
+  position: relative;
+  flex: none;
+  width: 400px;
+  height: 120px;
+  border-radius: 32px;
+  border: 1px dashed rgba(0, 0, 0, .4);
+}
+.basket-thumb {
+  position: absolute;
+  left: 13.09px;
+  top: 14.98px;
+  width: 60px;
+  height: 90.75px;
+  transform: rotate(-4deg);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, .5));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.basket-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.basket-name {
+  position: absolute;
+  left: 80px;
+  top: 43px;
+  margin: 0;
+  font-family: jgs7, monospace;
+  font-size: 24px;
+  line-height: 20px;
+  letter-spacing: -0.96px;
+  color: #1317e4;
+  white-space: nowrap;
+}
+.basket-disc {
+  position: absolute;
+  top: 44px;
+  width: 32px;
+  height: 32px;
+  border-radius: 26px;
+  border: 1px solid #000;
+  background-image: var(--noise);
+  box-shadow: inset 0 2px 2px 0 #fff, -1px 0 2px 0 rgba(0, 0, 0, .25), 1px 0 2px 0 rgba(0, 0, 0, .25);
+  cursor: pointer;
+  padding: 0;
+}
+.basket-disc.is-minus { left: 307px; background-color: #1e1e1e; }
+.basket-disc.is-plus { left: 351px; background-color: #1317e4; }
+.basket-bar {
+  position: absolute;
+  left: 4px;
+  top: 14.5px;
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;
+}
+.basket-bar.is-v { left: 14.5px; top: 4px; width: 3px; height: 24px; }
+.basket-qty {
+  position: absolute;
+  left: 335px;
+  top: 70px;
+  width: 24px;
+  height: 20px;
+  box-sizing: border-box;
+  border: 1px solid rgba(19, 23, 228, .4);
+  border-radius: 4px;
+  font-family: jgs7, monospace;
+  font-size: 14px;
+  line-height: 18px;
+  letter-spacing: -0.56px;
+  color: #1317e4;
+  text-align: center;
+}
+/* The running total sits in the band the file leaves empty between the basket
+   and the recommendation strip. */
+.cart-total {
+  position: absolute;
+  z-index: 20;
+  left: 20px;
+  top: 1128px;
+  width: 400px;
+  display: flex;
+  justify-content: space-between;
+  font-family: jgs7, monospace;
+  font-size: 20px;
+  letter-spacing: -0.8px;
+  color: #1317e4;
+}
+.cart-short {
+  position: absolute;
+  z-index: 21;
+  left: 20px;
+  top: 1060px;
+  width: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: jgs7, monospace;
+  font-size: 16px;
+  color: #ff0303;
+}
+.cart-short button {
+  font-family: jgs7, monospace;
+  font-size: 16px;
+  color: #1317e4;
+  background: transparent;
+  border: 1px solid #1317e4;
+  border-radius: 64px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
 .figma-inline-error {
   position: sticky;
   bottom: 12px;
@@ -88,3 +280,166 @@
   pointer-events: none;
 }
 .figma-inline-error > * { pointer-events: auto; }
+
+/* ---------------------------------------------------------------------------
+   TRANS HISTORY (1:2107) — live rows.
+
+   The drawing's two receipts carry no `data-node` ids on their rows, so
+   `FigmaScreen` cannot bind real orders into them. The route renders the
+   artboard's own chrome (the drawn HISTORY heading, the month strip, the fade,
+   the watermark and the copyright) and paints live receipts over the two card
+   boxes the file reserves, at the file's own coordinates. Every value below is
+   the drawing's, not an approximation:
+
+     card   241 wide, #fff, drop-shadow(0 4px 24px rgba(0,0,0,.18))
+     head   14px  -0.56px  centred, 17px from the card's top
+     date   32px  -1.28px  centred, 37px from the card's top
+     rows   12px  -0.48px  9px apart, block 90px from the card's top
+     strip  241x70 #1317e4, 1px #797bf4, label 16px #fff -0.64px, 12px down
+     chip   height 24, radius 8, 1px #1317e4, 16px -0.64px
+   --------------------------------------------------------------------------- */
+.history-card {
+  width: 241px;
+  min-height: 305px;
+  background: #fff;
+  filter: drop-shadow(0 4px 24px rgba(0, 0, 0, .18));
+}
+.history-card-head {
+  position: absolute;
+  left: 0; right: 0; top: 17px;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: -0.56px;
+  color: #1317e4;
+}
+.history-card-date {
+  position: absolute;
+  left: 0; right: 0; top: 37px;
+  text-align: center;
+  font-size: 32px;
+  line-height: 1;
+  letter-spacing: -1.28px;
+  color: #1317e4;
+}
+.history-card-rows { position: absolute; left: 9px; right: 9px; top: 90px; }
+.history-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: -0.48px;
+  color: #1317e4;
+  margin-bottom: 9px;
+}
+.history-card-row b { font-weight: 400; white-space: nowrap; }
+
+.history-strip {
+  width: 241px;
+  height: 70px;
+  background: #1317e4;
+  border: 1px solid #797bf4;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .2);
+}
+.history-strip-label {
+  position: absolute;
+  left: 0; right: 0; top: 12px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 9px;
+  letter-spacing: -0.64px;
+  color: #fff;
+  white-space: nowrap;
+}
+.history-strip-slot {
+  position: absolute;
+  left: 40px; top: 38px;
+  width: 158px; height: 20px;
+  border: 1px dashed rgba(255, 255, 255, .5);
+  border-radius: 4px;
+}
+
+/* The month strip is drawn 965px wide — a scroll rail cropped by the 440px
+   board. The app keeps that crop and scrolls it, so every month the person has
+   orders in is reachable without leaving the design. */
+.history-months {
+  position: absolute;
+  left: 24px;
+  top: 231px;
+  width: 392px;
+  height: 24px;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.history-months::-webkit-scrollbar { display: none; }
+.history-chip {
+  height: 24px;
+  min-width: 45px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  border: 1px solid #1317e4;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.64px;
+  cursor: pointer;
+}
+/* The drawing lays the receipts out in a ROW, not a list: 1:2134 sits at x=60
+   and 1:2170 at x=341 — 241 wide with a 40px gap — so the second is cut by the
+   440px board and the row continues past it. The panel (1:2112) is itself at
+   top:80, so the strip's drawn top:232 lands at 312 on the board, and the month
+   strip's top:151 at 231. The app keeps that crop and lets the row scroll, so a
+   real history is reachable without moving anything the file draws. The rail is
+   sized by its content, not stretched to the board's bottom, or its transparent
+   box would swallow clicks meant for the watermark band below. */
+.history-rail {
+  position: absolute;
+  left: 60px;
+  top: 312px;
+  width: 380px;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.history-rail::-webkit-scrollbar { display: none; }
+
+/* One receipt column. The status strip (1:2199) is drawn 8px above the paper
+   (it ends at 302, 1:2134 starts at 310) and 78px above it from the rail's own
+   top, so every column reserves that band and the cards stay on one baseline. */
+.history-col {
+  position: relative;
+  flex: 0 0 241px;
+  padding-top: 78px;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.history-col > .history-strip { position: absolute; left: 0; top: 0; }
+
+.history-empty {
+  flex: 0 0 241px;
+  padding-top: 78px;
+  font-size: 16px;
+  letter-spacing: -0.64px;
+  color: #1317e4;
+}
+
+/* The file draws two sample receipts (1:2134, 1:2170) and a sample status strip
+   (1:2199) to show what a row looks like. Those are Figma's example order
+   ("GAS 10KG", "6-pack batteries", "17 MAR") and their text leaves carry no
+   `data-node` id, so nothing binds over them and a real user would see the
+   sample. The route paints live receipts at the same coordinates, so the drawn
+   samples are hidden — they are the row template's source, not content. */
+/* The three sit inside the panel (1:2112), not directly under `.frame`. The
+   month strip (1:2115) is a template too: its JAN..SEP are the file's sample
+   months, and the person's own months are painted in its place. */
+.figma-route-frame.is-history [data-node="1:2134"],
+.figma-route-frame.is-history [data-node="1:2170"],
+.figma-route-frame.is-history [data-node="1:2199"],
+.figma-route-frame.is-history [data-node="1:2115"] { display: none; }

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, type Refund, type AdminOrder, type AdminDriver } from "../../lib/api";
+import {
+  api, ApiError, type Refund, type AdminOrder, type AdminDriver, type FlaggedQueue,
+} from "../../lib/api";
 import {
   Empty, ErrorState, Input, LoadBar, Modal, Pill, Stamp, Tabs, money,
 } from "../../components/primitives";
@@ -16,7 +18,7 @@ type View = "all" | "flagged";
 export default function Orders() {
   const [view, setView] = useState<View>("flagged");
   const [orders, setOrders] = useState<AdminOrder[] | null>(null);
-  const [flagged, setFlagged] = useState<any>(null);
+  const [flagged, setFlagged] = useState<FlaggedQueue | null>(null);
   const [drivers, setDrivers] = useState<AdminDriver[]>([]);
   const [driverError, setDriverError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export default function Orders() {
   const [working, setWorking] = useState<string | null>(null);
   const [manual, setManual] = useState<Refund | null>(null);
   const [manualNote, setManualNote] = useState("");
-  const [cancelling, setCancelling] = useState<any>(null);
+  const [cancelling, setCancelling] = useState<{ order_id: string; order_number: string } | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -57,6 +59,7 @@ export default function Orders() {
   }, []);
 
   async function doCancel() {
+    if (!cancelling) return;
     setBusy(true);
     try {
       await api.admin.cancelOrder(cancelling.order_id, reason);
@@ -217,7 +220,10 @@ export default function Orders() {
                       style={{ height: 30, fontSize: 8, marginTop: 6 }}
                       aria-label="Reassign driver"
                       defaultValue=""
-                      onChange={(e) => e.target.value && assign(d.order?.order_id, e.target.value)}
+                      onChange={(e) => {
+                        const orderId = d.order?.order_id;
+                        if (e.target.value && orderId) assign(orderId, e.target.value);
+                      }}
                     >
                       <option value="">REASSIGN TO</option>
                       {drivers.filter((dr) => dr.status !== "offline").map((dr) => (

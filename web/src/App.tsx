@@ -21,6 +21,7 @@ import CustomerHome from "./routes/customer/Home";
 const Shop         = lazy(() => import("./routes/customer/Shop"));
 const ProductPage  = lazy(() => import("./routes/customer/Product"));
 const Cart         = lazy(() => import("./routes/customer/Cart"));
+const Checkout     = lazy(() => import("./routes/customer/Checkout"));
 const OrderStatus  = lazy(() => import("./routes/customer/OrderStatus"));
 const History      = lazy(() => import("./routes/customer/History"));
 const Profile      = lazy(() => import("./routes/customer/Profile"));
@@ -100,6 +101,7 @@ const router = createBrowserRouter([
   { path: "/shop", element: <Boundary><Shop /></Boundary> },
   { path: "/shop/:kind/:id", element: <Boundary><ProductPage /></Boundary> },
   { path: "/cart", element: <Boundary><Cart /></Boundary> },
+  { path: "/checkout", element: <Boundary><Checkout /></Boundary> },
   { path: "/orders/:id", element: <Boundary><OrderStatus /></Boundary> },
   // Paystack returns here. The page verifies server-side before believing it.
   { path: "/orders/verify", element: <Boundary><OrderStatus verifying /></Boundary> },
