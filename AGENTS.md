@@ -197,6 +197,35 @@ Two related traps in the same code:
   child, so a "no children" leaf test skips exactly these nodes. Tolerate `<br>`
   and split on it, or the joined string matches no order-number pattern.
 
+## Measuring drift against live Figma
+
+When comparing the gallery to the live file, two mistakes both produce a large
+false reading, and each one cost a full investigation before it was caught.
+
+**Do not screenshot an artboard by reparenting it to the viewport.** A harness
+that moved `.frame` out of the rack to capture it changed what painted — the
+artboard's own `background: #fff` and the rack context stopped applying, so the
+capture came back mostly dark and the diff read 20-30% on screens that were
+fine. Clip to the element's own box (`element.screenshot()` after
+`scrollIntoView`) and verify the capture independently: probe a known point with
+`document.elementFromPoint`, and check a colour you can predict. If the PNG and
+the DOM disagree, the capture is wrong, not the page.
+
+**A node's fill must be cross-checked against Figma's `visible` flag, not
+trusted by id.** Three profile artboards (`1:2090`, `1:4665`, `1:4968`) carry
+two stacked gradient rectangles — a hidden white fade and a visible black
+scrim. The gallery painted the *hidden* fade's colour at the *visible* node's
+id, so the header photo washed out to white. Nothing in the four gates can see
+this: the markup is self-consistent, the tokens match the id they claim, and
+the geometry is identical. Enumerate every gradient overlay and compare its
+`visible` flag to whether the gallery draws it. A node that is `visible: false`
+in Figma and rendered in the gallery, or vice versa, is the signature.
+
+Also note the gallery is a *hand-maintained* snapshot: it is not regenerated
+from Figma, so a live-file change lands as silent drift. `docs/figma-relabel.py`
+and `docs/figma-drive-images.py` exist for targeted patches, and
+`build/gen_react.py` only propagates the gallery into `web/src/figma`.
+
 ## Demo fixtures are part of the design
 
 The drawing always shows three rows in each driver list. With two active and one
