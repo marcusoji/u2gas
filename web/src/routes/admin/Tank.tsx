@@ -109,7 +109,7 @@ export default function Tank() {
   ];
 
   return (
-    <div className="screen figma-route-scroll">
+    <div className="screen figma-route-scroll is-h-scroll">
       <FigmaRouteFrame
         node="1:3887"
         values={{ "1:3904": String(Math.floor(tonsAvailable)) }}

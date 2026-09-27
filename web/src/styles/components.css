@@ -632,7 +632,7 @@
 
 /* --- Loading, empty ------------------------------------------------------ */
 
-/* The design has no spinner. Loading is the LED bar. */
+/* The bar is the design's only loading vocabulary. */
 .loadbar { display: flex; gap: 3px; justify-content: center; }
 .loadbar i {
   width: 13px; height: 8px;
@@ -643,6 +643,24 @@
 .loadbar i:nth-child(2) { animation-delay: .36s; }
 
 @keyframes loadbar-blip { 50% { background: var(--blue-soft); } }
+
+/* The veil that covers a screen while its hold runs. Fixed, so it is measured
+   against the viewport rather than against whatever the screen underneath is
+   doing, and it sits below the app nav (40) so the tabs stay usable while it is
+   up. Nothing underneath can be tabbed into while it is showing. */
+.page-hold { display: contents; }
+
+.page-hold-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  animation: veil-in 160ms ease-out;
+}
+
+@keyframes veil-in { from { opacity: 0; } to { opacity: 1; } }
 
 .empty {
   padding: var(--s-10) var(--s-4);
@@ -778,9 +796,20 @@
 
 /* --- Footer mark --------------------------------------------------------- */
 
-.u2 { text-align: center; padding-top: var(--s-6); }
-.u2-mark { font-size: 38px; font-weight: 700; color: var(--blue-soft); }
-.u2-copy { font-size: var(--t-micro); color: var(--blue-soft); letter-spacing: .1em; margin-top: 2px; }
+/* The signature, and the clear space under it.
+
+   It is a colophon, not a headline: the mark was set at 38px and read as a
+   second title on every screen. Small, spaced well clear of the last real
+   content, and with nothing allowed to sit under it. */
+.u2 {
+  text-align: center;
+  margin-top: var(--s-10);
+  padding-top: var(--s-8);
+  padding-bottom: var(--s-10);
+  clear: both;
+}
+.u2-mark { font-size: 22px; font-weight: 700; color: var(--blue-soft); letter-spacing: .08em; }
+.u2-copy { font-size: var(--t-micro); color: var(--blue-soft); letter-spacing: .1em; margin-top: var(--s-2); }
 
 /* --- Upload slots -------------------------------------------------------- */
 
@@ -2267,3 +2296,62 @@ body:has(.home-shop-link) .mockbar {
 }
 .roster-view { display: grid; gap: var(--s-2); }
 .roster-view > .label { text-align: left; }
+
+/* ---------------------------------------------------------------------------
+   Desktop.
+
+   The design is a 440px phone frame, and the shell above has always honoured
+   that — but "stay a phone" was implemented as "stay 440px in the middle of the
+   monitor", which is not the same thing. Nothing inside an artboard is
+   restyled here; the plate keeps its own coordinates and is only scaled
+   uniformly. Everything else is spacing and measure, which a desk has room for
+   and a phone does not.
+   --------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  /* The tab bar. It is still a bottom bar — that is the app's shape — but a
+     bar stretched the full width of a 2560px monitor reads as a phone control
+     someone forgot to size. Bounded, centred, and with room per link. */
+  .app-nav {
+    justify-content: center;
+    gap: var(--s-2);
+    padding-inline: var(--s-6);
+  }
+  .app-nav a {
+    flex: 0 0 auto;
+    min-width: 128px;
+    min-height: 64px;
+    border-radius: var(--r-key);
+  }
+  .app-nav a[aria-current="page"] { background: rgba(19, 23, 228, .06); }
+
+  /* Lists and forms are read at a desk. They reflow, so they take the width. */
+  .screen > div:has(.card),
+  .screen > section:has(.card) { max-width: 720px; }
+  .report-screen .report-section { max-width: 840px; }
+
+  /* Sheets are dialogs on a desk: centred and no longer pinned to the bottom. */
+  .sheet { border-radius: var(--r-sheet); padding-bottom: var(--s-6); }
+}
+
+@media (min-width: 1200px) {
+  /* Uppermost the plate is allowed to grow on a large screen. `zoom` scales
+     the artboard uniformly, so the drawing's own proportions are untouched —
+     this only decides how much of the monitor it occupies. */
+  .screen {
+    --plate-fit: min(1.2, calc((100vw - 2 * var(--screen-pad)) / 440px));
+  }
+
+  /* The roster's two controls sit side by side rather than stacked. */
+  .roster-controls {
+    grid-template-columns: auto 1fr;
+    align-items: end;
+    gap: var(--s-8);
+  }
+  .roster-view { max-width: 420px; }
+
+  /* Report figures across the page: the dashboard is the one screen built from
+     grid sections rather than a drawing, and a single column of numbers at
+     1200px is a lot of unused paper. */
+  .report-screen .report-section { max-width: 960px; }
+  .report-grid { grid-template-columns: repeat(4, 1fr); }
+}

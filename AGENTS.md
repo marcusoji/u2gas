@@ -18,7 +18,10 @@ React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
   It fails if `VITE_API_ORIGIN` is unset, because the CSP names the API origin
   explicitly; the script reads Vite's own `.env` (loading it via `loadEnv`), so
   the value does not have to be exported a second time. A
-  `VITE_EMBEDDED_API=true` build contacts no API and may omit the origin.
+  `VITE_EMBEDDED_API=true` build contacts no API and may omit the origin —
+  and the flag takes precedence: when it is set, `VITE_API_ORIGIN` is ignored
+  for the header even if `.env` still names a local Worker, so `connect-src`
+  is 'self' and a mock build never ships a `127.0.0.1` directive.
 
 Local preview: `VITE_EMBEDDED_API=true` serves the whole UI from in-browser
 fixtures, so every screen is reachable with no sign-in. Role links use

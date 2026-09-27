@@ -51,11 +51,17 @@ export default function Drop() {
     return () => { signal.cancelled = true; };
   }, [id]);
 
-  if (error && !drop) return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
+  if (error && !drop) return (
+    <div className="screen">
+      <BackButton to="/driver" label="DROPS" />
+      <ErrorState message={error} onRetry={load} />
+    </div>
+  );
 
   if (!drop) {
     return (
       <div className="screen" style={{ justifyContent: "center" }}>
+        <BackButton to="/driver" label="DROPS" />
         <LoadBar label="OPENING THE DROP" />
       </div>
     );

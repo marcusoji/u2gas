@@ -1,6 +1,6 @@
 import {
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode,
-  forwardRef, useEffect, useRef,
+  forwardRef, useEffect, useRef, useState,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { mediaUrl } from "../lib/media";
@@ -132,6 +132,51 @@ export function LoadBar({ label }: { label?: string }) {
       {label && <p className="label" style={{ marginTop: "var(--s-3)" }}>{label}</p>}
       <span className="sr-only">{label ?? "Loading"}</span>
     </div>
+  );
+}
+
+/**
+ * The hold every screen shows before its content settles.
+ *
+ * One place rather than one per route: a screen that resolves instantly used to
+ * paint in the same frame it was asked for, so moving between screens read as a
+ * flicker rather than a place being loaded. Two seconds is the deliberate
+ * figure. A screen that spends longer fetching keeps the same bar up — this is
+ * a floor, never a cap — so it is one continuous load either way.
+ *
+ * The children stay mounted underneath a fixed veil rather than replacing them.
+ * Replacing would unmount the route on every navigation, so each screen would
+ * refetch and lose its state, and the app shell's flex layout would change from
+ * under it. `resetKey` restarts the hold on navigation; two screens that share
+ * one component instance (product to product) each get their own hold.
+ */
+const PAGE_HOLD_MS = 2000;
+
+export function PageLoading({ children, label = "LOADING", resetKey, holdMs = PAGE_HOLD_MS }: {
+  children: ReactNode;
+  label?: string;
+  resetKey?: string;
+  /** Exposed so a test can shorten the hold without reaching into the module. */
+  holdMs?: number;
+}) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(false);
+    const t = window.setTimeout(() => setReady(true), holdMs);
+    return () => window.clearTimeout(t);
+  }, [holdMs, resetKey]);
+
+  return (
+    <>
+      {children}
+      <div className="page-hold" aria-hidden={ready ? "true" : undefined}>
+        {!ready && (
+          <div className="page-hold-veil" role="status" aria-live="polite">
+            <LoadBar label={label} />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

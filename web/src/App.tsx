@@ -1,11 +1,11 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation,
 } from "react-router-dom";
 import { AuthProvider, useAuth, type Role } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
 import { EMBEDDED_API } from "./mocks/gate";
-import { LoadBar } from "./components/primitives";
+import { LoadBar, PageLoading } from "./components/primitives";
 import { OfflineBanner, PermissionDenied, ScreenBoundary } from "./components/states";
 import { MockBar } from "./components/MockBar";
 
@@ -40,6 +40,21 @@ const Callback     = lazy(() => import("./routes/auth/Callback"));
 const StaffApp  = lazy(() => import("./routes/staff/StaffApp"));
 const DriverApp = lazy(() => import("./routes/driver/DriverApp"));
 const AdminApp  = lazy(() => import("./routes/admin/AdminApp"));
+
+/**
+ * The customer and auth screens have no app shell of their own, so the hold is
+ * applied here, once, around the whole outlet. The three app prefixes each put
+ * their own hold inside their shell so it can cover the screen but not the tab
+ * bar.
+ */
+function PageHold() {
+  const location = useLocation();
+  return (
+    <PageLoading label="LOADING" resetKey={location.pathname}>
+      <Outlet />
+    </PageLoading>
+  );
+}
 
 function Loading() {
   return (
@@ -99,33 +114,44 @@ function NotFound() {
 }
 
 const router = createBrowserRouter([
-  // The front door is LOG IN 1 (figma 1:1219), not the terminal. `/home` is
-  // the guest/customer terminal; `/auth/login` is LOG IN 2.
-  { path: "/", element: <Boundary><Landing /></Boundary> },
-  { path: "/home", element: <CustomerHome /> },
-  { path: "/shop", element: <Boundary><Shop /></Boundary> },
-  { path: "/shop/:kind/:id", element: <Boundary><ProductPage /></Boundary> },
-  { path: "/cart", element: <Boundary><Cart /></Boundary> },
-  { path: "/checkout", element: <Boundary><Checkout /></Boundary> },
-  { path: "/orders/:id", element: <Boundary><OrderStatus /></Boundary> },
-  // Paystack returns here. The page verifies server-side before believing it.
-  { path: "/orders/verify", element: <Boundary><OrderStatus verifying /></Boundary> },
-
+  // Customer and auth screens share one hold. `/` is the entry screen (LOG IN 1,
+  // figma 1:1219) with a guest path to `/home`.
   {
-    element: <Guard allow={["customer", "staff", "driver", "manager", "admin"]}><Outlet /></Guard>,
+    element: <Boundary><PageHold /></Boundary>,
     children: [
-      { path: "/history", element: <Boundary><History /></Boundary> },
-      { path: "/profile", element: <Boundary><Profile /></Boundary> },
-      { path: "/profile/details", element: <Boundary><PersonalDetails /></Boundary> },
-      { path: "/notifications", element: <Boundary><Notifications /></Boundary> },
-      { path: "/addresses", element: <Boundary><Addresses /></Boundary> },
+      { path: "/", element: <Landing /> },
+      { path: "/home", element: <CustomerHome /> },
+      { path: "/shop", element: <Shop /> },
+      { path: "/shop/:kind/:id", element: <ProductPage /> },
+      { path: "/cart", element: <Cart /> },
+      { path: "/checkout", element: <Checkout /> },
+      { path: "/orders/:id", element: <OrderStatus /> },
+      // Paystack returns here. The page verifies server-side before believing it.
+      { path: "/orders/verify", element: <OrderStatus verifying /> },
+      { path: "/auth/login", element: <Login /> },
+      { path: "/auth/sent", element: <VerifySent /> },
+      { path: "/auth/callback", element: <Callback /> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 
-  { path: "/auth/login", element: <Boundary><Login /></Boundary> },
-  { path: "/auth/sent", element: <Boundary><VerifySent /></Boundary> },
-  { path: "/auth/callback", element: <Boundary><Callback /></Boundary> },
+  {
+    element: (
+      <Guard allow={["customer", "staff", "driver", "manager", "admin"]}>
+        <Boundary><PageHold /></Boundary>
+      </Guard>
+    ),
+    children: [
+      { path: "/history", element: <History /> },
+      { path: "/profile", element: <Profile /> },
+      { path: "/profile/details", element: <PersonalDetails /> },
+      { path: "/notifications", element: <Notifications /> },
+      { path: "/addresses", element: <Addresses /> },
+    ],
+  },
 
+  // The three role apps. Each carries its own hold inside its shell, around the
+  // screen and under its tab bar.
   {
     path: "/staff/*",
     element: <Guard allow={["staff", "manager", "admin"]}>
@@ -144,8 +170,6 @@ const router = createBrowserRouter([
       <Boundary><AdminApp /></Boundary>
     </Guard>,
   },
-
-  { path: "*", element: <NotFound /> },
 ]);
 
 export default function App() {

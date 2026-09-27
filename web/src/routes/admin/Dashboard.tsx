@@ -65,7 +65,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="screen figma-route-scroll">
+    <div className="screen figma-route-scroll is-h-scroll">
       <OptionalBack to="/" />
       <FigmaRouteFrame node={blueprint ? "1:2299" : "1:2454"} textReplacements={textReplacements}>
         {/* The bell the file draws top-right is the notification counter. */}

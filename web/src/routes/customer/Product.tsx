@@ -69,8 +69,22 @@ export default function ProductPage() {
     } : undefined;
   }, [imagePath]);
 
-  if (error) return <div className="screen"><p role="alert">{error}</p><button onClick={() => nav(0)}>RETRY</button></div>;
-  if (!data || !item) return <div className="screen"><div className="sr-only">Fetching product…</div></div>;
+  // Both of these are reached from `/shop`, and both are dead ends a customer
+  // can land on from a stale link: a product that no longer exists, or a fetch
+  // that failed. The back control is the whole way out, so it stays.
+  if (error) return (
+    <div className="screen">
+      <BackButton to="/shop" label="SHOP" />
+      <p role="alert">{error}</p>
+      <button onClick={() => nav(0)}>RETRY</button>
+    </div>
+  );
+  if (!data || !item) return (
+    <div className="screen">
+      <BackButton to="/shop" label="SHOP" />
+      <div className="sr-only">Fetching product…</div>
+    </div>
+  );
 
   const itemId = data.kind === "bundle" ? data.bundle.bundle_id : data.product.product_id;
 

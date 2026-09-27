@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type AdminProduct } from "../../lib/api";
 import {
-  Empty, ErrorState, Input, LoadBar, Modal, OptionalBack,
+  BackButton, Empty, ErrorState, Input, LoadBar, Modal, OptionalBack,
   Pill, ProductImage, Stamp, money} from "../../components/primitives";
 import { ImagePicker } from "../../components/ImagePicker";
 import { mediaUrl } from "../../lib/media";
@@ -145,7 +145,12 @@ export default function Products() {
     }
   }
 
-  if (error && !items) return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
+  if (error && !items) return (
+    <div className="screen">
+      <BackButton to="/admin" label="ADMIN" />
+      <ErrorState message={error} onRetry={load} />
+    </div>
+  );
 
   return (
     <div className="screen">

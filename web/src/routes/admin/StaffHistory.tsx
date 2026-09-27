@@ -43,6 +43,7 @@ export default function StaffHistory() {
   if (error) {
     return (
       <div className="screen" style={{ justifyContent: "center" }}>
+        <BackButton to="/admin/people" label="STAFF" />
         <div className="stamp-wrap"><div className="stamp">{error}</div></div>
       </div>
     );
@@ -51,6 +52,7 @@ export default function StaffHistory() {
   if (!drivers || !orders) {
     return (
       <div className="screen" style={{ justifyContent: "center" }}>
+        <BackButton to="/admin/people" label="STAFF" />
         <LoadBar label="PULLING THE RUN" />
       </div>
     );
@@ -59,6 +61,7 @@ export default function StaffHistory() {
   if (!driver) {
     return (
       <div className="screen" style={{ justifyContent: "center" }}>
+        <BackButton to="/admin/people" label="STAFF" />
         <div className="stamp-wrap"><div className="stamp">NO SUCH DRIVER</div></div>
       </div>
     );

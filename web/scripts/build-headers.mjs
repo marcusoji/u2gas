@@ -37,9 +37,16 @@ const apiOrigin = env.VITE_API_ORIGIN;
 // route in the browser — so there is no origin for the CSP to name. Failing
 // the build here would make that local preview impossible to ship without
 // inventing a URL that is never contacted. A real build still requires it.
+//
+// The flag wins outright rather than only filling in for a missing origin: a
+// developer's `.env` carries both the flag and their local Worker origin, and
+// letting the origin through put `http://127.0.0.1:8787` into the CSP of a
+// mock build — a directive naming a host that build never contacts, while the
+// log below reported the opposite. `connect-src` is 'self' for every embedded
+// build, whatever else the environment happens to set.
 const embeddedBuild = env.VITE_EMBEDDED_API === "true";
 
-if (!apiOrigin && !embeddedBuild) {
+if (!embeddedBuild && !apiOrigin) {
   console.error(
     "\nVITE_API_ORIGIN is not set.\n\n" +
     "The Content-Security-Policy names the API origin explicitly, so the\n" +
@@ -50,7 +57,7 @@ if (!apiOrigin && !embeddedBuild) {
   process.exit(1);
 }
 
-const resolvedOrigin = apiOrigin ?? "";
+const resolvedOrigin = embeddedBuild ? "" : (apiOrigin ?? "");
 
 if (resolvedOrigin && !/^https?:\/\//.test(resolvedOrigin)) {
   console.error(`VITE_API_ORIGIN must be an absolute origin, got: ${resolvedOrigin}`);

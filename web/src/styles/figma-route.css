@@ -37,6 +37,36 @@
 }
 .figma-route-scroll { overflow-x: hidden; }
 
+/* Some artboards draw past their own 440px edge on purpose. GAS LVL CHECK
+   (1:3887) and DASHBOARD (1:2454) both carry a STAFF PREVIEW strip at
+   x=40 width=476 — the file clips it, so the fourth avatar is meant to read as
+   "more off the edge". `overflow-x: hidden` above reproduces that crop, but on
+   these two screens the cropped strip is the only place the extra staff are,
+   so the plate scrolls to reach them instead of losing them. Opt in per screen
+   with `.is-h-scroll` rather than widening every plate: everything else is a
+   440 drawing and any horizontal motion there is a bug. */
+.figma-route-scroll.is-h-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.figma-route-scroll.is-h-scroll::-webkit-scrollbar { display: none; }
+/* The frame is the clipping box for the interaction layer, so it stays 440 and
+   scrolls its own overflow rather than the page growing a second scrollbar. */
+.figma-route-scroll.is-h-scroll > .figma-route-frame {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.figma-route-scroll.is-h-scroll > .figma-route-frame::-webkit-scrollbar { display: none; }
+/* `.frame` carries `overflow: hidden` (figma.css) to crop every other board to
+   its drawn 440. These two have to let the staff strip pass through and be
+   reached, or the frame above has nothing to scroll. Visibility only — no
+   measurement of the artwork changes, so the drawing still renders 1:1. */
+.figma-route-scroll.is-h-scroll > .figma-route-frame > .frame {
+  overflow: visible;
+}
+
 /* The artboard keeps its drawn 440px: everything inside it is absolutely
    positioned from Figma's coordinates, so it cannot reflow narrower, and the
    shell centres it so the crop is symmetric. */
