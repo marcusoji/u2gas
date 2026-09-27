@@ -103,7 +103,7 @@ export default function StockHistory() {
           {entries.length} {entries.length === 1 ? "ENTRY" : "ENTRIES"}
           {month ? ` IN ${label(month)}` : ""}
         </Ticker>
-        <Tabs label="Month" value={month} onChange={setMonth} options={months} />
+        <Tabs label="Month" value={month} onChange={setMonth} options={months} rail />
       </div>
     </div>
   );

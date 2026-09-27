@@ -14,11 +14,12 @@ import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
  * only way to move it is a stock entry. (Spec 29)
  *
  * The board draws the gauge, the big available figure, the days-left line and
- * an UPDATE control, so those are bound to the live tank and the drawing's
- * geometry is kept. The drawing collapses the accounting into one number and
- * gives the rate no control at all; both stay as app chrome below the board,
- * because the number is reconciled against a delivery note and the rate still
- * has to be changeable.
+ * an UPDATE control. The accounting behind that figure — received, reserved,
+ * used, the burn rate and the rate — used to be stacked under the board, where
+ * it made the screen a long page and the controls at the bottom (MOVE STOCK)
+ * sat below the fold, so a manager never saw them. Tapping the tank now opens
+ * the detail sheet over a blurred board: the breakdown and every action live
+ * together in the layer the tap asked for.
  */
 export default function Tank() {
   const nav = useNavigate();
@@ -34,6 +35,7 @@ export default function Tank() {
 
   const [rateOpen, setRateOpen] = useState(false);
   const [rate, setRate] = useState("");
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -117,6 +119,11 @@ export default function Tank() {
         <button className="figma-route-interactive" aria-label="Update stock"
           onClick={() => nav("/admin/tank/update")}
           style={{ left: 40, top: 656, width: 200, height: 70 }} />
+        {/* The gauge itself is the door to the breakdown. Everything that used
+            to be stacked below the board is in the sheet this opens. */}
+        <button className="figma-route-interactive" aria-label="Tank details"
+          onClick={() => setDetailsOpen(true)}
+          style={{ left: 40, top: 126, width: 280, height: 510 }} />
         <button className="figma-route-interactive" aria-label="Staff"
           onClick={() => nav("/admin/people")}
           style={{ left: 40, top: 834, width: 476, height: 161 }} />
@@ -148,46 +155,13 @@ export default function Tank() {
         </div>
       )}
 
-      {/* The gauge draws one number. The three that produce it are what a
-          manager actually reconciles against a delivery note. */}
-      <div style={{ marginTop: "var(--s-8)" }}>
-        <div className="row"><span>RECEIVED</span><b>{asTons(stock.total_received_kg)}</b></div>
-        <div className="row"><span>RESERVED</span><b>{asTons(stock.reserved_kg)}</b></div>
-        <div className="row"><span>USED</span><b>{asTons(stock.deducted_kg)}</b></div>
-        <div className="row is-total"><span>AVAILABLE</span><b>{asTons(stock.available_kg)}</b></div>
-      </div>
-
-      {/* The guess, and what it was read from. A forecast with no visible basis
-          is a number a manager cannot argue with or trust. */}
-      {stock.burn_kg_per_day !== undefined && (
-        <div style={{ marginTop: "var(--s-6)" }}>
-          <p className="label" style={{ textAlign: "left" }}>HOW FAST IT'S GOING</p>
-          <div style={{ marginTop: "var(--s-3)" }}>
-            <div className="row">
-              <span>RECENT USE</span>
-              <b>{stock.burn_kg_per_day} KG/DAY</b>
-            </div>
-            <div className="row">
-              <span>MEASURED OVER</span>
-              <b>LAST {stock.burn_basis_days ?? 14} DAYS</b>
-            </div>
-          </div>
-          <p className="label" style={{ marginTop: "var(--s-3)", textAlign: "left" }}>
-            A GUESS FROM RECENT USE, NOT A PROMISE
-          </p>
-        </div>
-      )}
-
-      <div style={{ marginTop: "var(--s-8)" }}>
-        <p className="label" style={{ textAlign: "left" }}>RATE</p>
-        <div style={{ marginTop: "var(--s-3)" }}>
-          <div className="row"><span>PER KG</span><b>{money(stock.rate_kobo_per_kg)}</b></div>
-        </div>
-        {/* Existing orders keep rate_at_purchase. Nobody gets re-priced. */}
-        <p className="label" style={{ marginTop: "var(--s-3)", textAlign: "left" }}>
-          A NEW RATE ONLY AFFECTS NEW ORDERS
-        </p>
-      </div>
+      {/* The board draws one number. The tap that opens the sheet has to be
+          advertised, or the breakdown is as hidden as it was when it sat below
+          the fold. */}
+      <button className="tank-open-hint" onClick={() => setDetailsOpen(true)}>
+        <span>SEE RECEIVED, RESERVED AND USED</span>
+        <em aria-hidden="true">TAP THE TANK</em>
+      </button>
 
       {error && (
         <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>
@@ -197,17 +171,59 @@ export default function Tank() {
 
       <div className="spacer" />
 
-      <div className="stack is-tight">
-        <Pill onClick={() => { setMove("addition"); setMoveError(null); setMoving(true); }}>
-          MOVE STOCK
-        </Pill>
-        <Pill variant="ghost" onClick={() => setRateOpen(true)}>CHANGE THE RATE</Pill>
-        <Link to="/admin/tank/history" className="pill is-ghost" style={{
-          textDecoration: "none", display: "grid", placeItems: "center",
-        }}>
-          STOCK HISTORY
-        </Link>
-      </div>
+      {/* Everything that used to be a wall of rows below the board, plus the
+          actions that went with it. Opened by the gauge or the hint above it. */}
+      <Sheet open={detailsOpen} onClose={() => setDetailsOpen(false)} label="Tank details" blur>
+        <p className="label" style={{ textAlign: "left" }}>WHAT IS IN THE TANK</p>
+        <div style={{ marginTop: "var(--s-3)" }}>
+          <div className="row"><span>RECEIVED</span><b>{asTons(stock.total_received_kg)}</b></div>
+          <div className="row"><span>RESERVED</span><b>{asTons(stock.reserved_kg)}</b></div>
+          <div className="row"><span>USED</span><b>{asTons(stock.deducted_kg)}</b></div>
+          <div className="row is-total"><span>AVAILABLE</span><b>{asTons(stock.available_kg)}</b></div>
+        </div>
+
+        {stock.burn_kg_per_day !== undefined && (
+          <div style={{ marginTop: "var(--s-5)" }}>
+            <p className="label" style={{ textAlign: "left" }}>HOW FAST IT'S GOING</p>
+            <div style={{ marginTop: "var(--s-3)" }}>
+              <div className="row">
+                <span>RECENT USE</span>
+                <b>{stock.burn_kg_per_day} KG/DAY</b>
+              </div>
+              <div className="row">
+                <span>MEASURED OVER</span>
+                <b>LAST {stock.burn_basis_days ?? 14} DAYS</b>
+              </div>
+            </div>
+            <p className="label" style={{ marginTop: "var(--s-3)", textAlign: "left" }}>
+              A GUESS FROM RECENT USE, NOT A PROMISE
+            </p>
+          </div>
+        )}
+
+        <div style={{ marginTop: "var(--s-5)" }}>
+          <p className="label" style={{ textAlign: "left" }}>RATE</p>
+          <div style={{ marginTop: "var(--s-3)" }}>
+            <div className="row"><span>PER KG</span><b>{money(stock.rate_kobo_per_kg)}</b></div>
+          </div>
+          {/* Existing orders keep rate_at_purchase. Nobody gets re-priced. */}
+          <p className="label" style={{ marginTop: "var(--s-3)", textAlign: "left" }}>
+            A NEW RATE ONLY AFFECTS NEW ORDERS
+          </p>
+        </div>
+
+        <div className="stack is-tight" style={{ marginTop: "var(--s-6)" }}>
+          <Pill onClick={() => { setMove("addition"); setMoveError(null); setMoving(true); }}>
+            MOVE STOCK
+          </Pill>
+          <Pill variant="ghost" onClick={() => setRateOpen(true)}>CHANGE THE RATE</Pill>
+          <Link to="/admin/tank/history" className="pill is-ghost" style={{
+            textDecoration: "none", display: "grid", placeItems: "center",
+          }}>
+            STOCK HISTORY
+          </Link>
+        </div>
+      </Sheet>
 
       <Sheet open={moving} onClose={() => setMoving(false)} label="Move stock">
         <p className="label">WHAT ARE YOU DOING</p>

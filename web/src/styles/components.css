@@ -449,6 +449,16 @@
   text-underline-offset: 3px;
 }
 
+/* A rail of tabs scrolls instead of wrapping. The drawn chip is ~15px tall and
+   the extra hit area is drawn outside it, so a rail carries vertical padding
+   for that area to live in — `overflow-y: hidden` would otherwise clip it. */
+.tabs.is-rail {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  padding: 15px 0;
+}
+.tabs.is-rail button { flex: none; }
+
 /* --- Payment chips ------------------------------------------------------- */
 
 .chips {
@@ -560,6 +570,15 @@
   align-items: flex-end;
   justify-content: center;
   z-index: 50;
+}
+
+/* Opened from something on the screen rather than a full-page action: the
+   backdrop blurs so the layer reads as "over this", matching the way the
+   artboards already blur a board behind their own sheets. */
+.sheet-scrim.is-blurred {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, .18);
 }
 
 .sheet {
@@ -1152,10 +1171,28 @@ body:has(.app-nav) .mockbar {
   /* The terminal is 1597px of artboard, so the entry sat 800px below the fold
      — a customer saw the keypad and never the shop. Pinning it to the bottom
      edge makes it a permanent door: visible on arrival, and it stays put while
-     the plate scrolls past it. */
+     the plate scrolls past it. It floats clear of the edge (and of any phone
+     home bar) so it reads as a button to press, not a footer to ignore. */
   position: sticky;
-  bottom: 0;
+  bottom: max(var(--s-3), env(safe-area-inset-bottom));
   z-index: 30;
+}
+/* The artboard draws the label at 40% opacity as a quiet caption. As the only
+   door to the shop it cannot whisper, so it is drawn solid and given a filled
+   chevron — the shape a person reads as "tap me". */
+.home-shop-link .home-shop-copy b { color: var(--blue); }
+.home-shop-link:hover .home-shop-go,
+.home-shop-link:focus-visible .home-shop-go {
+  background: var(--blue);
+}
+.home-shop-link:hover .home-shop-go::before,
+.home-shop-link:focus-visible .home-shop-go::before {
+  border-color: var(--white);
+}
+.home-shop-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.home-shop-go {
+  background: rgba(19, 23, 228, .06);
+  transition: background .15s ease;
 }
 .home-shop-link:active {
   box-shadow: inset 0 6px 12px rgba(0, 0, 0, .22);
@@ -1486,6 +1523,9 @@ body:has(.app-nav) .mockbar {
   background: var(--field);
 }
 .report-trend i.has-value { background: var(--blue); background-image: var(--noise); }
+/* Past a month the rail scrolls, so bars keep a width a person can read and
+   a title they can hover; 90 days of flex-shrink would be a smear. */
+.report-trend.is-dense i { flex: none; width: 8px; }
 .report-trend-note {
   display: flex;
   justify-content: space-between;
@@ -1631,22 +1671,64 @@ body:has(.app-nav) .mockbar {
     padding-bottom: 10px;
     border-bottom: 2px solid #000;
   }
+  .report-print-brand { display: flex; align-items: center; gap: 10px; }
+  .report-print-mark {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 2px solid #000;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.04em;
+  }
   .report-print-head h1 {
     margin: 0;
     font-size: 16px;
     letter-spacing: -.02em;
   }
   .report-print-head p { margin: 2px 0 0; letter-spacing: .1em; }
-  .report-print-head dl {
-    display: grid;
-    grid-template-columns: auto auto;
-    gap: 2px 12px;
-    margin: 0;
-    text-align: right;
+  .report-print-meta {
+    border-collapse: collapse;
+    font-size: 10px;
   }
-  .report-print-head dl > div { display: flex; gap: 6px; justify-content: flex-end; }
-  .report-print-head dt { letter-spacing: .08em; opacity: .6; }
-  .report-print-head dd { margin: 0; font-weight: 700; }
+  .report-print-meta th,
+  .report-print-meta td {
+    padding: 1px 0 1px 12px;
+    text-align: right;
+    vertical-align: top;
+  }
+  .report-print-meta th { letter-spacing: .08em; opacity: .6; font-weight: 400; }
+  .report-print-meta td { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .report-print-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    margin-top: 14px;
+    border: 1px solid #000;
+    background: #000;
+  }
+  .report-print-kpis > div {
+    padding: 8px 10px;
+    background: #fff;
+  }
+  .report-print-kpis span { display: block; font-size: 9px; letter-spacing: .1em; opacity: .65; }
+  .report-print-kpis b {
+    display: block;
+    margin-top: 3px;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .report-print-kpis em {
+    display: block;
+    margin-top: 3px;
+    font-size: 8.5px;
+    font-style: normal;
+    letter-spacing: .05em;
+    opacity: .65;
+  }
 
   .report-print h2 {
     margin: 16px 0 6px;
@@ -1685,6 +1767,30 @@ body:has(.app-nav) .mockbar {
 
   /* A long daily table must not split a row across pages. */
   .report-print-table tr { break-inside: avoid; }
+  .report-print-table thead { display: table-header-group; }
+  .report-print-table tfoot { display: table-footer-group; }
+
+  /* Signature block: the lines a depot signs off on. Kept whole, never split
+     across a page break, and pushed clear of the last table. */
+  .report-print-signoff {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-top: 28px;
+    break-inside: avoid;
+  }
+  .report-print-signoff > div { display: block; }
+  .report-print-signoff span {
+    display: block;
+    font-size: 8.5px;
+    letter-spacing: .12em;
+    opacity: .65;
+  }
+  .report-print-signoff i {
+    display: block;
+    height: 22px;
+    border-bottom: 1px solid #000;
+  }
 
   .report-print-foot {
     margin-top: 20px;
@@ -1693,7 +1799,9 @@ body:has(.app-nav) .mockbar {
     font-size: 9px;
     letter-spacing: .08em;
     opacity: .7;
+    break-inside: avoid;
   }
+  .report-print-foot p { margin: 0 0 3px; }
 }
 
 /* --- Low-gas warning ------------------------------------------------------
@@ -1792,3 +1900,69 @@ body:has(.app-nav) .mockbar {
   color: var(--blue);
 }
 .collect-handover .card-sub { margin: 4px 0 0; }
+
+/* --- Tank: the door to the breakdown -------------------------------------
+   The board draws one number. Everything that explains it is in the sheet the
+   gauge opens, so the tap has to be advertised or the detail is no more
+   reachable than when it sat below the fold. */
+
+.tank-open-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  box-sizing: border-box;
+  margin: var(--s-5) 0 0;
+  padding: var(--s-4) var(--s-5);
+  border: 1px dashed var(--blue-faint);
+  border-radius: 64px;
+  background: var(--white);
+  background-image: var(--noise);
+  color: var(--blue);
+  font-family: var(--font-px);
+  letter-spacing: .08em;
+  font-size: var(--t-caption);
+  cursor: pointer;
+}
+.tank-open-hint em {
+  font-style: normal;
+  flex: none;
+  font-size: var(--t-caption);
+  opacity: .7;
+}
+.tank-open-hint:active { transform: translateY(1px); }
+
+/* --- Horizontal rails ----------------------------------------------------
+   A row that can outgrow its width scrolls sideways with its scrollbar hidden,
+   rather than wrapping into a ragged second line or clipping the last item.
+   `.h-rail` is the shell; give it `is-snap` to settle on whole items. */
+
+.h-rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s-3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.h-rail::-webkit-scrollbar { display: none; }
+.h-rail.is-snap { scroll-snap-type: x proximity; }
+.h-rail.is-snap > * { scroll-snap-align: start; }
+
+/* Fades the edges so a cut-off item reads as "there is more", not "broken". */
+.h-rail-wrap {
+  position: relative;
+}
+.h-rail-wrap::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), var(--white));
+}

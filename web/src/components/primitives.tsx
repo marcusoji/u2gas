@@ -65,15 +65,22 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
   );
 }
 
-export function Tabs<T extends string>({ options, value, onChange, label, secondary }: {
+export function Tabs<T extends string>({ options, value, onChange, label, secondary, rail }: {
   options: { value: T; label: string; disabled?: boolean }[];
   value: T;
   onChange: (v: T) => void;
   label: string;
   secondary?: boolean;
+  /** Scroll sideways instead of wrapping. Use when the row can outgrow its
+   *  width — a year of months is 13 chips, which wrap into two ragged lines. */
+  rail?: boolean;
 }) {
   return (
-    <div className={`tabs${secondary ? " is-secondary" : ""}`} role="tablist" aria-label={label}>
+    <div
+      className={`tabs${secondary ? " is-secondary" : ""}${rail ? " is-rail h-rail is-snap" : ""}`}
+      role="tablist"
+      aria-label={label}
+    >
       {options.map((o) => (
         <button
           key={o.value}
@@ -153,14 +160,33 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 }
 
 /**
+ * Body scroll lock that survives nesting. A sheet can open another sheet
+ * (change the rate from a stock sheet). Each one used to clear `overflow` on
+ * close unconditionally, so the inner one closing unlocked the page while the
+ * outer one was still open. Count the open overlays instead.
+ */
+let openOverlays = 0;
+function lockBodyScroll() {
+  if (openOverlays++ === 0) document.body.style.overflow = "hidden";
+  return () => {
+    if (--openOverlays === 0) document.body.style.overflow = "";
+  };
+}
+
+/**
  * Bottom sheet. Traps focus and closes on Escape — the design shows neither,
  * but a sheet you cannot leave with a keyboard is broken.
+ *
+ * `blur` blurs the page behind the scrim. Use it when the overlay is opened
+ * from a control on the screen (the tank gauge, say): the blur is what tells
+ * the eye the sheet is a layer over that screen rather than a new page.
  */
-export function Sheet({ open, onClose, children, label }: {
+export function Sheet({ open, onClose, children, label, blur }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   label: string;
+  blur?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -186,10 +212,10 @@ export function Sheet({ open, onClose, children, label }: {
     }
 
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      unlock();
       previous?.focus();
     };
   }, [open, onClose]);
@@ -198,7 +224,7 @@ export function Sheet({ open, onClose, children, label }: {
 
   return (
     <div
-      className="sheet-scrim"
+      className={`sheet-scrim${blur ? " is-blurred" : ""}`}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={label} ref={ref}>
@@ -209,11 +235,12 @@ export function Sheet({ open, onClose, children, label }: {
   );
 }
 
-export function Modal({ open, onClose, children, label }: {
+export function Modal({ open, onClose, children, label, blur }: {
   open: boolean;
   onClose: () => void;
   children: ReactNode;
   label: string;
+  blur?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -241,10 +268,10 @@ export function Modal({ open, onClose, children, label }: {
     }
 
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    const unlock = lockBodyScroll();
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      unlock();
       previous?.focus();
     };
   }, [open, onClose]);
@@ -252,7 +279,7 @@ export function Modal({ open, onClose, children, label }: {
   if (!open) return null;
   return (
     <div
-      className="sheet-scrim"
+      className={`sheet-scrim${blur ? " is-blurred" : ""}`}
       style={{ alignItems: "center" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >

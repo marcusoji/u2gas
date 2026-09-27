@@ -246,23 +246,28 @@ export default function Reports() {
           )}
 
           {/* The trend, drawn with the gauge's own language: one bar per day,
-              the busiest day labelled so the shape has a scale. */}
+              the busiest day labelled so the shape has a scale. A quarter is 90
+              bars, which cannot fit 334px at any readable width — past a month
+              the rail scrolls sideways instead of shrinking the bars into a
+              smear or pushing the page wider than the screen. */}
           {trend.length > 1 && (
             <section className="report-section">
               <h2>DAY BY DAY</h2>
-              <div
-                className="report-trend"
-                role="img"
-                aria-label={`Daily revenue for the last ${days} days`}
-              >
-                {trend.map((d) => (
-                  <i
-                    key={d.date}
-                    className={d.revenue_kobo > 0 ? "has-value" : ""}
-                    style={{ height: `${Math.max(2, (d.revenue_kobo / trendPeak) * 100)}%` }}
-                    title={`${d.date} · ${money(d.revenue_kobo)} · ${d.orders} orders`}
-                  />
-                ))}
+              <div className={trend.length > 31 ? "h-rail-wrap" : undefined}>
+                <div
+                  className={`report-trend${trend.length > 31 ? " is-dense h-rail" : ""}`}
+                  role="img"
+                  aria-label={`Daily revenue for the last ${days} days`}
+                >
+                  {trend.map((d) => (
+                    <i
+                      key={d.date}
+                      className={d.revenue_kobo > 0 ? "has-value" : ""}
+                      style={{ height: `${Math.max(2, (d.revenue_kobo / trendPeak) * 100)}%` }}
+                      title={`${d.date} · ${money(d.revenue_kobo)} · ${d.orders} orders`}
+                    />
+                  ))}
+                </div>
               </div>
               <p className="report-trend-note">
                 <span>{trend[0]?.date}</span>
@@ -354,23 +359,53 @@ export default function Reports() {
       <div className="spacer" />
 
       {/* Printer only — see printReport. Hidden on screen by CSS, and the whole
-          interactive screen is hidden in its place. */}
+          interactive screen is hidden in its place. It is laid out as a
+          document a depot signs off: masthead, the figures read first, the
+          breakdowns, the day book, and a signature block. */}
       {report && (
         <section className="report-print" aria-hidden="true">
           <header className="report-print-head">
-            <div>
-              <h1>U2 OIL AND GAS LTD.</h1>
-              <p>DEPOT PERFORMANCE REPORT</p>
+            <div className="report-print-brand">
+              <span className="report-print-mark" aria-hidden="true">U2</span>
+              <div>
+                <h1>U2 OIL AND GAS LTD.</h1>
+                <p>DEPOT PERFORMANCE REPORT</p>
+              </div>
             </div>
-            <dl>
-              <div><dt>PERIOD</dt><dd>{PERIOD_NAME[days] ?? `${days} DAYS`}</dd></div>
-              <div><dt>FROM</dt><dd>{reportWindow.start}</dd></div>
-              <div><dt>TO</dt><dd>{reportWindow.end}</dd></div>
-              <div><dt>PRINTED</dt><dd>{printed}</dd></div>
-            </dl>
+            <table className="report-print-meta">
+              <tbody>
+                <tr><th>PERIOD</th><td>{PERIOD_NAME[days] ?? `${days} DAYS`}</td></tr>
+                <tr><th>FROM</th><td>{reportWindow.start}</td></tr>
+                <tr><th>TO</th><td>{reportWindow.end}</td></tr>
+                <tr><th>PRINTED</th><td>{printed}</td></tr>
+              </tbody>
+            </table>
           </header>
 
-          <h2>HEADLINE FIGURES</h2>
+          <div className="report-print-kpis">
+            <div>
+              <span>REVENUE</span>
+              <b>{money(report.revenue_kobo)}</b>
+              <em>{revenueDelta?.label ?? "NO COMPARISON"} VS PREVIOUS {days} DAYS</em>
+            </div>
+            <div>
+              <span>GAS SOLD</span>
+              <b>{report.gas_sold_kg.toFixed(1)} KG</b>
+              <em>{gasDelta?.label ?? "NO COMPARISON"} VS PREVIOUS {days} DAYS</em>
+            </div>
+            <div>
+              <span>ORDERS</span>
+              <b>{report.orders_total}</b>
+              <em>{report.orders_fulfilled} FULFILLED</em>
+            </div>
+            <div>
+              <span>AVERAGE ORDER</span>
+              <b>{money(average)}</b>
+              <em>PER FULFILLED ORDER</em>
+            </div>
+          </div>
+
+          <h2>1 · HEADLINE FIGURES</h2>
           <table className="report-print-table">
             <tbody>
               <tr><th>REVENUE</th><td>{money(report.revenue_kobo)}</td><td>{revenueDelta?.label ?? "—"}</td></tr>
@@ -381,7 +416,7 @@ export default function Reports() {
             </tbody>
           </table>
 
-          <h2>ORDER OUTCOMES</h2>
+          <h2>2 · ORDER OUTCOMES</h2>
           <table className="report-print-table">
             <tbody>
               <tr><th>FULFILMENT RATE</th><td>{Math.round(fulfilmentShare * 100)}%</td></tr>
@@ -394,8 +429,11 @@ export default function Reports() {
 
           {byMethod.length > 0 && (
             <>
-              <h2>PAYMENTS BY METHOD</h2>
+              <h2>3 · PAYMENTS BY METHOD</h2>
               <table className="report-print-table">
+                <thead>
+                  <tr><th>METHOD</th><th>REVENUE</th><th>SHARE</th></tr>
+                </thead>
                 <tbody>
                   {byMethod.map(([method, kobo]) => (
                     <tr key={method}>
@@ -405,19 +443,34 @@ export default function Reports() {
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr>
+                    <th>TOTAL</th>
+                    <td>{money(report.revenue_kobo)}</td>
+                    <td>100%</td>
+                  </tr>
+                </tfoot>
               </table>
             </>
           )}
 
           {report.orders_by_type && (
             <>
-              <h2>WHAT WAS BOUGHT</h2>
+              <h2>4 · WHAT WAS BOUGHT</h2>
               <table className="report-print-table">
+                <thead>
+                  <tr><th>TYPE</th><th>ORDERS</th><th>SHARE</th></tr>
+                </thead>
                 <tbody>
                   {(["gas", "accessory", "mixed"] as const).map((kind) => (
                     <tr key={kind}>
                       <th>{kind.toUpperCase()}</th>
                       <td>{report.orders_by_type![kind]}</td>
+                      <td>
+                        {report.orders_total > 0
+                          ? Math.round((report.orders_by_type![kind] / report.orders_total) * 100)
+                          : 0}%
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -425,7 +478,7 @@ export default function Reports() {
             </>
           )}
 
-          <h2>DAY BY DAY</h2>
+          <h2>5 · DAY BY DAY</h2>
           <table className="report-print-table is-daily">
             <thead>
               <tr><th>DATE</th><th>REVENUE</th><th>ORDERS</th></tr>
@@ -448,8 +501,20 @@ export default function Reports() {
             </tfoot>
           </table>
 
+          {/* A figure nobody signs is a figure nobody owns. The lines are blank
+              on purpose: the manager writes the name, as on a delivery note. */}
+          <section className="report-print-signoff">
+            <div><span>PREPARED BY</span><i /></div>
+            <div><span>CHECKED BY</span><i /></div>
+            <div><span>DATE</span><i /></div>
+          </section>
+
           <footer className="report-print-foot">
-            <p>U2 OIL AND GAS LTD. — GENERATED BY THE U2 GAS DEPOT SYSTEM</p>
+            <p>
+              U2 OIL AND GAS LTD. — DEPOT PERFORMANCE REPORT FOR{" "}
+              {PERIOD_NAME[days] ?? `${days} DAYS`} ({reportWindow.start} TO {reportWindow.end})
+            </p>
+            <p>GENERATED BY THE U2 GAS DEPOT SYSTEM · NOT VALID WITHOUT A SIGNATURE</p>
           </footer>
         </section>
       )}
