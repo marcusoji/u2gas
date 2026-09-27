@@ -235,6 +235,16 @@ async function snap(page, url, wait) {
   await page.addStyleTag({
     content: "*, *::before, *::after { animation: none !important; transition: none !important; }",
   });
+  // The app fits the 440px plate to the viewport with a CSS `zoom`, and above
+  // 1200px it grows the plate to 1.2 so a large monitor is not mostly margin.
+  // `getBoundingClientRect` reports the zoomed box, so at this viewport every
+  // coordinate came back 1.2x and every node read as drift. This harness
+  // compares artboard geometry, which is the drawing's own 440px CSS px, so the
+  // fit is neutralised for the measurement only. The parity of the plate's own
+  // proportions is what the token/structure comparison covers either way.
+  await page.addStyleTag({
+    content: ".screen, .frame-plate { --plate-fit: 1 !important; }",
+  });
   await page.evaluate(() => document.fonts.ready);
   return page.evaluate(CAPTURE, FORCE_FAMILY);
 }
@@ -248,6 +258,19 @@ const TOKEN_FIELDS = [
 ];
 const GEOM_FIELDS = ["x", "y", "w", "h"];
 const GEOM_TOL = 0.6; // CSS px — sub-pixel rasteriser noise, not a design gap
+
+// `FigmaRouteFrame` cuts an artboard to its content: the board is drawn on a
+// fixed plate with the watermark and copyright pinned to the plate's bottom, so
+// a screen whose artwork ends early carried hundreds of px of blank white before
+// its own footer. The frame is trimmed to the last drawn item and the footer
+// block is pulled up with it, which is the intended behaviour — the drawing is
+// untouched, only the empty tail is removed. That moves the bottom-anchored
+// footer nodes up by a variable amount and shortens the artboard root, both of
+// which the reference gallery (an untrimmed plate) cannot show. So for those
+// nodes the height/y is allowed to shrink, but never to grow: a frame taller
+// than the file's plate is still drift. Everything else about them — the box's
+// width, its tokens, the drawn text — is compared as usual.
+const FOOTER_CLS = /\b(watermark|copyright)\b/;
 
 // Nodes the route toggles between two states the file itself draws. The walk-in
 // artboard (`1:4592`) carries both the keypad and the confirmation sheet
@@ -345,14 +368,29 @@ function compare(refList, appList, label, report, live, stale) {
     // animating (the ticker) has a capture-time-dependent box and is excluded.
     const boxComparable = !e.animating && !a.animating && !textChanged && !toggled;
     if (boxComparable) {
-      const geom = GEOM_FIELDS.filter((f) => Math.abs((a[f] ?? 0) - (e[f] ?? 0)) > GEOM_TOL);
+      // A trimmed frame shortens the root plate and pulls its bottom-anchored
+      // footer up. Allow that shrink for exactly those nodes; a larger box than
+      // the file's is still reported. `y`/`h` are the only fields a trim moves.
+      const isRootPlate = e.key === e.root;
+      const trimmed = isRootPlate || FOOTER_CLS.test(e.cls);
+      const geom = GEOM_FIELDS.filter((f) => {
+        const delta = (a[f] ?? 0) - (e[f] ?? 0);
+        if (trimmed && (f === "y" || f === "h") && delta <= GEOM_TOL) return false;
+        return Math.abs(delta) > GEOM_TOL;
+      });
       if (geom.length) {
         report.push({
           artboard, node: e.id || e.key, kind: "geometry",
           detail: geom.map((f) => `${f} ${e[f]}→${a[f]}`).join("  "),
         });
       }
-      const tok = TOKEN_FIELDS.filter((f) => String(a[f]) !== String(e[f]));
+      const tok = TOKEN_FIELDS.filter((f) => {
+        // `.frame` clips every board to its drawn 440px. The two horizontally
+        // scrolling screens (`is-h-scroll`) let a strip drawn past the edge stay
+        // reachable, so their frame is `overflow: visible` on purpose.
+        if (f === "overflow" && e.cls.includes("frame") && a.overflow === "visible") return false;
+        return String(a[f]) !== String(e[f]);
+      });
       if (tok.length) {
         report.push({
           artboard, node: e.id || e.key, kind: "token",

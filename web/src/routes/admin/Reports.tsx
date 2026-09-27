@@ -227,7 +227,11 @@ export default function Reports() {
 
           {/* Today's problems first. These are the only figures on the screen
               that mean somebody has to act, so they sit at the top rather than
-              after the revenue, and each opens the queue that resolves it. */}
+              after the revenue, and each opens the queue that resolves it.
+              Everything below the strip is detail, so it shares one wrapper
+              that reflows into two columns on a desk instead of a 1700px
+              ribbon a manager has to scroll for a month of figures. */}
+          <div className="report-body">
           {flagged && (
             <section className="report-section">
               <h2>NEEDS SOMEONE TODAY</h2>
@@ -367,6 +371,7 @@ export default function Reports() {
               </Stamp>
             </div>
           )}
+          </div>
         </>
       )}
 

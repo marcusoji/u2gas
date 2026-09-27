@@ -196,7 +196,9 @@ export default function People() {
   if (addState && view === "staff") {
     return (
       <div className="screen figma-route-scroll">
-        <FigmaRouteFrame node="1:2686" textReplacements={gridValues}>
+        <FigmaRouteFrame node="1:2686" textReplacements={gridValues} after={
+          <Ticker static>{rows.length} ON THE BOOKS · {available} ACTIVE</Ticker>
+        }>
           <button className="figma-route-interactive" aria-label="Back to the roster"
             onClick={() => setQuery({ state: null })} style={{ left: 12, top: 6, width: 48, height: 44 }} />
           <button className="figma-route-interactive" aria-label="Notifications"
@@ -205,9 +207,6 @@ export default function People() {
           <button className="figma-route-interactive" aria-label="Add a staff member"
             onClick={() => setAdding(true)} style={{ left: 345, top: 139, width: 40, height: 40 }} />
         </FigmaRouteFrame>
-        <div style={{ marginTop: 18 }}>
-          <Ticker static>{rows.length} ON THE BOOKS · {available} ACTIVE</Ticker>
-        </div>
         <AddSheet open={adding} onClose={() => setAdding(false)}
           onDone={() => { setAdding(false); setQuery({ state: null }); load(); }} />
       </div>
@@ -219,7 +218,9 @@ export default function People() {
     const tiles = [[28, 162], [144, 162], [260, 162], [376, 162]];
     return (
       <div className="screen figma-route-scroll">
-        <FigmaRouteFrame node="1:2624" values={rowValues}>
+        <FigmaRouteFrame node="1:2624" values={rowValues} after={
+          <Ticker static>{rows.length} ON THE BOOKS · {available} ACTIVE</Ticker>
+        }>
           <button className="figma-route-interactive" aria-label="Back to the grid"
             onClick={() => setQuery({ layout: null })} style={{ left: 12, top: 6, width: 48, height: 44 }} />
           <button className="figma-route-interactive" aria-label="Notifications"
@@ -239,9 +240,6 @@ export default function People() {
             onClick={() => rows[0] && setRemoving(rows[0])}
             style={{ left: 144, top: 670, width: 152, height: 51 }} />
         </FigmaRouteFrame>
-        <div style={{ marginTop: 18 }}>
-          <Ticker static>{rows.length} ON THE BOOKS · {available} ACTIVE</Ticker>
-        </div>
         <RemoveSheet person={removing} onClose={() => setRemoving(null)}
           onDone={() => { setRemoving(null); load(); }} />
       </div>
@@ -252,7 +250,45 @@ export default function People() {
   return (
     <div className="screen figma-route-scroll">
       <OptionalBack to="/admin" />
-      <FigmaRouteFrame node="1:2747" textReplacements={gridValues}>
+      {/* The roster controls belong *before* the drawn copyright, not stacked
+          under the plate where the file's footer then lands on top of them.
+          `after` drops them just below the last roster row and lets the drawn
+          U2 / copyright fall in underneath. */}
+      <FigmaRouteFrame node="1:2747" textReplacements={gridValues} after={
+        <>
+          <Ticker static>{rows.length} {view === "staff" ? "STAFF" : "DRIVERS"} · {available} ACTIVE</Ticker>
+          <Segmented
+            label="Who"
+            value={view}
+            onChange={setView}
+            options={[{ value: "staff", label: "STAFF" }, { value: "drivers", label: "DRIVERS" }]}
+          />
+          {view === "staff" && (
+            <div className="roster-controls">
+              {/* The drawn plus in the empty tile is a 40px hotspot an admin has
+                  to find and guess at. Adding somebody is the whole point of
+                  opening this screen, so it is a real button, labelled, and the
+                  two drawings of the roster are named for what they look like
+                  rather than by layout number. */}
+              <Pill onClick={() => setQuery({ state: "add" })}>ADD STAFF</Pill>
+              <div className="roster-view">
+                <p className="label">HOW THE ROSTER IS DRAWN</p>
+                <Segmented
+                  label="Roster layout"
+                  value={layoutOne ? "rows" : "grid"}
+                  onChange={(v) => setQuery({ layout: v === "rows" ? "1" : null })}
+                  options={[{ value: "grid", label: "GRID" }, { value: "rows", label: "ROWS" }]}
+                />
+              </div>
+            </div>
+          )}
+          {rows.length > 6 && (
+            <p className="label" style={{ marginTop: 14 }}>
+              {rows.length - 6} MORE RECORDS AVAILABLE BELOW THE DESIGNED SIX-PERSON Figma GRID.
+            </p>
+          )}
+        </>
+      }>
         <button className="figma-route-interactive" aria-label="Notifications"
           onClick={() => nav("/admin/notifs")} style={{ left: 362, top: 63, width: 50, height: 56 }} />
         {rows.slice(0, 6).map((person, index) => (
@@ -270,40 +306,6 @@ export default function People() {
           />
         ))}
       </FigmaRouteFrame>
-
-      <div style={{ marginTop: 18 }}>
-        <Ticker static>{rows.length} {view === "staff" ? "STAFF" : "DRIVERS"} · {available} ACTIVE</Ticker>
-        <Segmented
-          label="Who"
-          value={view}
-          onChange={setView}
-          options={[{ value: "staff", label: "STAFF" }, { value: "drivers", label: "DRIVERS" }]}
-        />
-        {view === "staff" && (
-          <div className="roster-controls">
-            {/* The drawn plus in the empty tile is a 40px hotspot an admin has
-                to find and guess at. Adding somebody is the whole point of
-                opening this screen, so it is a real button, labelled, and the
-                two drawings of the roster are named for what they look like
-                rather than by layout number. */}
-            <Pill onClick={() => setQuery({ state: "add" })}>ADD STAFF</Pill>
-            <div className="roster-view">
-              <p className="label">HOW THE ROSTER IS DRAWN</p>
-              <Segmented
-                label="Roster layout"
-                value={layoutOne ? "rows" : "grid"}
-                onChange={(v) => setQuery({ layout: v === "rows" ? "1" : null })}
-                options={[{ value: "grid", label: "GRID" }, { value: "rows", label: "ROWS" }]}
-              />
-            </div>
-          </div>
-        )}
-        {rows.length > 6 && (
-          <p className="label" style={{ marginTop: 14 }}>
-            {rows.length - 6} MORE RECORDS AVAILABLE BELOW THE DESIGNED SIX-PERSON Figma GRID.
-          </p>
-        )}
-      </div>
     </div>
   );
 }

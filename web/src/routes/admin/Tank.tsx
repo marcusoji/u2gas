@@ -114,6 +114,46 @@ export default function Tank() {
         node="1:3887"
         values={{ "1:3904": String(Math.floor(tonsAvailable)) }}
         textReplacements={textReplacements}
+        after={
+          <>
+            {stock.available_kg <= 0 && (
+              <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>
+                <Stamp loud>THE TANK IS EMPTY</Stamp>
+              </div>
+            )}
+
+            {/* Three warnings, escalating with the level the worker computed. Only
+                the current one shows: three stacked alarms is alarm fatigue, and the
+                level already says how bad it is. */}
+            {level > 0 && (
+              <div className={`gas-warning is-level-${level}`} role="status">
+                <span className="gas-warning-dot" aria-hidden="true" />
+                <div>
+                  <b>{warnings.find((w) => w.level === level)?.text}</b>
+                  <em>
+                    {stock.days_remaining !== null
+                      ? `ABOUT ${stock.days_remaining} DAY${stock.days_remaining === 1 ? "" : "S"} LEFT AT TODAY'S USE`
+                      : "USE IS TOO UNEVEN TO GUESS"}
+                  </em>
+                </div>
+              </div>
+            )}
+
+            {/* The board draws one number. The tap that opens the sheet has to be
+                advertised, or the breakdown is as hidden as it was when it sat below
+                the fold. */}
+            <button className="tank-open-hint" onClick={() => setDetailsOpen(true)}>
+              <span>SEE RECEIVED, RESERVED AND USED</span>
+              <em aria-hidden="true">TAP THE TANK</em>
+            </button>
+
+            {error && (
+              <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>
+                <Stamp>{error}</Stamp>
+              </div>
+            )}
+          </>
+        }
       >
         <BackButton to="/admin" />
         <button className="figma-route-interactive" aria-label="Update stock"
@@ -131,43 +171,6 @@ export default function Tank() {
           onClick={() => nav("/admin/notifs")}
           style={{ left: 362, top: 63, width: 50, height: 56 }} />
       </FigmaRouteFrame>
-
-      {stock.available_kg <= 0 && (
-        <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>
-          <Stamp loud>THE TANK IS EMPTY</Stamp>
-        </div>
-      )}
-
-      {/* Three warnings, escalating with the level the worker computed. Only
-          the current one shows: three stacked alarms is alarm fatigue, and the
-          level already says how bad it is. */}
-      {level > 0 && (
-        <div className={`gas-warning is-level-${level}`} role="status">
-          <span className="gas-warning-dot" aria-hidden="true" />
-          <div>
-            <b>{warnings.find((w) => w.level === level)?.text}</b>
-            <em>
-              {stock.days_remaining !== null
-                ? `ABOUT ${stock.days_remaining} DAY${stock.days_remaining === 1 ? "" : "S"} LEFT AT TODAY'S USE`
-                : "USE IS TOO UNEVEN TO GUESS"}
-            </em>
-          </div>
-        </div>
-      )}
-
-      {/* The board draws one number. The tap that opens the sheet has to be
-          advertised, or the breakdown is as hidden as it was when it sat below
-          the fold. */}
-      <button className="tank-open-hint" onClick={() => setDetailsOpen(true)}>
-        <span>SEE RECEIVED, RESERVED AND USED</span>
-        <em aria-hidden="true">TAP THE TANK</em>
-      </button>
-
-      {error && (
-        <div className="stamp-wrap" style={{ marginTop: "var(--s-5)" }}>
-          <Stamp>{error}</Stamp>
-        </div>
-      )}
 
       <div className="spacer" />
 

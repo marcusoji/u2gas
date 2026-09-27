@@ -85,7 +85,15 @@ export default function StockHistory() {
 
   return (
     <div className="screen figma-route-scroll">
-      <FigmaRouteFrame node="1:2847" textReplacements={textReplacements}>
+      <FigmaRouteFrame node="1:2847" textReplacements={textReplacements} after={
+        <>
+          <Ticker static>
+            {entries.length} {entries.length === 1 ? "ENTRY" : "ENTRIES"}
+            {month ? ` IN ${label(month)}` : ""}
+          </Ticker>
+          <Tabs label="Month" value={month} onChange={setMonth} options={months} rail />
+        </>
+      }>
         <BackButton to="/admin/tank" />
         <button className="figma-route-interactive" aria-label="Update stock"
           onClick={() => nav("/admin/tank/update")}
@@ -97,14 +105,6 @@ export default function StockHistory() {
           onClick={() => nav("/admin/notifs")}
           style={{ left: 362, top: 63, width: 50, height: 56 }} />
       </FigmaRouteFrame>
-
-      <div style={{ marginTop: 18 }}>
-        <Ticker static>
-          {entries.length} {entries.length === 1 ? "ENTRY" : "ENTRIES"}
-          {month ? ` IN ${label(month)}` : ""}
-        </Ticker>
-        <Tabs label="Month" value={month} onChange={setMonth} options={months} rail />
-      </div>
     </div>
   );
 }

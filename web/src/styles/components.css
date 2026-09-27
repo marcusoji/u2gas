@@ -1422,6 +1422,11 @@ body:has(.home-shop-link) .mockbar {
 .report-cell.is-accent dd { color: var(--blue-deep, #0d1099); }
 .report-section { margin-top: var(--s-8); }
 
+/* Below the headline strip every block is detail. One wrapper lets a desk
+   reflow that detail into columns rather than a single 1700px ribbon; on a
+   phone the wrapper is a plain block and the sections keep their own spacing. */
+.report-body { display: block; }
+
 /* Reports is the one screen built from app-rendered blocks rather than an
    artboard, so it is the one that has to claim its own width. Without this the
    centred `.screen` collapsed each panel to its widest child — the sections
@@ -2349,9 +2354,33 @@ body:has(.home-shop-link) .mockbar {
   }
   .roster-view { max-width: 420px; }
 
+  /* The report is the one screen that is not a 440 drawing, so it is the one
+     screen allowed past the phone column. Its sections need the room the grid
+     above asks for; at 520 the two columns had nowhere to go and spilled. */
+  .report-screen { max-width: 960px; }
+
   /* Report figures across the page: the dashboard is the one screen built from
      grid sections rather than a drawing, and a single column of numbers at
      1200px is a lot of unused paper. */
   .report-screen .report-section { max-width: 960px; }
   .report-grid { grid-template-columns: repeat(4, 1fr); }
+
+  /* A month of detail stacked in one column is 1700px of scrolling for figures
+     a manager reads side by side. Two columns put the action queue beside the
+     trend and the breakdowns beside each other, so the whole month is on one
+     screen. The columns are the plate's own 440 so each section keeps the width
+     it was designed at, rather than being squeezed into a third of the screen. */
+  .report-body {
+    display: grid;
+    grid-template-columns: repeat(2, 440px);
+    justify-content: center;
+    gap: 0 var(--s-6);
+    align-items: start;
+    width: 100%;
+    max-width: 960px;
+  }
+  /* The sections carry a fixed 440 for the phone; inside the grid the column
+     decides the width, and the day-by-day rail is allowed to span both. */
+  .report-body > .report-section { width: 100%; }
+  .report-body > .report-section:has(.report-trend) { grid-column: 1 / -1; }
 }

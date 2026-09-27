@@ -22,6 +22,7 @@ export function FigmaScreen({
   images,
   textReplacements,
   className,
+  height,
 }: {
   node: string;
   values?: Record<string, string>;
@@ -29,6 +30,8 @@ export function FigmaScreen({
   /** Replace exact frozen Figma sample text where the source node has no data-node id. */
   textReplacements?: Record<string, string | string[]>;
   className?: string;
+  /** Cut the plate to this height. Omitted, the board keeps its drawn height. */
+  height?: number | null;
 }) {
   const board: FigmaArtboard | undefined = artboards[node];
 
@@ -129,7 +132,7 @@ export function FigmaScreen({
     <div
       className={`frame${className ? ` ${className}` : ""}`}
       data-node={board.node}
-      style={{ height: board.height }}
+      style={{ height: height ?? board.height }}
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );

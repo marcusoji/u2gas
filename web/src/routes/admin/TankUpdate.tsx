@@ -55,7 +55,40 @@ export default function TankUpdate() {
 
   return (
     <div className="screen figma-route-scroll">
-      <FigmaRouteFrame node="1:3075" values={{ "1:3231": String(tons) }}>
+      <FigmaRouteFrame node="1:3075" values={{ "1:3231": String(tons) }} after={
+        <>
+          <Segmented
+            label="Direction"
+            value={move}
+            onChange={setMove}
+            options={[
+              { value: "addition", label: "TAKE IN" },
+              { value: "removal", label: "TAKE OUT" },
+            ]}
+          />
+          {/* Taking stock out cannot touch what customers have already reserved,
+              so say which way the tank moves before they press it. */}
+          <p className="label" style={{ marginTop: 12, lineHeight: 2 }}>
+            {move === "removal"
+              ? "THIS CANNOT TOUCH STOCK ALREADY RESERVED"
+              : "THIS IS ADDED ON TOP OF WHAT IS ALREADY THERE"}
+          </p>
+          <Input
+            placeholder="DELIVERY NOTE OR REASON"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            style={{ marginTop: 12 }}
+          />
+          <p className="label" style={{ marginTop: 12 }}>
+            {busy ? "SAVING…" : `${move === "removal" ? "REMOVING" : "ADDING"} ${tons} TONS`}
+          </p>
+          {error && (
+            <div className="stamp-wrap" style={{ marginTop: 12 }}>
+              <Stamp>{error}</Stamp>
+            </div>
+          )}
+        </>
+      }>
         <BackButton to="/admin/tank" />
         {/* The minus and plus the file draws at (120,612) and (202,612). */}
         <button className="figma-route-interactive" aria-label="One ton less"
@@ -71,39 +104,6 @@ export default function TankUpdate() {
           onClick={submit}
           style={{ left: 151, top: 487, width: 123, height: 73 }} />
       </FigmaRouteFrame>
-
-      <div style={{ marginTop: 18 }}>
-        <Segmented
-          label="Direction"
-          value={move}
-          onChange={setMove}
-          options={[
-            { value: "addition", label: "TAKE IN" },
-            { value: "removal", label: "TAKE OUT" },
-          ]}
-        />
-        {/* Taking stock out cannot touch what customers have already reserved,
-            so say which way the tank moves before they press it. */}
-        <p className="label" style={{ marginTop: 12, lineHeight: 2 }}>
-          {move === "removal"
-            ? "THIS CANNOT TOUCH STOCK ALREADY RESERVED"
-            : "THIS IS ADDED ON TOP OF WHAT IS ALREADY THERE"}
-        </p>
-        <Input
-          placeholder="DELIVERY NOTE OR REASON"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          style={{ marginTop: 12 }}
-        />
-        <p className="label" style={{ marginTop: 12 }}>
-          {busy ? "SAVING…" : `${move === "removal" ? "REMOVING" : "ADDING"} ${tons} TONS`}
-        </p>
-        {error && (
-          <div className="stamp-wrap" style={{ marginTop: 12 }}>
-            <Stamp>{error}</Stamp>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
