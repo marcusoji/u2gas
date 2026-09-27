@@ -171,7 +171,7 @@ create policy profile_self_read on profile
     or exists (
       select 1 from profile me
       where me.auth_user_id = auth.uid()
-        and me.role in ('staff','manager','admin')
+        and me.role in ('staff','admin')
     )
   );
 

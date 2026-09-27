@@ -6,7 +6,7 @@
 -- took no asset and stock_entry had no column to put one in. The capability
 -- was designed and then left unreachable.
 --
--- This closes it. When a tanker arrives the manager photographs the delivery
+-- This closes it. When a tanker arrives the admin photographs the delivery
 -- note, and that photograph is attached to the entry that moves the tank
 -- reading — which is the evidence you want when a supplier's figure and the
 -- gauge disagree weeks later.

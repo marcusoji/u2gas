@@ -24,12 +24,12 @@ $$;
 
 create or replace function is_staff() returns boolean
 language sql stable as $$
-  select current_role_name() in ('staff','manager','admin')
+  select current_role_name() in ('staff','admin')
 $$;
 
 create or replace function is_admin() returns boolean
 language sql stable as $$
-  select current_role_name() in ('manager','admin')
+  select current_role_name() = 'admin'
 $$;
 
 create or replace function is_driver() returns boolean

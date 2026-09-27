@@ -2,7 +2,7 @@
 -- U2GAS — 0024 staff lifecycle
 --
 -- The admin's STAFF screens draw ADD STAFF and REMOVE STAFF as controls, and
--- nothing behind them existed. A manager could see the roster and change a
+-- nothing behind them existed. An admin could see the roster and change a
 -- person's bank details, but could not bring somebody onto the till or take
 -- them off it. The two functions here are those controls.
 --
@@ -36,7 +36,7 @@
 -- ---------------------------------------------------------------------------
 create or replace function staff_assignable_roles()
 returns text[] language sql immutable as $$
-  select array['staff', 'manager', 'admin', 'driver']::text[]
+  select array['staff', 'admin', 'driver']::text[]
 $$;
 
 -- ---------------------------------------------------------------------------

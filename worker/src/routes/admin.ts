@@ -8,7 +8,7 @@ import { rateLimit } from "../middleware/ratelimit";
 
 const admin = new Hono<AppEnv>();
 
-admin.use("*", requireRole("manager", "admin"));
+admin.use("*", requireRole("admin"));
 
 // A blanket ceiling across every admin route. Not a substitute for the role
 // check above — it is the backstop for a stolen admin session being used to
@@ -303,7 +303,7 @@ admin.post("/bundles", async (c) => {
   }
 
   // Raises INCOMPATIBLE_ITEMS with the rule's own message, or
-  // OVERRIDE_FORBIDDEN if a non-manager tried to force it through.
+  // OVERRIDE_FORBIDDEN if a non-admin tried to force it through.
   const bundle = await rpc<any>(c.get("admin"), "publish_bundle", {
     p_name: body.data.name,
     p_price_kobo: body.data.price_kobo,
@@ -444,9 +444,9 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
   const caller = c.get("caller")!;
   const db = c.get("admin");
 
-  // The router already restricts this to manager and admin. Money leaving the
+  // The router already restricts this to admin. Money leaving the
   // business is worth checking twice.
-  if (!["manager", "admin"].includes(caller.role)) throw appError("FORBIDDEN");
+  if (caller.role !== "admin") throw appError("FORBIDDEN");
 
   const claim = await rpc<any>(db, "claim_refund", {
     p_refund_id: id, p_actor_id: caller.profileId,
@@ -595,7 +595,7 @@ admin.get("/drivers", async (c) =>
 /**
  * Bring somebody onto the roster (1:2686 ADD STAFF).
  *
- * The role is the thing that actually grants access, so only a manager or
+ * The role is the thing that actually grants access, so only an
  * admin may set it and only to a role the till understands — a client cannot
  * promote itself by asking. The two rows this writes (profile role and
  * staff_member) are described in migration 0024; both are needed before the
@@ -605,7 +605,7 @@ admin.post("/staff", async (c) => {
   const body = z.object({
     email: z.string().email().max(200),
     display_name: z.string().min(1).max(120),
-    role: z.enum(["staff", "manager", "admin", "driver"]),
+    role: z.enum(["staff", "admin", "driver"]),
     bank_name: z.string().max(120).optional(),
     account_number: z.string().regex(/^[0-9]{10}$/).optional(),
   }).safeParse(await c.req.json());

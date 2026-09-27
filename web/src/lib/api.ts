@@ -311,7 +311,7 @@ export interface Zone {
 
 export interface Profile {
   profile_id: string;
-  role: "customer" | "staff" | "driver" | "manager" | "admin";
+  role: "customer" | "staff" | "driver" | "admin";
   display_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -799,7 +799,7 @@ export const api = {
     addStaff:    (body: {
       email: string;
       display_name: string;
-      role: "staff" | "manager" | "admin" | "driver";
+      role: "staff" | "admin" | "driver";
       bank_name?: string;
       account_number?: string;
     }) => post<{ staff_id: string; created: boolean }>("/admin/staff", body),

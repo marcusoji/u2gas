@@ -137,7 +137,7 @@ const router = createBrowserRouter([
 
   {
     element: (
-      <Guard allow={["customer", "staff", "driver", "manager", "admin"]}>
+      <Guard allow={["customer", "staff", "driver", "admin"]}>
         <Boundary><PageHold /></Boundary>
       </Guard>
     ),
@@ -154,19 +154,19 @@ const router = createBrowserRouter([
   // screen and under its tab bar.
   {
     path: "/staff/*",
-    element: <Guard allow={["staff", "manager", "admin"]}>
+    element: <Guard allow={["staff", "admin"]}>
       <Boundary><StaffApp /></Boundary>
     </Guard>,
   },
   {
     path: "/driver/*",
-    element: <Guard allow={["driver", "manager", "admin"]}>
+    element: <Guard allow={["driver", "admin"]}>
       <Boundary><DriverApp /></Boundary>
     </Guard>,
   },
   {
     path: "/admin/*",
-    element: <Guard allow={["manager", "admin"]}>
+    element: <Guard allow={["admin"]}>
       <Boundary><AdminApp /></Boundary>
     </Guard>,
   },

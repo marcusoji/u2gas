@@ -147,9 +147,9 @@ begin
           'message',  v_violation.message)::text;
     end if;
 
-    -- Override is manager-only and always leaves a trail. (Addendum 71.2)
+    -- Override is admin-only and always leaves a trail. (Addendum 71.2)
     select role into v_role from profile where profile_id = p_created_by;
-    if v_role not in ('manager','admin') then
+    if v_role <> 'admin' then
       raise exception 'OVERRIDE_FORBIDDEN'
         using detail = json_build_object('role', v_role)::text;
     end if;

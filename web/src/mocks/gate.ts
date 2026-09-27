@@ -16,13 +16,13 @@ import type { Role } from "../lib/auth";
 
 export const EMBEDDED_API = import.meta.env.VITE_EMBEDDED_API === "true";
 
-export const MOCK_ROLES: Role[] = ["customer", "staff", "driver", "manager", "admin"];
+export const MOCK_ROLES: Role[] = ["customer", "staff", "driver", "admin"];
 
 export const ROLE_KEY = "u2gas.mock.role";
 
 export const ROLE_HOME: Record<Role, string> = {
   // `/` is the entry screen (LOG IN 1); the customer terminal is `/home`.
-  customer: "/home", staff: "/staff", manager: "/staff", driver: "/driver", admin: "/admin",
+  customer: "/home", staff: "/staff", driver: "/driver", admin: "/admin",
 };
 
 export function getMockRole(): Role {

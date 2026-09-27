@@ -53,7 +53,7 @@ export const supabase = createClient(
   },
 );
 
-export type Role = "customer" | "staff" | "driver" | "manager" | "admin";
+export type Role = "customer" | "staff" | "driver" | "admin";
 
 export interface AuthState {
   session: Session | null;
@@ -69,7 +69,7 @@ const AuthContext = createContext<AuthState>({
 
 const HOME: Record<Role, string> = {
   // `/` is the entry screen; the customer terminal is `/home`.
-  customer: "/home", staff: "/staff", manager: "/staff",
+  customer: "/home", staff: "/staff",
   driver: "/driver", admin: "/admin",
 };
 

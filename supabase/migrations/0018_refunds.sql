@@ -14,7 +14,7 @@ create type refund_status as enum (
   'processing',   -- handed to Paystack, awaiting their answer
   'refunded',     -- Paystack confirmed
   'declined',     -- Paystack refused
-  'manual'        -- settled outside the system; closed by a manager
+  'manual'        -- settled outside the system; closed by an admin
 );
 
 create table if not exists refund (

@@ -100,7 +100,7 @@ async function rollbackStorage(c: Ctx, paths: string[]) {
 // Single image
 // ---------------------------------------------------------------------------
 
-uploads.post("/image", requireRole("staff", "manager", "admin"),
+uploads.post("/image", requireRole("staff", "admin"),
   rateLimit("upload", 40, 60_000), async (c) => {
     const form = await c.req.formData();
     const file = form.get("file");
@@ -193,7 +193,7 @@ const bundleUpload = z.object({
  * 1 and 2 are deleted before the error comes back. No orphans, no half-built
  * bundle.
  */
-uploads.post("/bundle", requireRole("manager", "admin"),
+uploads.post("/bundle", requireRole("admin"),
   rateLimit("upload", 15, 60_000), async (c) => {
     const form = await c.req.formData();
 

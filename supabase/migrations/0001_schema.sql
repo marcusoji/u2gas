@@ -10,7 +10,7 @@ create extension if not exists "citext";
 -- Enums. Status concepts are kept separate on purpose (spec 36).
 -- ----------------------------------------------------------------------------
 
-create type app_role         as enum ('customer','staff','driver','manager','admin');
+create type app_role         as enum ('customer','staff','driver','admin');
 create type order_channel    as enum ('online','walk_in');
 create type order_type       as enum ('gas','accessory','mixed');
 create type fulfillment_type as enum ('pickup','delivery');

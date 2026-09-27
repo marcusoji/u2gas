@@ -15,7 +15,7 @@ type Person = AdminStaff | AdminDriver;
  * database calls a cashier, which is the word every drawing uses.
  */
 const ROLE_LABEL: Record<string, string> = {
-  staff: "CASHIER", manager: "MANAGER", admin: "ADMIN", driver: "DRIVER",
+  staff: "CASHIER", admin: "ADMIN", driver: "DRIVER",
 };
 
 const roleOf = (p: Person | null, view: View): string | null => {
@@ -316,7 +316,7 @@ function AddSheet({ open, onClose, onDone }: {
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"staff" | "manager" | "admin" | "driver">("staff");
+  const [role, setRole] = useState<"staff" | "admin" | "driver">("staff");
   const [bank, setBank] = useState("");
   const [account, setAccount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -359,7 +359,6 @@ function AddSheet({ open, onClose, onDone }: {
           onChange={setRole}
           options={[
             { value: "staff", label: "CASHIER" },
-            { value: "manager", label: "MANAGER" },
             { value: "admin", label: "ADMIN" },
             { value: "driver", label: "DRIVER" },
           ]}

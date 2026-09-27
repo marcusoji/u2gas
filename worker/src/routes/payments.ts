@@ -27,7 +27,7 @@ async function ownsOrder(c: Ctx, orderId: string): Promise<boolean> {
     if (!row) return false;
     if (row.user_id === caller.profileId) return true;
     // Staff act for walk-in customers at the counter.
-    return ["staff", "manager", "admin"].includes(caller.role);
+    return ["staff", "admin"].includes(caller.role);
   }
 
   const token = c.req.query("t") ?? c.req.header("X-Guest-Token");

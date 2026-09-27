@@ -121,7 +121,7 @@ export default function BundleUpload() {
   }, [existingIds.join(","), canCheck]);
 
   const compatible = checked && violations.length === 0;
-  const isManager = profile?.role === "manager" || profile?.role === "admin";
+  const isManager = profile?.role === "admin";
 
   // Only a *known* conflict blocks publishing. A bundle made entirely of new
   // items cannot be checked here — they have no product_id yet — so requiring

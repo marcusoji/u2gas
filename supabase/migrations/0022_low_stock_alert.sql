@@ -37,7 +37,7 @@ begin
   select name into v_depot from depot where depot_id = new.depot_id;
 
   -- Everyone who can do something about it. A cashier cannot order gas, so
-  -- telling them is noise; managers and admins can.
+  -- telling them is noise; admins can.
   insert into notification (profile_id, kind, title, body)
   select p.profile_id,
          'stock.low',
@@ -47,7 +47,7 @@ begin
          trim(to_char(v_after, 'FM999999990')) || 'kg). The warning level is ' ||
          trim(to_char(v_threshold, 'FM999999990')) || 'kg.'
   from profile p
-  where p.role in ('manager', 'admin');
+  where p.role = 'admin';
 
   insert into audit_log (action, entity_type, entity_id, before, after, note)
   values ('stock.low', 'gas_stock', new.depot_id,

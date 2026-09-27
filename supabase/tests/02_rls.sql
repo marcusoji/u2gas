@@ -81,7 +81,7 @@ declare
 begin
   for r in select * from (values
       ('customer','customer'), ('customer_b','customer'),
-      ('staff','staff'), ('manager','manager'), ('admin','admin'),
+      ('staff','staff'), ('admin','admin'),
       ('driver_a','driver'), ('driver_b','driver')) as t(label, role)
   loop
     v_auth := gen_random_uuid();
@@ -93,7 +93,7 @@ begin
 
   -- Staff rows where the role needs one.
   insert into staff_member (profile_id, status)
-  select id, 'active' from t_ids where label in ('staff','manager');
+  select id, 'active' from t_ids where label = 'staff';
 
   insert into driver (profile_id, phone, status)
   select id, '+2348000000300', 'available' from t_ids where label = 'driver_a'
@@ -259,13 +259,12 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
--- 4. Staff vs manager vs admin — Part 47
+-- 4. Staff vs admin — Part 47
 -- ----------------------------------------------------------------------------
 do $$
-declare v_staff uuid; v_manager uuid; v_admin uuid; v_order uuid;
+declare v_staff uuid; v_admin uuid; v_order uuid;
 begin
   select auth_uid into v_staff from t_ids where label = 'staff';
-  select auth_uid into v_manager from t_ids where label = 'manager';
   select auth_uid into v_admin from t_ids where label = 'admin';
   select id into v_order from t_ids where label = 'order';
 

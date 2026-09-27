@@ -9,13 +9,13 @@ import { qrTokenHash } from "../lib/crypto";
 
 const driver = new Hono<AppEnv>();
 
-driver.use("*", requireRole("driver", "manager", "admin"));
+driver.use("*", requireRole("driver", "admin"));
 
 /**
  * The driver row this caller acts as.
  *
  * Same rule as the till: a delivery has to be attributed to a real driver
- * record, so a manager or admin without one cannot take a drop. The error
+ * record, so an admin without one cannot take a drop. The error
  * distinguishes "not finished setting up" from "not allowed". (Item 4)
  */
 async function driverId(c: Ctx): Promise<string> {

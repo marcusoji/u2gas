@@ -64,15 +64,14 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next();
 };
 
-/** Role gate. Managers and admins inherit staff access. */
+/** Role gate. An admin inherits staff access. */
 export function requireRole(...allowed: Role[]): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const caller = c.get("caller");
     if (!caller) throw appError("UNAUTHENTICATED");
 
     const effective: Role[] = [caller.role];
-    if (caller.role === "manager") effective.push("staff");
-    if (caller.role === "admin") effective.push("staff", "manager");
+    if (caller.role === "admin") effective.push("staff");
 
     if (!effective.some((r) => allowed.includes(r))) {
       throw appError("FORBIDDEN", { required: allowed, actual: caller.role });

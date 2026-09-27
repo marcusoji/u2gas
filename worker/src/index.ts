@@ -148,7 +148,7 @@ app.get("/api/me", requireAuth, async (c) => {
   );
 
   const home: Record<string, string> = {
-    customer: "/", staff: "/staff", manager: "/staff",
+    customer: "/", staff: "/staff",
     driver: "/driver", admin: "/admin",
   };
 

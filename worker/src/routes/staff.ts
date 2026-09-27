@@ -10,14 +10,14 @@ import { qrTokenHash } from "../lib/crypto";
 
 const staff = new Hono<AppEnv>();
 
-staff.use("*", requireRole("staff", "manager", "admin"));
+staff.use("*", requireRole("staff", "admin"));
 
 /**
  * The staff_member row this caller acts as.
  *
- * requireRole lets managers and admins through, but every till operation has
+ * requireRole lets admins through, but every till operation has
  * to be attributed to a real staff record — cash reconciliation and the audit
- * trail are meaningless otherwise. A manager who has never been given a staff
+ * trail are meaningless otherwise. An admin who has never been given a staff
  * record used to get a bare FORBIDDEN, which reads as "you are not allowed"
  * when the truth is "your account is not finished".
  *

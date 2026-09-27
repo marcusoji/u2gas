@@ -36,7 +36,7 @@ export default function StaffProfile() {
   }
 
   const name = profile.display_name ?? "STAFF";
-  const role = profile.role === "manager" ? "Manager" : "Cashier";
+  const role = "Cashier";
 
   return (
     <div className="screen figma-route-scroll">

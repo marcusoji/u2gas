@@ -35,7 +35,7 @@ export interface Env {
   CACHE: KVNamespace;
 }
 
-export type Role = "customer" | "staff" | "driver" | "manager" | "admin";
+export type Role = "customer" | "staff" | "driver" | "admin";
 
 export interface Caller {
   authUserId: string;

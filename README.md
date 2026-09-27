@@ -109,7 +109,7 @@ because each app is behind a role gate a real deployment authorises on the
 server. You can also link straight to one:
 
 ```
-/?as=customer    /?as=staff    /?as=driver    /?as=manager    /?as=admin
+/?as=customer    /?as=staff    /?as=driver    /?as=admin
 ```
 
 The mock layer is `src/mocks/`. It answers the same routes with the same

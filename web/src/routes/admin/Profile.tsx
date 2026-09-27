@@ -43,7 +43,7 @@ export default function AdminProfile() {
   }
 
   const name = profile.display_name ?? "ADMIN";
-  const role = profile.role === "manager" ? "Manager" : "Admin";
+  const role = "Admin";
 
   return (
     <div className="screen figma-route-scroll">
