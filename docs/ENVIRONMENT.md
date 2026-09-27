@@ -36,7 +36,7 @@ All public. Anything secret here is a leak.
 | Name | Example |
 |---|---|
 | `VITE_API_BASE` | `https://api.u2gas.ng/api` |
-| `VITE_API_ORIGIN` | `https://api.u2gas.ng` — written into the CSP in `dist/_headers`; the real build fails without it. A `VITE_USE_MOCKS=true` build (the demo) contacts no API and may leave it unset. |
+| `VITE_API_ORIGIN` | `https://api.u2gas.ng` — written into the CSP in `dist/_headers`; the real build fails without it. A `VITE_EMBEDDED_API=true` build (local preview) contacts no API and may leave it unset. |
 | `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | the sb_publishable_ key, never the secret key |
 | `VITE_SUPABASE_ANON_KEY` | optional. Legacy name for the same public key, still accepted as a fallback so an older deployment keeps working. Set the publishable key on anything new. |

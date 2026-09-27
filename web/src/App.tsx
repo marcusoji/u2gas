@@ -4,6 +4,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth, type Role } from "./lib/auth";
 import { CartProvider } from "./lib/cart";
+import { EMBEDDED_API } from "./mocks/gate";
 import { LoadBar } from "./components/primitives";
 import { OfflineBanner, PermissionDenied, ScreenBoundary } from "./components/states";
 import { MockBar } from "./components/MockBar";
@@ -69,7 +70,11 @@ function Guard({ allow, children }: { allow: Role[]; children: ReactNode }) {
 
   if (loading) return <Loading />;
 
-  if (!session) {
+  // With no Worker behind it there is no login to send anyone to, so a missing
+  // session is never a redirect. The embedded API always answers with the role
+  // the switch selected; a role that does not hold this prefix still gets the
+  // "not your door" screen, exactly as the real build would show it.
+  if (!session && !EMBEDDED_API) {
     const next = encodeURIComponent(location.pathname + location.search);
     return <Navigate to={`/auth/login?next=${next}`} replace />;
   }

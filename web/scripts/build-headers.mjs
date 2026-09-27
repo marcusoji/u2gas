@@ -33,20 +33,20 @@ const env = { ...loadEnv(process.env.NODE_ENV ?? "production", root, "VITE_"), .
 
 const apiOrigin = env.VITE_API_ORIGIN;
 
-// The mock build talks to no API at all — `src/mocks/` answers every route in
-// the browser — so there is no origin for the CSP to name. Failing the build
-// here would make the one deployable demo impossible to ship without inventing
-// a URL that is never contacted. A real build (mocks off) still requires it.
-const mockBuild = env.VITE_USE_MOCKS === "true";
+// An embedded-API build talks to no API at all — `src/mocks/` answers every
+// route in the browser — so there is no origin for the CSP to name. Failing
+// the build here would make that local preview impossible to ship without
+// inventing a URL that is never contacted. A real build still requires it.
+const embeddedBuild = env.VITE_EMBEDDED_API === "true";
 
-if (!apiOrigin && !mockBuild) {
+if (!apiOrigin && !embeddedBuild) {
   console.error(
     "\nVITE_API_ORIGIN is not set.\n\n" +
     "The Content-Security-Policy names the API origin explicitly, so the\n" +
     "build cannot produce a correct _headers file without it.\n\n" +
     "Set it to your Worker's origin, for example:\n" +
     "  VITE_API_ORIGIN=https://api.example.com\n\n" +
-    "For a mock-only demo build (VITE_USE_MOCKS=true) no origin is needed.\n");
+    "For an embedded-API build (VITE_EMBEDDED_API=true) no origin is needed.\n");
   process.exit(1);
 }
 

@@ -1,19 +1,19 @@
 #!/usr/bin/env node
 /**
- * Demo error crawl.
+ * Route error crawl.
  *
- * Visits every route in the demo (VITE_USE_MOCKS=true), as each role, and
+ * Visits every route, as each role, and
  * fails if any page logs a console error/warning, throws, or fails a request.
  *
  * The dev server must already be on :12001.
  *
- *   node scripts/check-demo-errors.mjs
+ *   node scripts/check-route-errors.mjs
  */
 import puppeteer from "puppeteer-core";
 
 const BASE = process.env.BASE_URL || "http://127.0.0.1:12001";
 
-/** Routes per role. Roles are selected through the demo `?as=` switch. */
+/** Routes per role. Roles are selected through the `?as=` switch. */
 const ROUTES = {
   customer: [
     "/", "/home", "/shop", "/shop/product/p1", "/cart", "/checkout",
@@ -91,9 +91,9 @@ for (const [role, paths] of Object.entries(ROUTES)) {
 await browser.close();
 
 if (report.length) {
-  console.log("DEMO ERRORS FOUND:");
+  console.log("ROUTE ERRORS FOUND:");
   console.log(report.join("\n"));
   console.log(`\n${failures} problem(s).`);
   process.exit(1);
 }
-console.log("DEMO CLEAN — no console errors, page errors or failed requests.");
+console.log("ROUTES CLEAN — no console errors, page errors or failed requests.");

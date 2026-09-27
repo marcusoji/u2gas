@@ -4,14 +4,14 @@ import { getMockRole, mockHome } from "./gate";
 /* ---------------------------------------------------------------------------
    A stand-in for the Worker.
 
-   Enabled only by `VITE_USE_MOCKS=true`. It answers every endpoint lib/api.ts
-   calls, from the fixtures, and mutates them in memory so the demo behaves:
+   Enabled only by `VITE_EMBEDDED_API=true`. It answers every endpoint lib/api.ts
+   calls, from the fixtures, and mutates them in memory so the screen behaves:
    an order moves stock, a collected code stops being collectable, a refund
    leaves the queue.
 
    Reached by dynamic import, and only once the flag is known to be set, so no
-   fixture in here can land in a real bundle. The flag and the demo role live
-   in ./gate, which is cheap enough to import on the real path.
+   fixture in here can land in a real bundle. The flag and the selected role
+   live in ./gate, which is cheap enough to import on the real path.
    --------------------------------------------------------------------------- */
 
 export class MockHttpError extends Error {
@@ -31,7 +31,7 @@ const fail = (code: string, status: number, message: string, detail: Record<stri
 
 /* --- Who is signed in ----------------------------------------------------- */
 
-/** The role-shaped fixture for whoever the demo bar has selected. */
+/** The role-shaped fixture for whoever the role switch has selected. */
 export function mockProfile(): any {
   const role = getMockRole();
   if (role === "customer") return fx.customerProfile;
@@ -934,7 +934,7 @@ async function route(
     return { bundle, products_created: 0 };
   }
 
-  // Deliberately customer-safe wording: this fallback surfaces in the demo, and
+  // Deliberately customer-safe wording: this fallback reaches the screen, and
   // the method/path it used to print read as a broken build rather than a
   // screen that simply has nothing to show.
   throw fail("NOT_FOUND", 404, "WE COULDN'T FIND WHAT YOU ASKED FOR");

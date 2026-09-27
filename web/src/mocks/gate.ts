@@ -1,16 +1,20 @@
 import type { Role } from "../lib/auth";
 
 /* ---------------------------------------------------------------------------
-   The demo switch, and the identity it carries.
+   The embedded API, and the identity it carries.
 
-   Kept apart from ./index.ts, which pulls in every fixture. Only the flag and
-   a few localStorage reads live here, so the rest of the app can ask "are we
-   in demo mode?" and "which role?" without dragging the fixtures into a
-   production bundle. The fixtures are reached by dynamic import, and only
-   after MOCKS_ENABLED is known to be true.
+   A build with no Worker behind it has no login to offer, so identity is
+   served locally: one profile per role, and this module is the switch that
+   picks it. The flag and a few localStorage reads live here so the rest of
+   the app can ask "is the API embedded?" and "which role?" without dragging
+   every fixture into a build that talks to the real Worker. The fixtures are
+   reached by dynamic import, and only after EMBEDDED_API is known to be true.
+
+   A build with a real API sets VITE_EMBEDDED_API to anything but "true", and
+   none of this is reachable.
    --------------------------------------------------------------------------- */
 
-export const MOCKS_ENABLED = import.meta.env.VITE_USE_MOCKS === "true";
+export const EMBEDDED_API = import.meta.env.VITE_EMBEDDED_API === "true";
 
 export const MOCK_ROLES: Role[] = ["customer", "staff", "driver", "manager", "admin"];
 
@@ -62,7 +66,7 @@ export function mockSession(): any {
 
 /**
  * `?as=staff` picks a role and drops the parameter, so the four apps can be
- * linked to directly. Purely a demo convenience — nothing reads this on the
+ * linked to directly. Local convenience only — nothing reads this on the
  * real path.
  */
 export function bootstrapRoleFromUrl(): void {

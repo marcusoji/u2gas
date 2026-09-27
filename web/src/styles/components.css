@@ -1080,8 +1080,9 @@ img.is-unavailable { filter: blur(1.5px); }
 .app-nav a[aria-current="page"] { color: var(--blue); }
 
 /* ---------------------------------------------------------------------------
-   Demo-mode control. Only rendered when VITE_USE_MOCKS=true; carries no
-   production styling and never appears in a real build.
+   Role switch for a build with no login. Only rendered when
+   VITE_EMBEDDED_API=true; carries no production styling and never appears in a
+   real build.
    --------------------------------------------------------------------------- */
 .mockbar {
   position: fixed;

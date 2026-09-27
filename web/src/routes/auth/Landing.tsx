@@ -28,7 +28,8 @@ export default function Landing() {
     setError(null);
     const { error: authError } = await signInWithProvider(which);
     if (authError) { setBusy(null); setError("THAT DIDN'T WORK — TRY AGAIN"); return; }
-    // Demo mode resolves synchronously above; land the way /auth/callback does.
+    // The embedded sign-in resolves synchronously above; land the way
+    // /auth/callback does.
     nav(mockLanding(), { replace: true });
   }
 

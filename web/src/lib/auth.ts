@@ -1,7 +1,7 @@
 import { createClient, type Session } from "@supabase/supabase-js";
 import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from "react";
 import {
-  MOCKS_ENABLED, mockHome, mockSession, onMockRoleChange, setMockRole,
+  EMBEDDED_API, mockHome, mockSession, onMockRoleChange, setMockRole,
 } from "../mocks/gate";
 
 /**
@@ -24,10 +24,10 @@ const browserKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
   import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Demo mode runs with no Supabase project at all, so the guard below would
+// The embedded API needs no Supabase project at all, so the guard below would
 // abort the import. Keys are not read in this mode — see the mock branch of
 // AuthProvider. Never enabled in a real build.
-if (!MOCKS_ENABLED && !browserKey) {
+if (!EMBEDDED_API && !browserKey) {
   throw new Error(
     "VITE_SUPABASE_PUBLISHABLE_KEY is not set. The app cannot reach Supabase.",
   );
@@ -35,7 +35,7 @@ if (!MOCKS_ENABLED && !browserKey) {
 
 // A secret key in the browser bundle is a total compromise, so refuse to start
 // rather than ship one by accident.
-if (!MOCKS_ENABLED && /^sb_secret_|^service_role/.test(browserKey!)) {
+if (!EMBEDDED_API && /^sb_secret_|^service_role/.test(browserKey!)) {
   throw new Error(
     "A Supabase SECRET key is configured in the frontend. Use the publishable key.",
   );
@@ -81,10 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
 
-    // Demo mode has no Supabase project to ask, so identity comes straight
-    // from the mock store. Switching role there re-runs this, which is what
+    // There is no Supabase project to ask, so identity comes straight from
+    // the embedded store. Switching role there re-runs this, which is what
     // lets the role switcher move you between the four apps.
-    if (MOCKS_ENABLED) {
+    if (EMBEDDED_API) {
       const sync = async () => {
         const { mockProfile } = await import("../mocks");
         setState({
@@ -137,9 +137,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext);
 
 export async function signInWithEmail(email: string, next?: string) {
-  // Demo mode has no mail server. Report success so the "check your mail"
+  // There is no mail server here. Report success so the "check your mail"
   // screen is reachable; there is nothing to send.
-  if (MOCKS_ENABLED) return { data: {}, error: null };
+  if (EMBEDDED_API) return { data: {}, error: null };
   return supabase.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: buildRedirect(next) },
@@ -147,10 +147,10 @@ export async function signInWithEmail(email: string, next?: string) {
 }
 
 export async function signInWithProvider(provider: "google" | "apple", next?: string) {
-  // Demo mode has no OAuth round trip. Callers land on mockLanding() — the
+  // There is no OAuth round trip here. Callers land on mockLanding() — the
   // real provider returns by way of /auth/callback, and without this the
   // buttons set a busy flag and then stopped, which read as broken.
-  if (MOCKS_ENABLED) return { data: {}, error: null };
+  if (EMBEDDED_API) return { data: {}, error: null };
   return supabase.auth.signInWithOAuth({
     provider,
     options: { redirectTo: buildRedirect(next) },
@@ -158,7 +158,7 @@ export async function signInWithProvider(provider: "google" | "apple", next?: st
 }
 
 /**
- * Where a successful demo sign-in lands.
+ * Where a successful embedded sign-in lands.
  *
  * Mirrors what /auth/callback does with a real session: the validated deep link
  * if there is one, otherwise this role's own app root.
@@ -168,7 +168,7 @@ export function mockLanding(next?: string | null): string {
 }
 
 export async function signOut() {
-  if (MOCKS_ENABLED) { setMockRole("customer"); return; }
+  if (EMBEDDED_API) { setMockRole("customer"); return; }
   await supabase.auth.signOut();
 }
 

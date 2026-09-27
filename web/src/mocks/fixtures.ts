@@ -6,12 +6,12 @@ import type {
 } from "../lib/api";
 
 /* ---------------------------------------------------------------------------
-   Demo data for running the interface without a backend.
+   Fixture data for running the interface with the API embedded.
 
    Shapes mirror what the Worker returns (the interfaces in lib/api.ts), so a
    screen cannot tell the difference between this and the live API. Everything
    is held in module state for the life of the tab, which is what makes the
-   demo interactive: placing an order moves stock, scanning a code fulfils it.
+   interactive: placing an order moves stock, scanning a code fulfils it.
    --------------------------------------------------------------------------- */
 
 const now = Date.now();
@@ -375,15 +375,15 @@ export const orders: Order[] = [
 ];
 
 /** `Delivery.delivery_id` is optional on the wire; every row here has one. */
-export type DemoDelivery = Delivery & { delivery_id: string };
+export type FixtureDelivery = Delivery & { delivery_id: string };
 
-export const deliveries: DemoDelivery[] = [
-  orders[2].delivery as DemoDelivery,
-  orders[5].delivery as DemoDelivery,
-  orders[6].delivery as DemoDelivery,
-  orders[7].delivery as DemoDelivery,
-  orders[8].delivery as DemoDelivery,
-  orders[9].delivery as DemoDelivery,
+export const deliveries: FixtureDelivery[] = [
+  orders[2].delivery as FixtureDelivery,
+  orders[5].delivery as FixtureDelivery,
+  orders[6].delivery as FixtureDelivery,
+  orders[7].delivery as FixtureDelivery,
+  orders[8].delivery as FixtureDelivery,
+  orders[9].delivery as FixtureDelivery,
 ];
 
 /* --- Customer-adjacent ---------------------------------------------------- */
@@ -443,9 +443,9 @@ export function availableKg(): number {
 }
 
 /**
- * The demo's burn rate. The real Worker measures the last 14 days of fulfilled
+ * The embedded burn rate. The real Worker measures the last 14 days of fulfilled
  * orders; the fixtures have no such history, so a mid-range figure stands in.
- * The three warning levels are derived the same way on both sides so the demo
+ * The three warning levels are derived the same way on both sides so the screen
  * shows the same wording a live depot would.
  */
 export const BURN_KG_PER_DAY = 180;
@@ -503,7 +503,7 @@ export function report(days: number): ReportSummary {
     .filter((o) => o.payment_status === "paid")
     .reduce((s, o) => s + o.total_kobo, 0);
 
-  // Same daily buckets the Worker builds, so the demo trend is the same shape
+  // Same daily buckets the Worker builds, so the trend is the same shape
   // as production rather than a different-looking mock.
   const buckets = new Map<string, { date: string; revenue_kobo: number; orders: number }>();
   for (let i = days - 1; i >= 0; i--) {

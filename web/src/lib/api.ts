@@ -1,5 +1,5 @@
 import { supabase } from "./auth";
-import { MOCKS_ENABLED, ROLE_KEY } from "../mocks/gate";
+import { EMBEDDED_API, ROLE_KEY } from "../mocks/gate";
 
 /* ---------------------------------------------------------------------------
    API client.
@@ -44,16 +44,16 @@ export class ApiError extends Error {
 }
 
 async function authHeader(): Promise<Record<string, string>> {
-  if (MOCKS_ENABLED) return { Authorization: "Bearer mock-token" };
+  if (EMBEDDED_API) return { Authorization: "Bearer mock-token" };
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 /**
- * Demo mode. Same contract as the fetch path below — the response body on
- * success, an ApiError carrying the server's own code and copy on failure — so
- * no screen needs to know which one it is talking to.
+ * The embedded API. Same contract as the fetch path below — the response body
+ * on success, an ApiError carrying the server's own code and copy on failure —
+ * so no screen needs to know which one it is talking to.
  *
  * The fixture module is pulled in here rather than at the top of the file: a
  * static import would put every fixture in the production bundle, which the
@@ -70,7 +70,7 @@ async function mockFetch<T>(path: string, init: RequestInit): Promise<T> {
     if (e instanceof mocks.MockHttpError) {
       throw new ApiError(e.code, e.status, e.message, e.detail);
     }
-    throw new ApiError("INTERNAL", 500, "SOMETHING WENT WRONG IN DEMO MODE");
+    throw new ApiError("INTERNAL", 500, "SOMETHING WENT WRONG");
   }
 }
 
@@ -79,7 +79,7 @@ async function request<T>(
   init: RequestInit = {},
   retries = 1,
 ): Promise<T> {
-  if (MOCKS_ENABLED) return mockFetch<T>(path, init);
+  if (EMBEDDED_API) return mockFetch<T>(path, init);
 
   let res: Response;
 
