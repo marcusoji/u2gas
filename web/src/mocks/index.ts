@@ -934,7 +934,10 @@ async function route(
     return { bundle, products_created: 0 };
   }
 
-  throw fail("NOT_FOUND", 404, `No mock for ${method} ${path}`);
+  // Deliberately customer-safe wording: this fallback surfaces in the demo, and
+  // the method/path it used to print read as a broken build rather than a
+  // screen that simply has nothing to show.
+  throw fail("NOT_FOUND", 404, "WE COULDN'T FIND WHAT YOU ASKED FOR");
 }
 
 /* --- Helpers that read live state ----------------------------------------- */

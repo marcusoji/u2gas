@@ -54,7 +54,7 @@ const TARGETS = [
   { route: "/orders/o-paid", role: "customer" },
   { route: "/orders/o-delivery", role: "customer" },
   { route: "/orders/o-expired", role: "customer" },
-  { route: "/orders/verify", role: "customer" },            // 1:502 while a verification fails
+  { route: "/orders/verify?order=o-missing&reference=mock-fail", role: "customer" }, // 1:502 a verification that actually failed
   { route: "/history", role: "customer" },
   { route: "/profile", role: "customer" },
   { route: "/profile/details", role: "customer" },
@@ -81,6 +81,7 @@ const TARGETS = [
   { route: "/admin/people?state=add", role: "admin" },        // 1:2686 ADD STAFF
   { route: "/admin/people?layout=1", role: "admin" },         // 1:2624 STAFF LAYOUT 1
   { route: "/admin/staff/d-1/history", role: "admin" },
+  { route: "/admin/me", role: "admin" },                      // 1:4665 office profile
 ];
 
 /* ------------------------------------------------------------------ capture */

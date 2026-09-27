@@ -1102,6 +1102,14 @@ img.is-unavailable { filter: blur(1.5px); }
 body:has(.app-nav) .mockbar {
   bottom: calc(56px + var(--s-4) + env(safe-area-inset-bottom));
 }
+
+/* Customer home pins the shop entry along the bottom edge, and this control is
+   fixed to the same corner: on a narrow phone the toggle landed on the door's
+   own centre and swallowed the tap, so the one route into the shop could not
+   be opened. Lift the control above the door and let the door keep the corner. */
+body:has(.home-shop-link) .mockbar {
+  bottom: calc(84px + var(--s-4) + env(safe-area-inset-bottom));
+}
 .mockbar-toggle {
   display: inline-flex;
   align-items: center;
@@ -1326,7 +1334,14 @@ body:has(.app-nav) .mockbar {
   position: absolute;
   z-index: 24;
   left: 20px;
-  top: 206px;
+  /* The count sat on the first row of tiles: its second line met the tile's
+     top edge, so a match count read as part of the product underneath it. The
+     band between the search field's foot (198) and the tiles (215) is only
+     17px, so the count keeps to one line and is centred in it. */
+  top: 198px;
+  height: 17px;
+  line-height: 17px;
+  white-space: nowrap;
   width: 400px;
   text-align: right;
   font-family: var(--font-px);

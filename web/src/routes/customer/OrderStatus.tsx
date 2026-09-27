@@ -64,6 +64,10 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
 
   const load = useCallback(async () => {
     setError(null);
+    // With no order in the path or the query there is nothing to ask for.
+    // Letting the request go out produced the mock transport's own developer
+    // string — "No mock for GET /orders/" — straight onto the screen.
+    if (!orderId) { setError("WE COULDN'T TELL WHICH ORDER TO OPEN"); return; }
     try {
       const { order } = await api.order(orderId, guestToken);
       setOrder(order);
@@ -202,32 +206,39 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
   }
 
   if (error && !order) {
+    // The FAILED board belongs to a verification that actually ran and did not
+    // pass. Opening the callback with no reference at all is not that: the
+    // order simply never loaded, and painting FAILED over it told a customer
+    // their payment had failed when nothing had been attempted. Only a real
+    // attempt gets the board; anything else gets the ordinary error.
+    const failedVerification = verifying && !!paymentReference;
+    if (!failedVerification) {
+      return (
+        <div className="screen">
+          <BackButton to="/history" />
+          <ErrorState message={error} onRetry={load} />
+        </div>
+      );
+    }
     return (
       <div className="screen">
-        {verifying ? (
-          <FigmaRouteFrame
-            node="1:502"
-            values={{ "1:576": "FAILED" }}
-          >
-            <button
-              className="figma-route-interactive"
-              aria-label="Retry payment verification"
-              onClick={() => { setError(null); void load(); }}
-              style={{ left: 120, top: 600, width: 200, height: 90 }}
-            />
-            <div className="figma-route-overlay-text" style={{ left: 50, top: 520, width: 340 }}>
-              {error}
-            </div>
-            {/* A failed verification is a dead end without a way out: the
-                frame draws no back control, so the app's own goes on it. */}
-            <BackButton to="/history" />
-          </FigmaRouteFrame>
-        ) : (
-          <>
-            <BackButton to="/history" />
-            <ErrorState message={error} onRetry={load} />
-          </>
-        )}
+        <FigmaRouteFrame
+          node="1:502"
+          values={{ "1:576": "FAILED" }}
+        >
+          <button
+            className="figma-route-interactive"
+            aria-label="Retry payment verification"
+            onClick={() => { setError(null); void load(); }}
+            style={{ left: 120, top: 600, width: 200, height: 90 }}
+          />
+          <div className="figma-route-overlay-text" style={{ left: 50, top: 520, width: 340 }}>
+            {error}
+          </div>
+          {/* A failed verification is a dead end without a way out: the
+              frame draws no back control, so the app's own goes on it. */}
+          <BackButton to="/history" />
+        </FigmaRouteFrame>
       </div>
     );
   }
