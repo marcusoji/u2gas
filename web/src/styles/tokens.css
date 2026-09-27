@@ -94,8 +94,8 @@
    Delete this block if a later jgs7 build gains U+20A6 and U+2014. */
 @font-face {
   font-family: "jgs7";
-  src: url("/fonts/u2-pixel-400.woff2") format("woff2"),
-       url("/fonts/u2-pixel-400.woff")  format("woff");
+  src: url("/fonts/u2-pixel-400.woff") format("woff");
+
   font-weight: 400;
   font-display: swap;
   unicode-range: U+20A6, U+2014;
@@ -107,15 +107,15 @@
    reached in production. */
 @font-face {
   font-family: "U2 Pixel";
-  src: url("/fonts/u2-pixel-400.woff2") format("woff2"),
-       url("/fonts/u2-pixel-400.woff")  format("woff");
+  src: url("/fonts/u2-pixel-400.woff") format("woff");
+
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: "U2 Pixel";
-  src: url("/fonts/u2-pixel-700.woff2") format("woff2"),
-       url("/fonts/u2-pixel-700.woff")  format("woff");
+  src: url("/fonts/u2-pixel-700.woff") format("woff");
+
   font-weight: 700;
   font-display: swap;
 }

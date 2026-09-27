@@ -41,7 +41,18 @@ export default function Shift() {
   const variance = data ? countedKobo - data.expected_kobo : 0;
   const validCount = counted.trim() !== "" && Number.isFinite(parsedCounted) && parsedCounted >= 0;
   const closed = Boolean(data?.reconciliation?.closed_at);
-
+  // The variance is the number the whole screen exists to show, and the one a
+  // cashier signs their name against. Three states, and the words a manager
+  // uses for them — balanced, over, short — rather than a bare signed figure.
+  const varianceState: "balanced" | "over" | "short" =
+    variance === 0 ? "balanced" : variance > 0 ? "over" : "short";
+  const varianceWord = { balanced: "BALANCED", over: "OVER", short: "SHORT" }[varianceState];
+  // Once the drawer is closed the count is history, not a form field. The
+  // input used to stay mounted and editable after filing, which let a cashier
+  // retype a number that could never be saved.
+  const displayCountedKobo = closed && data?.reconciliation
+    ? Number(data.reconciliation.counted_kobo)
+    : countedKobo;
   async function close() {
     setBusy(true);
     setError(null);
@@ -81,24 +92,25 @@ export default function Shift() {
         lines={[
           { label: "CASH TAKEN", value: String(data.transaction_count) },
           { label: "EXPECTED", value: money(data.expected_kobo) },
-          { label: "COUNTED", value: money(countedKobo) },
+          { label: "COUNTED", value: money(displayCountedKobo) },
         ]}
-      >
-        <div className="row is-total">
-          <span>VARIANCE</span>
-          <b style={{ color: variance === 0 ? "var(--blue)" : "var(--danger)" }}>
-            {variance > 0 ? "+" : ""}{money(variance)}
-          </b>
-        </div>
+      />
 
-        {/* A variance of zero is the normal case and needs no decoration. Any
-            other number is stamped, because it needs explaining. */}
-        {variance !== 0 && (
-          <div className="stamp-wrap" style={{ marginTop: "var(--s-3)" }}>
-            <Stamp>{variance > 0 ? "OVER" : "SHORT"}</Stamp>
-          </div>
-        )}
-      </Receipt>
+      {/* The variance gets its own instrument rather than a fourth line on the
+          receipt. It is the one figure on this screen a cashier is answerable
+          for, and a signed number in a list is not read the way a colour-coded
+          tally is. */}
+      <div className={`shift-variance is-${varianceState}`}>
+        <span>{varianceWord}</span>
+        <b>{variance > 0 ? "+" : ""}{money(variance)}</b>
+        <i>
+          {varianceState === "balanced"
+            ? "THE DRAWER MATCHES THE TILL"
+            : varianceState === "over"
+              ? "MORE IN THE DRAWER THAN THE TILL RECORDED"
+              : "LESS IN THE DRAWER THAN THE TILL RECORDED"}
+        </i>
+      </div>
 
       {!closed && (
         <div className="stack is-tight" style={{ marginTop: "var(--s-6)" }}>
@@ -120,12 +132,29 @@ export default function Shift() {
           <Pill onClick={close} disabled={busy || !validCount || (variance !== 0 && !note.trim())}>
             {busy ? "CLOSING" : "CLOSE SHIFT"}
           </Pill>
+          {/* The button is inert until the difference is explained. Say so,
+              rather than leaving a cashier pressing a dead key. */}
+          {validCount && variance !== 0 && !note.trim() && (
+            <p className="label" style={{ textAlign: "left" }}>
+              WRITE WHY THE DRAWER DIFFERS, THEN YOU CAN CLOSE
+            </p>
+          )}
         </div>
       )}
 
-      {closed && (
-        <div className="stamp-wrap" style={{ marginTop: "var(--s-6)" }}>
+      {closed && data?.reconciliation && (
+        <div className="shift-closed">
           <Stamp tone="ok">CLOSED AND FILED</Stamp>
+          <p className="label">
+            FILED {new Date(data.reconciliation.closed_at!).toLocaleString("en-GB", {
+              day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+            })}
+          </p>
+          {data.reconciliation.note && (
+            <p className="card-sub" style={{ marginTop: "var(--s-2)" }}>
+              {data.reconciliation.note}
+            </p>
+          )}
         </div>
       )}
 

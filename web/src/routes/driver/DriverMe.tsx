@@ -4,6 +4,7 @@ import { api, ApiError } from "../../lib/api";
 import { signOut } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { mediaUrl } from "../../lib/media";
+import { AvatarUpload } from "../../components/AvatarUpload";
 import {
   ErrorState, LoadBar, OptionalBack, Pill, Segmented, Stamp,
   U2Mark} from "../../components/primitives";
@@ -75,6 +76,9 @@ export default function DriverMe() {
             style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, objectFit: "cover", zIndex: 10 }}
           />
         )}
+        {/* Same avatar slot as the cashier's: the drawing has the frame, the
+            driver owns a profile row, so the picker goes here too. */}
+        <AvatarUpload basePath={driver.profile?.avatar_asset?.base_path} left={149} top={106} />
         {/* The completed figure is drawn as a caption at (131,403) on the
             board, but it is the number a driver taps when they want to see what
             they actually did. The hotspot sits on the drawn line, not on the

@@ -13,6 +13,8 @@ export default function WalkIn() {
 
   const [digits, setDigits] = useState("");
   const [sheet, setSheet] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
+  const [typed, setTyped] = useState("");
   const [fulfillment, setFulfillment] = useState<"pickup" | "delivery">("pickup");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -53,13 +55,22 @@ export default function WalkIn() {
       if (/^\d$/.test(d) && digits.length < 4 && !(d === "0" && digits === "")) setDigits((v) => v + d);
       return;
     }
-    if (el.closest(".key.is-pay") || el.closest('[data-node="1:4514"]')) {
-      if (kg > 0) setSheet(true);
-    }
-    // The hand opens the details sheet on every board. It must still respect
-    // the amount: there is nothing to reserve at 0kg, and the sheet's own
-    // button only checked the name and phone.
-    if (el.closest('[data-node="1:4516"]') && kg > 0) setSheet(true);
+    if (el.closest(".key.is-pay")) { if (kg > 0) setSheet(true); return; }
+    // The drawing puts two controls in this row and the file labels them
+    // differently: the blue pill says ENTER and opens the customer details,
+    // and the white circle is drawn as "enter the code by hand" (1:4516). They
+    // used to be wired to the same handler, so the counter had two buttons for
+    // one act. The drawn labels are now honoured — ENTER confirms, the hand
+    // types the amount directly for a bulk figure the keypad is slow to tap.
+    if (el.closest('[data-node="1:4514"]')) { if (kg > 0) setSheet(true); return; }
+    if (el.closest('[data-node="1:4516"]')) { setTyped(""); setTypeOpen(true); }
+  }
+
+  /** Commit a hand-typed amount, the same 4-digit ceiling the keypad enforces. */
+  function commitTyped() {
+    const d = typed.replace(/\D/g, "").slice(0, 4).replace(/^0+/, "");
+    setDigits(d);
+    setTypeOpen(false);
   }
 
   return (
@@ -75,6 +86,35 @@ export default function WalkIn() {
         onClick={handleClick}
       >
       </FigmaRouteFrame>
+
+      {/* The drawn hand (1:4516). The keypad stops at four digits and is slow
+          for a bulk figure, so this types the amount straight in. It commits to
+          the same readout the keypad drives — one amount, two ways to enter it,
+          which is what the file's two controls actually mean. */}
+      <Sheet open={typeOpen} onClose={() => setTypeOpen(false)} label="Type the amount">
+        <p className="label">HOW MANY KILOGRAMMES</p>
+        <div style={{ marginTop: "var(--s-4)" }}>
+          <Input
+            autoFocus
+            type="number"
+            inputMode="numeric"
+            placeholder="KG"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") commitTyped(); }}
+          />
+        </div>
+        <p className="label" style={{ marginTop: "var(--s-4)", lineHeight: 2 }}>
+          UP TO FOUR DIGITS. THE READOUT UPDATES WHEN YOU CONFIRM.
+        </p>
+        <div style={{ marginTop: "var(--s-5)" }}>
+          <Pill disabled={!typed.replace(/\D/g, "")} onClick={commitTyped}>
+            USE THIS AMOUNT
+          </Pill>
+          <Pill variant="ghost" onClick={() => setTypeOpen(false)}>CANCEL</Pill>
+        </div>
+      </Sheet>
+
       <Sheet open={sheet} onClose={() => setSheet(false)} label="Walk-in details">
         <Segmented
           label="Pickup or delivery"

@@ -252,6 +252,16 @@
 .key:active { transform: translateY(1px); background: #0F0F10; }
 .key:disabled { opacity: .45; }
 
+/* The submit key while its request is in flight. A search answers in a second
+   or two and the key looks identical throughout, so a cashier presses it
+   again; the pulse says the press landed and the screen is working. */
+.key.is-busy {
+  color: var(--blue-soft);
+  animation: key-busy 900ms ease-in-out infinite alternate;
+}
+@keyframes key-busy { from { opacity: .55; } to { opacity: 1; } }
+.key.is-busy:disabled { opacity: .55; animation: none; }
+
 /* --- Receipt ------------------------------------------------------------- */
 
 /* figma 1:260 — 284x20 radius 6 in #D5D4D4, with a 271x5 black inner slot. */
@@ -515,6 +525,16 @@
   white-space: nowrap;
 }
 .card-sub { font-size: 7px; color: var(--grey-mid); margin: 3px 0 0; }
+/* The line a cashier reads out — a customer's name, a driver's name. One step
+   up from `card-sub` so the list scans by name, not by order number. */
+.card-lead {
+  font-size: var(--t-card);
+  color: var(--ink);
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .card-go {
   width: 18px; height: 18px; flex: none;
   border-radius: 50%;
@@ -1544,6 +1564,37 @@ body:has(.app-nav) .mockbar {
   margin: 0 0 var(--s-4);
 }
 .report-bars { display: flex; flex-direction: column; gap: var(--s-3); }
+
+/* A single proportional bar for a share of orders. It replaces the tank
+   illustration on this screen: the meter says "this fraction of the whole" in
+   the same fill language as the gauge without implying a gas stock figure. */
+.report-meter { display: grid; gap: var(--s-3); }
+.report-meter-bar {
+  height: 22px;
+  border: 1px solid var(--field);
+  border-radius: 11px;
+  background: var(--field);
+  overflow: hidden;
+}
+.report-meter-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 11px 0 0 11px;
+  background: var(--blue);
+  background-image: var(--noise);
+  min-width: 2px;
+}
+.report-meter-note {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .08em;
+  color: var(--grey);
+}
+.report-meter-note b { color: var(--blue); font-weight: 400; font-variant-numeric: tabular-nums; }
 .report-bar {
   display: grid;
   grid-template-columns: 110px 1fr 74px;
@@ -1643,7 +1694,7 @@ body:has(.app-nav) .mockbar {
 .report-print { display: none; }
 
 @media print {
-  @page { margin: 16mm 14mm; }
+  @page { margin: 14mm 12mm; size: A4; }
 
   html, body { background: #fff !important; }
 
@@ -1652,6 +1703,9 @@ body:has(.app-nav) .mockbar {
   .report-screen .report-print,
   .report-screen .report-print * { visibility: visible !important; }
 
+  /* A signed document, so it is set like one: black on white, one column, a
+     consistent baseline. The dashboard's colours and gauges have no meaning on
+     paper and none of them reach here. */
   .report-print {
     display: block !important;
     position: absolute;
@@ -1660,82 +1714,108 @@ body:has(.app-nav) .mockbar {
     color: #000;
     background: #fff;
     font-family: var(--font-px), Arial, sans-serif;
-    font-size: 11px;
-    line-height: 1.5;
+    font-size: 10.5px;
+    line-height: 1.45;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+
+  /* --- Letterhead -------------------------------------------------------- */
   .report-print-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 16px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #000;
+    gap: 18px;
+    padding-bottom: 8px;
+    border-bottom: 2.5px solid #000;
   }
   .report-print-brand { display: flex; align-items: center; gap: 10px; }
   .report-print-mark {
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border: 2px solid #000;
     border-radius: 8px;
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 700;
     letter-spacing: -.04em;
   }
   .report-print-head h1 {
     margin: 0;
-    font-size: 16px;
+    font-size: 17px;
     letter-spacing: -.02em;
   }
-  .report-print-head p { margin: 2px 0 0; letter-spacing: .1em; }
+  .report-print-head p {
+    margin: 2px 0 0;
+    font-size: 9px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
   .report-print-meta {
     border-collapse: collapse;
-    font-size: 10px;
+    font-size: 9.5px;
   }
   .report-print-meta th,
   .report-print-meta td {
-    padding: 1px 0 1px 12px;
+    padding: 1px 0 1px 14px;
     text-align: right;
     vertical-align: top;
   }
-  .report-print-meta th { letter-spacing: .08em; opacity: .6; font-weight: 400; }
+  .report-print-meta th { letter-spacing: .1em; opacity: .55; font-weight: 400; }
   .report-print-meta td { font-weight: 700; font-variant-numeric: tabular-nums; }
 
+  /* --- Headline figures --------------------------------------------------
+     Four boxes ruled like a ledger, not four coloured cards. The heavy top
+     rule is what makes it read as the front page of a statement. */
   .report-print-kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1px;
-    margin-top: 14px;
+    margin-top: 12px;
     border: 1px solid #000;
     background: #000;
   }
   .report-print-kpis > div {
-    padding: 8px 10px;
+    padding: 8px 9px;
     background: #fff;
   }
-  .report-print-kpis span { display: block; font-size: 9px; letter-spacing: .1em; opacity: .65; }
+  .report-print-kpis span { display: block; font-size: 8px; letter-spacing: .14em; opacity: .6; }
   .report-print-kpis b {
     display: block;
     margin-top: 3px;
     font-size: 15px;
+    line-height: 1.1;
     font-variant-numeric: tabular-nums;
   }
   .report-print-kpis em {
     display: block;
     margin-top: 3px;
-    font-size: 8.5px;
+    font-size: 8px;
     font-style: normal;
     letter-spacing: .05em;
-    opacity: .65;
+    opacity: .6;
   }
 
+  /* A one-paragraph reading of the numbers, so the document opens with a
+     sentence a person can act on rather than four figures and silence. */
+  .report-print-summary {
+    margin-top: 12px;
+    padding: 9px 11px;
+    border-left: 3px solid #000;
+    background: #f4f4f4;
+    font-size: 10.5px;
+  }
+  .report-print-summary b { font-variant-numeric: tabular-nums; }
+
+  /* --- Sections ---------------------------------------------------------- */
   .report-print h2 {
-    margin: 16px 0 6px;
+    margin: 18px 0 6px;
     padding-bottom: 3px;
-    border-bottom: 1px solid #999;
-    font-size: 12px;
-    letter-spacing: .1em;
+    border-bottom: 1px solid #000;
+    font-size: 11.5px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
   }
   .report-print-table {
     width: 100%;
@@ -1744,20 +1824,26 @@ body:has(.app-nav) .mockbar {
   }
   .report-print-table th,
   .report-print-table td {
-    padding: 4px 6px;
+    padding: 4.5px 7px;
     text-align: left;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #d8d8d8;
     vertical-align: top;
   }
   .report-print-table thead th {
-    border-bottom: 1px solid #000;
-    letter-spacing: .08em;
+    border-bottom: 1.5px solid #000;
+    letter-spacing: .1em;
+    font-size: 9.5px;
+    text-transform: uppercase;
   }
+  /* Alternating rows. A daily table is 31 lines of near-identical figures; the
+     shade is what keeps the eye on the row it meant to read. */
+  .report-print-table tbody tr:nth-child(even) { background: #f7f7f7; }
   .report-print-table tfoot th,
   .report-print-table tfoot td {
     border-top: 2px solid #000;
     border-bottom: 0;
     font-weight: 700;
+    background: #fff;
   }
   .report-print-table th:first-child { width: 46%; }
   .report-print-table td { font-variant-numeric: tabular-nums; }
@@ -1765,43 +1851,50 @@ body:has(.app-nav) .mockbar {
   .report-print-table th:not(:first-child) { text-align: right; }
   .report-print-table.is-daily th:first-child { width: 40%; }
 
-  /* A long daily table must not split a row across pages. */
+  /* A long daily table must not split a row across pages, and its headings
+     must come back at the top of the next one. */
   .report-print-table tr { break-inside: avoid; }
   .report-print-table thead { display: table-header-group; }
   .report-print-table tfoot { display: table-footer-group; }
+  /* Section boundaries are a natural place to break; a heading alone at the
+     foot of a page is not. */
+  .report-print h2 { break-after: avoid; }
 
-  /* Signature block: the lines a depot signs off on. Kept whole, never split
-     across a page break, and pushed clear of the last table. */
+  /* --- Sign-off ----------------------------------------------------------
+     The lines a depot signs. Three witnesses and a date, ruled generously so
+     there is room to actually write on the printed page. */
   .report-print-signoff {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 24px;
-    margin-top: 28px;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 28px;
+    margin-top: 30px;
     break-inside: avoid;
   }
   .report-print-signoff > div { display: block; }
   .report-print-signoff span {
     display: block;
-    font-size: 8.5px;
-    letter-spacing: .12em;
-    opacity: .65;
+    font-size: 8px;
+    letter-spacing: .14em;
+    opacity: .6;
+    text-transform: uppercase;
   }
   .report-print-signoff i {
     display: block;
-    height: 22px;
+    height: 26px;
     border-bottom: 1px solid #000;
   }
 
   .report-print-foot {
-    margin-top: 20px;
+    margin-top: 22px;
     padding-top: 8px;
-    border-top: 1px solid #999;
-    font-size: 9px;
+    border-top: 1px solid #000;
+    font-size: 8.5px;
     letter-spacing: .08em;
-    opacity: .7;
+    opacity: .75;
     break-inside: avoid;
   }
   .report-print-foot p { margin: 0 0 3px; }
+  .report-print-foot p:last-child { letter-spacing: .12em; text-transform: uppercase; }
 }
 
 /* --- Low-gas warning ------------------------------------------------------
@@ -1966,3 +2059,195 @@ body:has(.app-nav) .mockbar {
   pointer-events: none;
   background: linear-gradient(90deg, rgba(255, 255, 255, 0), var(--white));
 }
+
+/* --- Desktop panorama ----------------------------------------------------
+   The four screens are 440px drawings. Left alone on a 1440px monitor that is
+   a phone-shaped strip marooned in grey, and every screen that had a list
+   still only ran the height of one phone. Above 560px the plate is centred on
+   a backdrop (above); above 900px there is room to widen the app chrome the
+   drawings never specified — the card lists, the keypads and the sheets — so a
+   manager working at a desk sees a working surface rather than a simulator.
+   Nothing here reaches inside an artboard: the drawings keep their own
+   coordinates and their own scale. */
+
+@media (min-width: 900px) {
+  /* A list of orders, people or drops wants width, not a centred ribbon. */
+  .screen > div:has(.card),
+  .screen > section:has(.card) {
+    max-width: 620px;
+  }
+
+  /* The dashboard's figures sit in a two-up row instead of one tall column.
+     Scoped to the report screen, which is the only one built from grid
+     sections rather than an artboard. */
+  .report-screen .report-section { max-width: 720px; }
+  .report-screen .report-bars { columns: 2; column-gap: var(--s-6); }
+
+  /* The till is a physical machine. It reads better larger at a desk, and the
+     extra room stops the amount and the keys crowding each other. */
+  .keypad { column-gap: 40px; row-gap: 12px; width: 247px; }
+}
+
+/* Below ~950px of height the driver's SCAN page cannot show camera, status and
+   action without the action falling under the sticky nav. The nav's own height
+   is the only thing that varies, so the last block lifts by exactly that. */
+@media (min-width: 900px) and (max-height: 950px) {
+  .app-shell:has(.app-nav) .screen { padding-bottom: 96px; }
+}
+
+/* A desktop sheet is a dialog, not a bottom drawer: centred, and it does not
+   need to hug the phone's bottom edge. */
+@media (min-width: 900px) {
+  .sheet { border-radius: var(--r-sheet); }
+}
+
+/* --- Scan action block ---------------------------------------------------
+   The driver's SCAN control is app chrome, not part of the drawing: the
+   artboard already spells SCAN on the camera button and again on the camera
+   lens, so a third SCAN directly under them read as two competing buttons for
+   the same act (item 5). It is one control here, named for what it does. */
+.scan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  width: 100%;
+  max-width: 344px;
+  margin: 0 auto;
+}
+
+/* --- Shift variance ------------------------------------------------------
+   The figure a cashier is answerable for. A signed number in a receipt list
+   reads as another line item; a coloured panel with the word the manager uses
+   (BALANCED, OVER, SHORT) reads as a verdict. Green is the existing "ok" tone,
+   not a new colour. */
+.shift-variance {
+  display: grid;
+  gap: 2px;
+  margin: var(--s-5) auto 0;
+  max-width: 344px;
+  padding: var(--s-4);
+  border-radius: var(--r-card);
+  border: 1px dashed var(--grey);
+  text-align: center;
+}
+.shift-variance span {
+  font-size: var(--t-caption);
+  letter-spacing: .12em;
+  color: var(--grey);
+}
+.shift-variance b {
+  font-family: var(--font-px);
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+.shift-variance i {
+  font-style: normal;
+  font-size: var(--t-caption);
+  letter-spacing: .06em;
+  color: var(--grey);
+}
+.shift-variance.is-over { border-color: var(--danger); border-style: solid; }
+.shift-variance.is-over b { color: var(--danger); }
+.shift-variance.is-short { border-color: var(--danger); border-style: solid; background: rgba(19, 23, 228, .05); }
+.shift-variance.is-short b { color: var(--danger); }
+.shift-variance.is-balanced { border-color: var(--blue); border-style: solid; }
+
+/* The filed shift: the count is history, so it is shown as a record rather
+   than left as an editable field. */
+.shift-closed {
+  display: grid;
+  gap: var(--s-2);
+  place-items: center;
+  margin-top: var(--s-6);
+  text-align: center;
+}
+.shift-closed .label { text-align: center; }
+
+/* --- Section heading -----------------------------------------------------
+   The admin lists carry a lot of sections and, until now, each was a bare
+   16px heading with no line saying what it meant. A heading plus one sentence
+   in the caption face turns a wall of cards into a readable page — the reader
+   knows what the list below them is for before they read a single row. */
+.section-head {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--field);
+}
+.section-head h2 {
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: 18px;
+  letter-spacing: var(--track);
+  color: var(--ink);
+}
+.section-head p {
+  margin: 0;
+  font-size: var(--t-caption);
+  letter-spacing: .08em;
+  color: var(--grey-mid);
+}
+.section-head.is-urgent h2 { color: var(--danger); }
+
+/* A count beside a heading, so the reader knows how much is below without
+   counting cards. */
+.section-head-count {
+  justify-self: start;
+  padding: 2px var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--field);
+  color: var(--blue);
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  font-variant-numeric: tabular-nums;
+}
+.section-head-count.is-urgent { background: rgba(255, 3, 3, .12); color: var(--danger); }
+
+/* --- Stepper -------------------------------------------------------------
+   A label, a sentence saying what the number does, and the −/+ pair. The old
+   control put the buttons at opposite edges of a 440px row with the value
+   floating between them, so the three parts read as unrelated. Grouping the
+   value with its buttons makes the thing being changed one object. */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px dashed var(--field);
+}
+.stepper-hint {
+  margin: 2px 0 0;
+  font-size: var(--t-caption);
+  letter-spacing: .06em;
+  color: var(--grey-mid);
+}
+.stepper-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex: none;
+}
+.stepper-controls > span {
+  min-width: 72px;
+  text-align: center;
+  color: var(--blue);
+  font-size: var(--t-body);
+  font-variant-numeric: tabular-nums;
+}
+.stepper-controls button:disabled { opacity: .4; }
+
+/* --- Roster controls -----------------------------------------------------
+   The roster screen's own controls. Adding somebody is a primary action, not
+   a footnote below the grid, and it is separated from the layout switch so the
+   two are not read as the same kind of thing. */
+.roster-controls {
+  display: grid;
+  gap: var(--s-5);
+  margin-top: var(--s-4);
+}
+.roster-view { display: grid; gap: var(--s-2); }
+.roster-view > .label { text-align: left; }

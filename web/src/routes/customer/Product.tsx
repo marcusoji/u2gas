@@ -4,7 +4,7 @@ import { api, ApiError, type Product, type Bundle } from "../../lib/api";
 import { useCart } from "../../lib/cart";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { CompleteTheSet } from "../../components/CompleteTheSet";
-import { useBackTo } from "../../components/primitives";
+import { BackButton, useBackTo } from "../../components/primitives";
 import { mediaUrl } from "../../lib/media";
 
 const imageUrl = (basePath?: string | null) => mediaUrl(basePath, "detail");
@@ -91,14 +91,11 @@ export default function ProductPage() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node={node} values={values} images={images}>
-        {/* 1:1483 draws the back button at (32,80) 52x52. The hotspot matches
-            those coordinates so the tap lands on the button a person can see. */}
-        <button
-          className="figma-route-interactive"
-          style={{ left: 32, top: 80, width: 52, height: 52 }}
-          aria-label="Back to the shop"
-          onClick={backToShop}
-        />
+        {/* 1:1483 draws the back button at (32,80) 52x52. The app's own back
+            control sits on that same corner: it is visible, it is 44px tall at
+            every zoom, and it knows where it came from rather than hard-wiring
+            one parent. */}
+        <BackButton to="/shop" label="SHOP" />
         <button
           className="figma-route-interactive"
           style={{ left: 110, top: 620, width: 220, height: 120 }}

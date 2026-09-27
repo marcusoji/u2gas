@@ -4,7 +4,7 @@ import {
 } from "../../lib/api";
 import {
   Empty, ErrorState, Input, LoadBar, Modal, OptionalBack,
-  Pill, Stamp, Tabs, money} from "../../components/primitives";
+  Pill, SectionHead, Stamp, Tabs, money} from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 type View = "all" | "flagged";
@@ -28,6 +28,7 @@ export default function Orders() {
   const [manual, setManual] = useState<Refund | null>(null);
   const [manualNote, setManualNote] = useState("");
   const [cancelling, setCancelling] = useState<{ order_id: string; order_number: string } | null>(null);
+  const [reassigning, setReassigning] = useState<{ order_id: string; order_number: string } | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -101,6 +102,7 @@ export default function Orders() {
   async function assign(orderId: string, driverId: string) {
     try {
       await api.admin.assign(orderId, driverId);
+      setReassigning(null);
       load();
     } catch (e) {
       setError((e as ApiError).message);
@@ -139,10 +141,12 @@ export default function Orders() {
           {/* Money owed comes first. Everything else can wait a day. */}
           {refunds && refunds.filter((r) => r.status !== "refunded" && r.status !== "manual").length > 0 && (
             <section style={{ marginBottom: "var(--s-8)" }}>
-              <h2 className="screen-title" style={{ fontSize: 16 }}>REFUNDS</h2>
-              <p className="label" style={{ textAlign: "left", margin: "var(--s-2) 0 var(--s-4)" }}>
-                THE CUSTOMER IS TOLD ONLY AFTER PAYSTACK CONFIRMS
-              </p>
+              <SectionHead
+                title="REFUNDS"
+                hint="THE CUSTOMER IS TOLD ONLY AFTER PAYSTACK CONFIRMS"
+                count={refunds.filter((r) => r.status !== "refunded" && r.status !== "manual").length}
+                tone="urgent"
+              />
 
               {refunds
                 .filter((r) => r.status !== "refunded" && r.status !== "manual")
@@ -184,10 +188,12 @@ export default function Orders() {
 
           {flagged.refunds_owed.length > 0 && (
             <section style={{ marginBottom: "var(--s-8)" }}>
-              <h2 className="screen-title" style={{ fontSize: 16 }}>REFUNDS OWED</h2>
-              <p className="label" style={{ textAlign: "left", margin: "var(--s-2) 0 var(--s-4)" }}>
-                MONEY ARRIVED AFTER THE ORDER CLOSED
-              </p>
+              <SectionHead
+                title="REFUNDS OWED"
+                hint="MONEY ARRIVED AFTER THE ORDER CLOSED"
+                count={flagged.refunds_owed.length}
+                tone="urgent"
+              />
               {flagged.refunds_owed.map((r) => (
                 <div className="card" key={r.audit_id}>
                   <div className="card-body">
@@ -205,8 +211,12 @@ export default function Orders() {
 
           {flagged.failed_deliveries.length > 0 && (
             <section style={{ marginBottom: "var(--s-8)" }}>
-              <h2 className="screen-title" style={{ fontSize: 16 }}>FAILED DROPS</h2>
-              <div style={{ height: "var(--s-4)" }} />
+              <SectionHead
+                title="FAILED DROPS"
+                hint="THE CUSTOMER IS STILL WAITING — SEND SOMEBODY ELSE"
+                count={flagged.failed_deliveries.length}
+                tone="urgent"
+              />
               {flagged.failed_deliveries.map((d) => (
                 <div className="card" key={d.delivery_id}>
                   <div className="card-body">
@@ -216,23 +226,21 @@ export default function Orders() {
                     {driverError && (
                       <Stamp>{driverError}</Stamp>
                     )}
-                    <select
-                      className="input"
-                      style={{ height: 30, fontSize: 8, marginTop: 6 }}
-                      aria-label="Reassign driver"
-                      defaultValue=""
-                      onChange={(e) => {
-                        const orderId = d.order?.order_id;
-                        if (e.target.value && orderId) assign(orderId, e.target.value);
-                      }}
+                    {/* A bare `<select>` styled down to 8px on a card is a
+                        control nobody can read or tap, and assigning a driver
+                        to a failed drop is not a one-line affair — it moves the
+                        order and notifies someone. It opens a sheet that names
+                        the order and asks the one question. */}
+                    <Pill
+                      variant="ghost"
+                      onClick={() => setReassigning({
+                        order_id: d.order?.order_id ?? "",
+                        order_number: d.order?.order_number ?? "THE DROP",
+                      })}
+                      disabled={!d.order?.order_id || Boolean(driverError)}
                     >
-                      <option value="">REASSIGN TO</option>
-                      {drivers.filter((dr) => dr.status !== "offline").map((dr) => (
-                        <option key={dr.driver_id} value={dr.driver_id}>
-                          {dr.profile?.display_name ?? "DRIVER"}
-                        </option>
-                      ))}
-                    </select>
+                      REASSIGN A DRIVER
+                    </Pill>
                   </div>
                 </div>
               ))}
@@ -241,8 +249,11 @@ export default function Orders() {
 
           {flagged.stale_unpaid.length > 0 && (
             <section>
-              <h2 className="screen-title" style={{ fontSize: 16 }}>UNPAID OVER A DAY</h2>
-              <div style={{ height: "var(--s-4)" }} />
+              <SectionHead
+                title="UNPAID OVER A DAY"
+                hint="THESE HOLDS HAVE COME AND GONE"
+                count={flagged.stale_unpaid.length}
+              />
               {flagged.stale_unpaid.map((o) => (
                 <div className="card" key={o.order_id}>
                   <div className="card-body">
@@ -262,16 +273,25 @@ export default function Orders() {
         <>
           {!orders && !error && <LoadBar label="PULLING ORDERS" />}
           {orders?.length === 0 && <Empty>NO ORDERS YET</Empty>}
+          {orders && orders.length > 0 && (
+            <SectionHead
+              title="EVERY ORDER"
+              hint="NEWEST FIRST · CANCEL ANYTHING NOT YET SETTLED"
+              count={`${orders.length} ${orders.length === 1 ? "ORDER" : "ORDERS"}`}
+            />
+          )}
           {orders?.map((o) => (
             <div className="card" key={o.order_id}>
               <div className="card-body">
                 <p className="card-title">{o.order_number}</p>
-                <p className="card-sub">
-                  {o.profile?.display_name ?? o.guest_name ?? o.guest_phone ?? "WALK-IN"} · {money(o.total_kobo)}
+                <p className="card-lead">
+                  {o.profile?.display_name ?? o.guest_name ?? o.guest_phone ?? "WALK-IN"}
                 </p>
                 <p className="card-sub">
-                  {o.status.toUpperCase()} · {o.payment_status.toUpperCase()} ·
-                  {" "}{o.fulfillment_type.toUpperCase()}
+                  {money(o.total_kobo)} · {o.fulfillment_type.toUpperCase()}
+                </p>
+                <p className="card-sub">
+                  {o.status.toUpperCase()} · {o.payment_status.toUpperCase()}
                 </p>
               </div>
               {!["fulfilled", "cancelled", "expired"].includes(o.status) && (
@@ -319,6 +339,33 @@ export default function Orders() {
             {busy ? "CANCELLING" : "CANCEL THE ORDER"}
           </Pill>
           <Pill variant="ghost" onClick={() => setCancelling(null)}>KEEP IT</Pill>
+        </div>
+      </Modal>
+
+      <Modal open={Boolean(reassigning)} onClose={() => setReassigning(null)}
+             label="Reassign a driver">
+        <p className="label">{reassigning?.order_number}</p>
+        <p className="label" style={{ marginTop: "var(--s-3)", lineHeight: 2 }}>
+          THE DRIVER IS TOLD AT ONCE. ONLY DRIVERS ON SHIFT ARE LISTED.
+        </p>
+        <div style={{ marginTop: "var(--s-5)" }}>
+          {drivers.filter((dr) => dr.status !== "offline").length === 0 ? (
+            <Stamp>NOBODY IS ON SHIFT</Stamp>
+          ) : (
+            drivers.filter((dr) => dr.status !== "offline").map((dr) => (
+              <Pill
+                key={dr.driver_id}
+                variant="ghost"
+                onClick={() => reassigning && assign(reassigning.order_id, dr.driver_id)}
+              >
+                {(dr.profile?.display_name ?? "DRIVER").toUpperCase()}
+                {dr.status === "busy" ? " · BUSY" : ""}
+              </Pill>
+            ))
+          )}
+        </div>
+        <div style={{ marginTop: "var(--s-5)" }}>
+          <Pill variant="ghost" onClick={() => setReassigning(null)}>CANCEL</Pill>
         </div>
       </Modal>
     </div>

@@ -15,6 +15,7 @@ const Audit        = lazy(() => import("./Audit"));
 const Reports      = lazy(() => import("./Reports"));
 const Notifications = lazy(() => import("./Notifications"));
 const StaffHistory  = lazy(() => import("./StaffHistory"));
+const Profile       = lazy(() => import("./Profile"));
 
 export default function AdminApp() {
   return (
@@ -38,6 +39,7 @@ export default function AdminApp() {
           <Route path="reports" element={<Reports />} />
           <Route path="audit" element={<Audit />} />
           <Route path="notifs" element={<Notifications />} />
+          <Route path="me" element={<Profile />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </Suspense>
@@ -52,6 +54,7 @@ export default function AdminApp() {
           { to: "/admin/settings", label: "SETUP" },
           { to: "/admin/reports", label: "REPORTS" },
           { to: "/admin/audit", label: "LOG" },
+          { to: "/admin/me", label: "ME" },
         ].map((i) => (
           <NavLink key={i.to} to={i.to} end={i.end}>{i.label}</NavLink>
         ))}

@@ -6,7 +6,7 @@ import { toOrderLines, useCart } from "../../lib/cart";
 import { useAddFromQuery } from "../../lib/useAddFromQuery";
 import { rememberGuestOrder } from "../../lib/guest";
 import { AddressPicker, maybeSaveAddress } from "../../components/AddressPicker";
-import { money, Sheet } from "../../components/primitives";
+import { BackButton, money, Sheet } from "../../components/primitives";
 import { CheckoutSheet, type Fulfillment, type Method } from "../../components/CheckoutSheet";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
@@ -126,13 +126,10 @@ export default function Checkout() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node={node} className="is-cart is-checkout">
-        <button
-          type="button"
-          className="figma-route-interactive"
-          aria-label="Back to basket"
-          onClick={() => nav("/cart")}
-          style={{ left: 32, top: 80, width: 52, height: 52 }}
-        />
+        {/* Each checkout artboard draws the back arrow at (32,80). The app's
+            control sits over it, so the way back to the basket is visible on
+            every one of the three drawn states. */}
+        <BackButton to="/cart" label="BASKET" />
 
         <CheckoutSheet
           node={node}

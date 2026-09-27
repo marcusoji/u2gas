@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, type AdminDriver, type AdminOrder } from "../../lib/api";
-import { LoadBar, Segmented } from "../../components/primitives";
+import { BackButton, LoadBar, Segmented } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { mediaUrl } from "../../lib/media";
 
@@ -111,9 +111,7 @@ export default function StaffHistory() {
             onClick={() => nav("/admin/orders")}
             style={{ left: 26, top: 271 + i * 125, width: 387, height: 109 }} />
         ))}
-        <button className="figma-route-interactive" aria-label="Back to staff"
-          onClick={() => nav("/admin/people")}
-          style={{ left: 32, top: 80, width: 52, height: 52 }} />
+        <BackButton to="/admin/people" label="STAFF" />
       </FigmaRouteFrame>
       <div style={{ marginTop: 18 }}>
         <Segmented

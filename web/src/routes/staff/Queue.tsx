@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
-import { Empty, ErrorState, LoadBar, OptionalBack, Segmented, money } from "../../components/primitives";
+import { Empty, ErrorState, LoadBar, OptionalBack, Segmented, Stamp, money } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 type Kind = "paid" | "unpaid";
@@ -90,19 +90,28 @@ export default function Queue() {
                   onClick={() => nav(`/staff/collect/${o.order_id}`)}>
             <div className="card-body">
               <p className="card-title">{o.order_number}</p>
-              <p className="card-sub">
+              {/* The name is the thing the cashier calls out. It gets a line of
+                  its own, with the phone under it, rather than being buried in a
+                  dot-separated run with the amount. */}
+              <p className="card-lead">
                 {o.profile?.display_name ?? o.guest_name ?? "WALK-IN"}
-                {(() => {
-                  const phone = o.guest_phone ?? o.profile?.phone;
-                  return phone ? ` · ${phone}` : "";
-                })()}
               </p>
+              {(() => {
+                const phone = o.guest_phone ?? o.profile?.phone;
+                return phone ? <p className="card-sub">{phone}</p> : null;
+              })()}
               <p className="card-sub">
                 {o.gas_amount_kg > 0 ? `${o.gas_amount_kg}KG · ` : ""}
                 {money(o.total_kobo)}
-                {kind === "unpaid" ? " · DUE" : ""}
               </p>
             </div>
+            {/* Which queue a row belongs to is the one fact the tab bar already
+                states for the whole list, so it is carried by the row's own
+                stamp instead: a cashier scanning a long queue should not have
+                to remember which tab they are on to know whether to take money. */}
+            <Stamp tone={kind === "paid" ? "ok" : "danger"}>
+              {kind === "paid" ? "PAID" : "DUE"}
+            </Stamp>
             <span className="card-go" aria-hidden="true" />
           </button>
         ))}

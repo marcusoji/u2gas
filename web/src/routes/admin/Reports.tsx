@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError, type ReportSummary } from "../../lib/api";
 import { ErrorState, LoadBar, OptionalBack, Pill, Stamp, Tabs, money } from "../../components/primitives";
-import { TankGauge } from "../../components/illustrated";
 import { Ticker } from "../../components/terminal";
 
 /**
@@ -34,6 +33,13 @@ const PERIOD_NAME: Record<number, string> = {
   7: "WEEKLY",
   30: "MONTHLY",
   90: "QUARTERLY",
+};
+/** The same periods as a duration, for the prose in the printed summary. */
+const PERIOD_SPAN: Record<number, string> = {
+  1: "the day",
+  7: "the week",
+  30: "the month",
+  90: "the quarter",
 };
 
 const periodWindow = (days: number) => {
@@ -279,14 +285,22 @@ export default function Reports() {
 
           <section className="report-section">
             <h2>WHAT CAME IN</h2>
-            <TankGauge
-              availableKg={report.orders_fulfilled}
-              totalKg={Math.max(report.orders_total, 1)}
-              unit="DONE"
-              labelLines={["ORDERS", "FULFILLED"]}
-              ariaLabel={`${report.orders_fulfilled} of ${report.orders_total} orders fulfilled`}
-              note={`${report.orders_fulfilled} OF ${report.orders_total} ORDERS FULFILLED`}
-            />
+            {/* The section used to lead with the admin tank illustration. On a
+                report it is the wrong language: the tank is a stock gauge, and
+                the figure under this heading is a share of orders, so a drawn
+                cylinder read as if it were gas. A single proportional bar says
+                the same thing in a fraction of the height and none of the
+                ambiguity, and it matches the payment and type bars below. */}
+            <div className="report-meter">
+              <div className="report-meter-bar" role="img"
+                   aria-label={`${report.orders_fulfilled} of ${report.orders_total} orders fulfilled`}>
+                <i style={{ width: `${Math.min(100, fulfilmentShare * 100)}%` }} />
+              </div>
+              <p className="report-meter-note">
+                <b>{report.orders_fulfilled}</b> OF {report.orders_total} ORDERS FULFILLED
+                <span>{Math.round(fulfilmentShare * 100)}%</span>
+              </p>
+            </div>
 
             <dl className="report-grid" style={{ marginTop: "var(--s-5)" }}>
               <div className="report-cell">
@@ -405,6 +419,28 @@ export default function Reports() {
             </div>
           </div>
 
+          {/* A one-paragraph reading of the headline figures. A table of
+              numbers makes a reader do the interpreting; the person who signs
+              this wants the sentence first. */}
+          <p className="report-print-summary">
+            <b>Summary.</b> Across <b>{PERIOD_SPAN[days] ?? `${days} days`}</b> (
+            {reportWindow.start} to {reportWindow.end}) the depot took{" "}
+            <b>{money(report.revenue_kobo)}</b> from <b>{report.orders_total}</b>{" "}
+            orders, of which <b>{report.orders_fulfilled}</b> were fulfilled
+            {report.gas_sold_kg > 0
+              ? <> — a total of <b>{report.gas_sold_kg.toFixed(1)} KG</b> of gas</>
+              : null},
+            an average of <b>{money(average)}</b> per fulfilled order. Revenue was{" "}
+            <b>{revenueDelta ? revenueDelta.label.toLowerCase() : "not comparable"}</b> against
+            the previous {days} days.{" "}
+            {report.orders_expired > 0
+              ? <>{report.orders_expired} holds expired uncollected, {Math.round(expireShare * 100)}% of all orders.</>
+              : <>No holds expired uncollected.</>}{" "}
+            {report.orders_cancelled > 0
+              ? <>{report.orders_cancelled} orders were cancelled.</>
+              : <>No orders were cancelled.</>}
+          </p>
+
           <h2>1 · HEADLINE FIGURES</h2>
           <table className="report-print-table">
             <tbody>
@@ -504,9 +540,10 @@ export default function Reports() {
           {/* A figure nobody signs is a figure nobody owns. The lines are blank
               on purpose: the manager writes the name, as on a delivery note. */}
           <section className="report-print-signoff">
-            <div><span>PREPARED BY</span><i /></div>
-            <div><span>CHECKED BY</span><i /></div>
-            <div><span>DATE</span><i /></div>
+            <div><span>Prepared by</span><i /></div>
+            <div><span>Checked by</span><i /></div>
+            <div><span>Approved by</span><i /></div>
+            <div><span>Date</span><i /></div>
           </section>
 
           <footer className="report-print-foot">

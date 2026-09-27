@@ -218,9 +218,15 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
             <div className="figma-route-overlay-text" style={{ left: 50, top: 520, width: 340 }}>
               {error}
             </div>
+            {/* A failed verification is a dead end without a way out: the
+                frame draws no back control, so the app's own goes on it. */}
+            <BackButton to="/history" />
           </FigmaRouteFrame>
         ) : (
-          <ErrorState message={error} onRetry={load} />
+          <>
+            <BackButton to="/history" />
+            <ErrorState message={error} onRetry={load} />
+          </>
         )}
       </div>
     );

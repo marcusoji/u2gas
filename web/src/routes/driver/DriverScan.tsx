@@ -50,6 +50,16 @@ export default function DriverScan() {
     // is exactly where a driver needs to type the code in instead.
     if (id === "1:4946" || id === "1:4916" || id === "1:4967") {
       setManual(""); setManualOpen(true);
+      return;
+    }
+    // The drawing's own SCAN button is the one scan control on this screen. It
+    // drives the camera directly, and toggles off while the camera is running,
+    // so the route never has to draw a second control carrying the same word.
+    if (id === "1:4944" || id === "1:4914" || id === "1:4945" || id === "1:4915") {
+      if (state === "scanning") { setState("idle"); return; }
+      setMessage(null);
+      setOrderNumber(null);
+      setState("scanning");
     }
   };
 
@@ -60,16 +70,18 @@ export default function DriverScan() {
         <div style={{ position: "absolute", left: 50, top: 140, width: 340, height: 400, zIndex: 15, borderRadius: 64, overflow: "hidden" }}>
           <Scanner state={state} active={state === "scanning"} onResult={onResult} onError={onError} />
         </div>
-        <div style={{ position: "absolute", left: 35, top: 700, width: 370, zIndex: 20 }}>
+        <div className="scan-actions" style={{ position: "absolute", left: 35, top: 700, width: 370, zIndex: 20 }}>
           {message && <div className="stamp-wrap"><Stamp tone={state === "ok" ? "ok" : "danger"} loud>{message}</Stamp>{orderNumber && <p className="label" style={{ marginTop: 12 }}>{orderNumber}</p>}</div>}
-          {state === "ok" ? (
-            <Pill onClick={() => nav("/driver")}>NEXT DROP</Pill>
-          ) : (
-            <Pill onClick={() => { setState("scanning"); setMessage(null); }} disabled={state === "scanning"}>
-              {message ? "SCAN AGAIN" : "SCAN"}
-            </Pill>
+          {/* The drawing already draws the scan control (1:4943), and the route
+              makes that drawn button live rather than stacking a second one on
+              top of it. What is left for this band is only what the drawing
+              does not have: a way to leave a finished drop, and a way to stop
+              a camera that is running. Two SCAN controls for one act is what
+              this band used to be; there is one now, and it is the drawn one. */}
+          {state === "ok" && <Pill onClick={() => nav("/driver")}>NEXT DROP</Pill>}
+          {state === "scanning" && (
+            <Pill variant="ghost" onClick={() => setState("idle")}>STOP THE CAMERA</Pill>
           )}
-          {state === "scanning" && <Pill variant="ghost" onClick={() => setState("idle")}>STOP</Pill>}
         </div>
       </FigmaRouteFrame>
 

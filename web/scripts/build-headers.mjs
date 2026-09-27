@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadEnv } from "vite";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const template = resolve(root, "public/_headers.template");
@@ -23,37 +24,59 @@ if (!existsSync(template)) {
   process.exit(1);
 }
 
-const apiOrigin = process.env.VITE_API_ORIGIN;
+// Vite reads `.env*` for the bundle but this script is a plain node process, so
+// a value that lives only in `.env` was invisible here. That is the whole
+// deploy trap: `npm run build` compiled a bundle pointed at one origin and then
+// failed for want of the same variable. Loading Vite's own env closes the gap —
+// shell vars still win, so CI can override the file.
+const env = { ...loadEnv(process.env.NODE_ENV ?? "production", root, "VITE_"), ...process.env };
 
-if (!apiOrigin) {
+const apiOrigin = env.VITE_API_ORIGIN;
+
+// The mock build talks to no API at all — `src/mocks/` answers every route in
+// the browser — so there is no origin for the CSP to name. Failing the build
+// here would make the one deployable demo impossible to ship without inventing
+// a URL that is never contacted. A real build (mocks off) still requires it.
+const mockBuild = env.VITE_USE_MOCKS === "true";
+
+if (!apiOrigin && !mockBuild) {
   console.error(
     "\nVITE_API_ORIGIN is not set.\n\n" +
     "The Content-Security-Policy names the API origin explicitly, so the\n" +
     "build cannot produce a correct _headers file without it.\n\n" +
     "Set it to your Worker's origin, for example:\n" +
-    "  VITE_API_ORIGIN=https://api.example.com\n");
+    "  VITE_API_ORIGIN=https://api.example.com\n\n" +
+    "For a mock-only demo build (VITE_USE_MOCKS=true) no origin is needed.\n");
   process.exit(1);
 }
 
-if (!/^https?:\/\//.test(apiOrigin)) {
-  console.error(`VITE_API_ORIGIN must be an absolute origin, got: ${apiOrigin}`);
+const resolvedOrigin = apiOrigin ?? "";
+
+if (resolvedOrigin && !/^https?:\/\//.test(resolvedOrigin)) {
+  console.error(`VITE_API_ORIGIN must be an absolute origin, got: ${resolvedOrigin}`);
   process.exit(1);
 }
 
-if (/YOUR-DOMAIN|\.example(\/|$)|REPLACE/i.test(apiOrigin)) {
-  console.error(`VITE_API_ORIGIN still looks like a placeholder: ${apiOrigin}`);
+if (resolvedOrigin && /YOUR-DOMAIN|\.example(\/|$)|REPLACE/i.test(resolvedOrigin)) {
+  console.error(`VITE_API_ORIGIN still looks like a placeholder: ${resolvedOrigin}`);
   process.exit(1);
 }
 
-// http is fine for local preview, but shipping it would break the CSP on a
-// site served over https.
-if (apiOrigin.startsWith("http://") && process.env.NODE_ENV === "production") {
-  console.error(`VITE_API_ORIGIN must use https in production, got: ${apiOrigin}`);
+// http is fine for a local Worker, but shipping it would break the CSP on a
+// site served over https. Localhost is exempt so a developer can build a real
+// (non-mock) bundle against `wrangler dev` without reaching for a tunnel.
+const isLocal = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(resolvedOrigin);
+if (resolvedOrigin.startsWith("http://") && !isLocal && env.NODE_ENV === "production") {
+  console.error(`VITE_API_ORIGIN must use https in production, got: ${resolvedOrigin}`);
   process.exit(1);
 }
 
 const rendered = readFileSync(template, "utf8")
-  .replaceAll("__API_ORIGIN__", apiOrigin.replace(/\/$/, ""));
+  .replaceAll("__API_ORIGIN__", resolvedOrigin.replace(/\/$/, ""))
+  // A mock build leaves the directive's separator behind, which would ship as
+  // `connect-src ... supabase.co ; frame-ancestors`. Tidied so the header is
+  // the same shape whether or not an origin was named.
+  .replace(/ +;/g, ";");
 
 if (rendered.includes("__API_ORIGIN__")) {
   console.error("substitution failed — __API_ORIGIN__ still present");
@@ -61,4 +84,7 @@ if (rendered.includes("__API_ORIGIN__")) {
 }
 
 writeFileSync(out, rendered);
-console.log(`_headers written with API origin ${apiOrigin}`);
+console.log(
+  resolvedOrigin
+    ? `_headers written with API origin ${resolvedOrigin}`
+    : "_headers written for a mock build — connect-src is 'self' only");

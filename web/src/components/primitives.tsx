@@ -135,6 +135,28 @@ export function LoadBar({ label }: { label?: string }) {
   );
 }
 
+/**
+ * A list section's heading. The admin screens are long; a heading and one
+ * sentence saying what the list holds is what makes them scannable. `tone`
+ * marks the sections that are somebody's problem today.
+ */
+export function SectionHead({ title, hint, count, tone }: {
+  title: string;
+  hint?: string;
+  count?: number | string;
+  tone?: "urgent";
+}) {
+  return (
+    <div className={`section-head${tone === "urgent" ? " is-urgent" : ""}`}>
+      <h2>{title}</h2>
+      {hint && <p>{hint}</p>}
+      {count !== undefined && (
+        <span className={`section-head-count${tone === "urgent" ? " is-urgent" : ""}`}>{count}</span>
+      )}
+    </div>
+  );
+}
+
 /** Empty states are an invitation, stamped in the cart's style. */
 export function Empty({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (

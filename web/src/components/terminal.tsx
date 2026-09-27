@@ -120,7 +120,7 @@ const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "×", "0", "PAY"];
  * around. The key is the same size and position either way.
  */
 export function Keypad({
-  onDigit, onClear, onSubmit, disabled, submitDisabled, submitLabel = "PAY", onManual,
+  onDigit, onClear, onSubmit, disabled, submitDisabled, submitLabel = "PAY", onManual, busyLabel,
 }: {
   onDigit: (d: string) => void;
   onClear: () => void;
@@ -130,6 +130,12 @@ export function Keypad({
   submitLabel?: string;
   /** The drawn hand. Where supplied, it opens manual entry for this screen. */
   onManual?: () => void;
+  /**
+   * Replaces the submit key's label while a request is in flight. A search runs
+   * over the network, and a submit key that looks identical while it works is
+   * the key that gets pressed twice.
+   */
+  busyLabel?: string;
 }) {
   return (
     <div className="keypad">
@@ -139,12 +145,17 @@ export function Keypad({
         return (
           <button
             key={k}
-            className="key"
+            className={`key${isPay && busyLabel ? " is-busy" : ""}`}
             disabled={disabled || (isPay && submitDisabled)}
-            aria-label={isPay ? submitLabel : isClear ? "Delete last digit" : k}
+            aria-label={isPay ? (busyLabel ?? submitLabel) : isClear ? "Delete last digit" : k}
+            aria-busy={isPay && busyLabel ? true : undefined}
+            // A word longer than PAY (FIND, FINDING) will not fit the drawn
+            // key at the drawn size, so the type steps down rather than
+            // spilling past the black cap.
+            style={isPay && submitLabel.length > 3 ? { fontSize: submitLabel.length > 5 ? 17 : 22 } : undefined}
             onClick={() => isPay ? onSubmit() : isClear ? onClear() : onDigit(k)}
           >
-            {isPay ? submitLabel : k}
+            {isPay ? (busyLabel ?? submitLabel) : k}
           </button>
         );
       })}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type AdminZone, type AdminSetting } from "../../lib/api";
 import {
   ErrorState, Input, LoadBar, Modal, OptionalBack, Pill,
-  Stamp, money} from "../../components/primitives";
+  SectionHead, Stamp, money} from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 /**
@@ -96,19 +96,29 @@ export default function Settings() {
     <div className="screen">
       <OptionalBack to="/admin" />
       <Ticker static>{zones.filter((z) => z.active).length} ZONES ACTIVE</Ticker>
-      <div style={{ height: "var(--s-5)" }} />
 
-      <h1 className="screen-title">DELIVERY<br />ZONES</h1>
-      <div style={{ height: "var(--s-5)" }} />
+      <h1 className="screen-title" style={{ marginTop: "var(--s-5)" }}>SETUP</h1>
+      <p className="label" style={{ textAlign: "left", marginTop: "var(--s-3)", lineHeight: 2 }}>
+        WHAT DELIVERY COSTS, AND HOW LONG THE SYSTEM HOLDS STOCK FOR A CUSTOMER.
+        CHANGING A FEE NEVER RE-PRICES AN ORDER THAT IS ALREADY PLACED.
+      </p>
+
+      <SectionHead
+        title="DELIVERY ZONES"
+        hint="WHERE YOU GO AND WHAT YOU CHARGE TO GET THERE"
+        count={`${zones.filter((z) => z.active).length} ON`}
+      />
 
       {zones.map((z) => (
-        <div className="card" key={z.zone_id}>
+        <div className={`card${z.active ? "" : " is-off"}`} key={z.zone_id}>
           <div className="card-body">
             <p className="card-title">{z.name}</p>
-            <p className="card-sub">{money(z.fee_kobo)}</p>
+            <p className="card-lead">{money(z.fee_kobo)}</p>
             {z.coverage_note && <p className="card-sub">{z.coverage_note}</p>}
-            {!z.active && <Stamp>OFF</Stamp>}
           </div>
+          {/* An inactive zone is a row that still takes taps, so it has to say
+              it is off in the same place the active ones say they are on. */}
+          <Stamp tone={z.active ? "ok" : "danger"}>{z.active ? "ON" : "OFF"}</Stamp>
           <button className="card-go" aria-label={`Edit ${z.name}`}
                   onClick={() => { setEditing(z); setFee(String(z.fee_kobo / 100)); }} />
         </div>
@@ -118,13 +128,14 @@ export default function Settings() {
         <Pill variant="ghost" onClick={() => setCreating(true)}>ADD A ZONE</Pill>
       </div>
 
-      <h2 className="screen-title" style={{ fontSize: 18, marginTop: "var(--s-10)" }}>
-        TIMINGS
-      </h2>
-      <div style={{ height: "var(--s-4)" }} />
+      <SectionHead
+        title="TIMINGS"
+        hint="HOW THE DEPOT BEHAVES WHEN NOBODY IS WATCHING IT"
+      />
 
       <Stepper
         label="HOW LONG A HOLD LASTS"
+        hint="AFTER THIS THE STOCK GOES BACK ON SALE"
         value={`${setting("hold_minutes")} MIN`}
         onDown={() => bumpSetting("hold_minutes", -5, 5, 240)}
         onUp={() => bumpSetting("hold_minutes", 5, 5, 240)}
@@ -132,6 +143,7 @@ export default function Settings() {
       />
       <Stepper
         label="HOW LONG A QR STAYS GOOD"
+        hint="THE CODE ON A RECEIPT EXPIRES AFTER THIS"
         value={`${setting("qr_valid_hours")} HRS`}
         onDown={() => bumpSetting("qr_valid_hours", -12, 12, 336)}
         onUp={() => bumpSetting("qr_valid_hours", 12, 12, 336)}
@@ -139,6 +151,7 @@ export default function Settings() {
       />
       <Stepper
         label="MOST GAS IN ONE ORDER"
+        hint="STOPS ONE ORDER TAKING THE WHOLE TANK"
         value={`${setting("max_gas_kg_per_order")} KG`}
         onDown={() => bumpSetting("max_gas_kg_per_order", -5, 5, 500)}
         onUp={() => bumpSetting("max_gas_kg_per_order", 5, 5, 500)}
@@ -194,18 +207,18 @@ export default function Settings() {
 }
 
 /** The −/+ control from the tank modal, reused rather than reinvented. */
-function Stepper({ label, value, onUp, onDown, disabled }: {
-  label: string; value: string; onUp: () => void; onDown: () => void; disabled?: boolean;
+function Stepper({ label, hint, value, onUp, onDown, disabled }: {
+  label: string; hint?: string; value: string; onUp: () => void; onDown: () => void; disabled?: boolean;
 }) {
   return (
-    <div style={{ marginBottom: "var(--s-5)" }}>
-      <p className="label" style={{ textAlign: "left" }}>{label}</p>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginTop: "var(--s-2)",
-      }}>
+    <div className="stepper">
+      <div>
+        <p className="label" style={{ textAlign: "left" }}>{label}</p>
+        {hint && <p className="stepper-hint">{hint}</p>}
+      </div>
+      <div className="stepper-controls">
         <button disabled={disabled} onClick={onDown} aria-label={`Less: ${label}`} style={stepStyle("var(--danger)")}>−</button>
-        <span style={{ color: "var(--blue)", fontSize: "var(--t-body)" }}>{value}</span>
+        <span>{value}</span>
         <button disabled={disabled} onClick={onUp} aria-label={`More: ${label}`} style={stepStyle("var(--blue)")}>+</button>
       </div>
     </div>

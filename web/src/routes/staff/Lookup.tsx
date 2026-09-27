@@ -76,7 +76,8 @@ export default function Lookup() {
           onClear={() => setTerm((t) => t.slice(0, -1))}
           onSubmit={() => void search()}
           submitLabel="FIND"
-          submitDisabled={term.trim().length < 3 || searching}
+          busyLabel={searching ? "LOOKING" : undefined}
+          submitDisabled={term.trim().length < 3}
           onManual={() => setManual((v) => !v)}
         />
       </Terminal>

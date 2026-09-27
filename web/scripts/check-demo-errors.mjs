@@ -30,7 +30,7 @@ const ROUTES = {
   admin: [
     "/admin", "/admin/tank", "/admin/tank/update", "/admin/tank/history",
     "/admin/products", "/admin/bundles/new", "/admin/orders", "/admin/people",
-    "/admin/settings", "/admin/reports", "/admin/audit", "/admin/notifs",
+    "/admin/settings", "/admin/reports", "/admin/audit", "/admin/notifs", "/admin/me",
   ],
 };
 

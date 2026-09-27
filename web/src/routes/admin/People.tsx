@@ -280,10 +280,22 @@ export default function People() {
           options={[{ value: "staff", label: "STAFF" }, { value: "drivers", label: "DRIVERS" }]}
         />
         {view === "staff" && (
-          <div style={{ marginTop: 12 }}>
+          <div className="roster-controls">
+            {/* The drawn plus in the empty tile is a 40px hotspot an admin has
+                to find and guess at. Adding somebody is the whole point of
+                opening this screen, so it is a real button, labelled, and the
+                two drawings of the roster are named for what they look like
+                rather than by layout number. */}
             <Pill onClick={() => setQuery({ state: "add" })}>ADD STAFF</Pill>
-            {/* The file draws the row layout too (1:2624); this is how it is seen. */}
-            <Pill variant="ghost" onClick={() => setQuery({ layout: "1" })}>ROW LAYOUT</Pill>
+            <div className="roster-view">
+              <p className="label">HOW THE ROSTER IS DRAWN</p>
+              <Segmented
+                label="Roster layout"
+                value={layoutOne ? "rows" : "grid"}
+                onChange={(v) => setQuery({ layout: v === "rows" ? "1" : null })}
+                options={[{ value: "grid", label: "GRID" }, { value: "rows", label: "ROWS" }]}
+              />
+            </div>
           </div>
         )}
         {rows.length > 6 && (

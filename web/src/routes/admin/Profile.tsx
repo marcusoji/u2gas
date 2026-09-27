@@ -8,13 +8,20 @@ import { AvatarUpload } from "../../components/AvatarUpload";
 import { ErrorState, LoadBar, OptionalBack, Pill } from "../../components/primitives";
 
 /**
- * Cashier profile (1:4665).
+ * Office profile (1:4665).
  *
- * The file draws the same header, avatar and back control as the driver's
- * profile, with the role line naming the counter. The live person and role come
- * from the session; the drawing supplies every measurement.
+ * The file draws one person profile — the driver's (1:4968) and the cashier's
+ * (1:4665) are the same screen with the role line changed — and the office is
+ * the third person who signs in, so it is the same drawing again. There is no
+ * separate admin artboard to render, and inventing a fifth layout would put the
+ * office outside the design the rest of the product is drawn from.
+ *
+ * The avatar slot is why the route exists at all: every signed-in user owns a
+ * profile row with an `avatar_asset`, and the office had nowhere to set theirs.
+ * The drawing has the frame but no control to fill it, so `AvatarUpload` sits
+ * on the drawn slot.
  */
-export default function StaffProfile() {
+export default function AdminProfile() {
   const nav = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +42,12 @@ export default function StaffProfile() {
     );
   }
 
-  const name = profile.display_name ?? "STAFF";
-  const role = profile.role === "manager" ? "Manager" : "Cashier";
+  const name = profile.display_name ?? "ADMIN";
+  const role = profile.role === "manager" ? "Manager" : "Admin";
 
   return (
     <div className="screen figma-route-scroll">
-      <OptionalBack to="/staff" />
+      <OptionalBack to="/admin" />
       <FigmaRouteFrame node="1:4665" values={{ "1:4671": `[ ${name} ] - ${role}` }}>
         {profile.avatar_asset?.base_path && (
           <img
@@ -49,11 +56,7 @@ export default function StaffProfile() {
             style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, objectFit: "cover", zIndex: 10 }}
           />
         )}
-        {/* The drawing has the avatar slot but no control to fill it. A cashier
-            owns the same profile row as a customer, so the same picker belongs
-            here. */}
         <AvatarUpload basePath={profile.avatar_asset?.base_path} left={149} top={106} />
-        {/* The drawing puts its back control at (32,80) 52x52, on the header. */}
         <button
           className="figma-route-interactive"
           aria-label="Back"

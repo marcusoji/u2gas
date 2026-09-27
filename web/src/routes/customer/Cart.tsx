@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../../lib/cart";
 import { useAddFromQuery } from "../../lib/useAddFromQuery";
 import { BasketLine } from "../../components/BasketLine";
-import { money } from "../../components/primitives";
+import { BackButton, money } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
@@ -42,21 +42,15 @@ export default function Cart() {
     setParams(next, { replace: true });
   }, [params, setParams]);
 
-  const backToShop = () => nav("/shop");
 
   if (count === 0) {
     return (
       <div className="screen figma-route-scroll">
         <FigmaRouteFrame node="1:1624" className="is-cart">
-          {/* The artboard draws its own back arrow at (12,28) and (8,30);
-              this hotspot sits over it. */}
-          <button
-            type="button"
-            className="figma-route-interactive"
-            aria-label="Back to shop"
-            onClick={backToShop}
-            style={{ left: 8, top: 15, width: 70, height: 90 }}
-          />
+          {/* The artboard draws its own back arrow at (12,28) and (8,30). The
+              app's control sits over it: visible, full-size, and it knows what
+              is behind it rather than hard-wiring the shop. */}
+          <BackButton to="/shop" label="SHOP" />
         </FigmaRouteFrame>
       </div>
     );
@@ -65,13 +59,10 @@ export default function Cart() {
   return (
     <div className="screen figma-route-scroll">
       <FigmaRouteFrame node="1:1517" className={`is-cart${shortId ? " is-short" : ""}`}>
-        <button
-          type="button"
-          className="figma-route-interactive"
-          aria-label="Back to shop"
-          onClick={backToShop}
-          style={{ left: 32, top: 80, width: 52, height: 52 }}
-        />
+        {/* 1:1517 draws the back arrow on the same corner as the empty basket.
+            The app's own control sits over it, so the way out is visible and
+            reaches wherever the shopper actually came from. */}
+        <BackButton to="/shop" label="SHOP" />
 
         <button
           type="button"

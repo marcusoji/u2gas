@@ -54,5 +54,6 @@ export const figmaRouteRegistry: FigmaRouteDefinition[] = [
   { route: "/admin/reports", role: "admin", artboards: [], notes: "No dedicated reports artboard; retain the functional reporting screen." },
   { route: "/admin/audit", role: "admin", artboards: [], notes: "These artboards are notification states, not the audit log; retain the functional audit screen." },
   { route: "/admin/notifs", role: "admin", artboards: ["1:3245", "1:3461", "83:246"], notes: "1:3245 NOTIF STATE 1 (list), 1:3461 NOTIF STATE 2 (empty), 83:246 Admin stock notification expanded. One route: ?state=expanded opens the drawn stock card." },
+  { route: "/admin/me", role: "admin", artboards: ["1:4665"], notes: "The office is the third signed-in person; the file draws one person profile (1:4968 driver, 1:4665 cashier) with only the role line changed, so the office renders that drawing. The avatar slot is the reason the route exists — every user owns a profile row and the office had nowhere to set their picture." },
   { route: "/admin/staff/:staffId/history", role: "admin", artboards: ["1:3675", "1:3781"], notes: "1:3675 STAFF HISTORY - DRIVER (1) completed run, 1:3781 (2) the run still in progress. One screen with a scope switch, reached from a driver's detail sheet." },
 ];
