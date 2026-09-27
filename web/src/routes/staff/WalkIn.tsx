@@ -56,7 +56,10 @@ export default function WalkIn() {
     if (el.closest(".key.is-pay") || el.closest('[data-node="1:4514"]')) {
       if (kg > 0) setSheet(true);
     }
-    if (el.closest('[data-node="1:4516"]')) setSheet(true);
+    // The hand opens the details sheet on every board. It must still respect
+    // the amount: there is nothing to reserve at 0kg, and the sheet's own
+    // button only checked the name and phone.
+    if (el.closest('[data-node="1:4516"]') && kg > 0) setSheet(true);
   }
 
   return (
@@ -100,7 +103,7 @@ export default function WalkIn() {
         )}
 
         <div style={{ marginTop: "var(--s-6)" }}>
-          <Pill onClick={create} disabled={busy || !name.trim() || !phone.trim()}>
+          <Pill onClick={create} disabled={busy || kg <= 0 || !name.trim() || !phone.trim()}>
             {busy ? "RESERVING" : `RESERVE ${kg}KG`}
           </Pill>
         </div>

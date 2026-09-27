@@ -60,7 +60,7 @@ export default function DriverScan() {
         <div style={{ position: "absolute", left: 50, top: 140, width: 340, height: 400, zIndex: 15, borderRadius: 64, overflow: "hidden" }}>
           <Scanner state={state} active={state === "scanning"} onResult={onResult} onError={onError} />
         </div>
-        <div style={{ position: "absolute", left: 35, top: 600, width: 370, zIndex: 20 }}>
+        <div style={{ position: "absolute", left: 35, top: 700, width: 370, zIndex: 20 }}>
           {message && <div className="stamp-wrap"><Stamp tone={state === "ok" ? "ok" : "danger"} loud>{message}</Stamp>{orderNumber && <p className="label" style={{ marginTop: 12 }}>{orderNumber}</p>}</div>}
           {state === "ok" ? (
             <Pill onClick={() => nav("/driver")}>NEXT DROP</Pill>

@@ -218,6 +218,16 @@ export function Scanner({ state, onResult, onError, active }: {
       {active && state === "scanning" && !denied && (
         <video ref={videoRef} muted playsInline />
       )}
+      {/* The dashed viewfinder is the artboard's own reticle: a 16px black
+          stroke, 4-4 dashes, inset 8px inside the 340x400 module with a 56px
+          corner. Drawn as SVG so the dash rhythm and the heavy weight match the
+          file, which a 2px CSS border could not. It sits above the video so the
+          reticle stays legible over a bright or a dark feed. */}
+      <svg className="scanner-reticle" viewBox="0 0 340 400" width="340" height="400"
+           preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <rect x="8" y="8" width="324" height="384" rx="56" ry="56"
+              fill="none" stroke="#000" strokeWidth="16" strokeDasharray="4 4" />
+      </svg>
       {/* The halftone glyphs are a Figma export that may not be in place yet.
           The tinted square already carries the result, so a missing file is
           hidden rather than shown as a broken-image icon. (Item 13) */}

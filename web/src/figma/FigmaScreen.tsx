@@ -104,9 +104,9 @@ export function FigmaScreen({
         // once it runs out the file's own text is left alone.
         const at = cursor.get(key)!;
         if (q.length === 1) {
-          result += escapeText(q[0]);
+          result += escapeWithBreaks(q[0]);
         } else if (at < q.length) {
-          result += escapeText(q[at]);
+          result += escapeWithBreaks(q[at]);
           cursor.set(key, at + 1);
         } else {
           result += hay.slice(i, i + key.length);
@@ -138,6 +138,17 @@ export function FigmaScreen({
 /** Values come from our own API, but they land in markup — escape anyway. */
 function escapeText(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/**
+ * Escapes a replacement the way `escapeText` does, but honours `<br>` as a
+ * real line break. Two-node notifications (an order number over its status, a
+ * title over its body) are one drawn `<p>` split by a `<br>`, so a route has to
+ * be able to say "break here" — and the whole string is escaped either way, so
+ * nothing else can introduce markup.
+ */
+function escapeWithBreaks(s: string): string {
+  return escapeText(s).replace(/&lt;br\s*\/?&gt;/g, "<br>");
 }
 
 /**

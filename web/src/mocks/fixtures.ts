@@ -442,16 +442,37 @@ export function availableKg(): number {
   return Math.max(0, tankBase.total_received_kg - tankBase.deducted_kg - reservedKg());
 }
 
+/**
+ * The demo's burn rate. The real Worker measures the last 14 days of fulfilled
+ * orders; the fixtures have no such history, so a mid-range figure stands in.
+ * The three warning levels are derived the same way on both sides so the demo
+ * shows the same wording a live depot would.
+ */
+export const BURN_KG_PER_DAY = 180;
+
+export function lowGasLevel(availableKg: number, daysLeft: number | null, fillPct: number): 0 | 1 | 2 | 3 {
+  return availableKg <= 0 || (daysLeft !== null && daysLeft <= 1) ? 3
+    : (daysLeft !== null && daysLeft <= 3) || fillPct <= 10 ? 2
+    : (daysLeft !== null && daysLeft <= 7) || fillPct <= 25 ? 1
+    : 0;
+}
+
 export function gasStock(): GasStock {
   const available = availableKg();
+  const fillPct = Math.round((available / tankBase.total_received_kg) * 100);
+  const days = available > 0 ? Math.floor(available / BURN_KG_PER_DAY) : 0;
   return {
     total_received_kg: tankBase.total_received_kg,
     reserved_kg: reservedKg(),
     deducted_kg: tankBase.deducted_kg,
     available_kg: available,
     rate_kobo_per_kg: RATE_KOBO_PER_KG,
-    fill_percent: Math.round((available / tankBase.total_received_kg) * 100),
-    days_remaining: available > 0 ? Math.floor(available / 180) : 0,
+    fill_percent: fillPct,
+    days_remaining: days,
+    burn_kg_per_day: BURN_KG_PER_DAY,
+    burn_basis_days: 14,
+    burn_sample_kg: BURN_KG_PER_DAY * 14,
+    low_gas_level: lowGasLevel(available, days, fillPct),
     updated_at: iso(-2 * HOUR),
   };
 }

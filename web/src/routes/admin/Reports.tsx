@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, ApiError, type ReportSummary } from "../../lib/api";
-import { ErrorState, LoadBar, OptionalBack, Stamp, Tabs, money } from "../../components/primitives";
+import { ErrorState, LoadBar, OptionalBack, Pill, Stamp, Tabs, money } from "../../components/primitives";
 import { TankGauge } from "../../components/illustrated";
 import { Ticker } from "../../components/terminal";
 
@@ -27,6 +27,22 @@ function delta(current: number, previous: number | undefined): { label: string; 
   if (pct === 0) return { label: "LEVEL", up: true };
   return { label: `${pct > 0 ? "+" : ""}${pct}%`, up: pct > 0 };
 }
+
+/** The periods a manager actually files, named for the printed sheet. */
+const PERIOD_NAME: Record<number, string> = {
+  1: "DAILY",
+  7: "WEEKLY",
+  30: "MONTHLY",
+  90: "QUARTERLY",
+};
+
+const periodWindow = (days: number) => {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 864e5);
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-NG", { day: "2-digit", month: "short", year: "numeric" });
+  return { start: fmt(start), end: fmt(end) };
+};
 
 export default function Reports() {
   const [days, setDays] = useState(30);
@@ -69,11 +85,26 @@ export default function Reports() {
 
   useEffect(load, [load]);
 
+  /**
+   * The printed sheet is a separate DOM tree from the screen. The screen is a
+   * dashboard — gauges, trend bars, tap targets — none of which survives paper.
+   * Printing it would give a manager a page of empty boxes and a chart they
+   * cannot read, so a plain table is rendered for the printer only and the
+   * screen is hidden for that one moment.
+   */
+  const printReport = useCallback(() => {
+    if (!report) return;
+    window.print();
+  }, [report]);
+
   if (error) return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
 
   const outstanding = (flagged?.refunds ?? 0) + (flagged?.failed ?? 0);
   const expireShare = report && report.orders_total > 0
     ? report.orders_expired / report.orders_total
+    : 0;
+  const fulfilmentShare = report && report.orders_total > 0
+    ? report.orders_fulfilled / report.orders_total
     : 0;
   const byMethod = Object.entries(report?.revenue_by_method ?? {})
     .map(([method, kobo]) => [method, Number(kobo)] as const)
@@ -92,8 +123,13 @@ export default function Reports() {
     { date: "", revenue_kobo: 0, orders: 0 },
   );
 
+  const reportWindow = periodWindow(days);
+  const printed = new Date().toLocaleString("en-NG", {
+    day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  });
+
   return (
-    <div className="screen">
+    <div className="screen report-screen">
       <OptionalBack to="/admin" />
       <Ticker static>
         {report ? `${money(report.revenue_kobo)} IN ${days} DAYS` : "ADDING IT UP"}
@@ -108,11 +144,27 @@ export default function Reports() {
         value={String(days)}
         onChange={(v) => setDays(Number(v))}
         options={[
+          { value: "1", label: "TODAY" },
           { value: "7", label: "WEEK" },
           { value: "30", label: "MONTH" },
           { value: "90", label: "QUARTER" },
         ]}
       />
+
+      <div style={{ height: "var(--s-5)" }} />
+
+      {/* Printing is the reason the daily period exists: a manager signs off a
+          day, files a week, or sends a month to the accountant. The button is
+          inert until the figures are in, so a half-loaded report is never what
+          comes out of the printer. */}
+      <div className="report-actions-row">
+        <Pill
+          onClick={printReport}
+          disabled={!report}
+        >
+          PRINT {PERIOD_NAME[days] ?? `${days} DAYS`}
+        </Pill>
+      </div>
 
       <div style={{ height: "var(--s-6)" }} />
 
@@ -300,6 +352,107 @@ export default function Reports() {
       )}
 
       <div className="spacer" />
+
+      {/* Printer only — see printReport. Hidden on screen by CSS, and the whole
+          interactive screen is hidden in its place. */}
+      {report && (
+        <section className="report-print" aria-hidden="true">
+          <header className="report-print-head">
+            <div>
+              <h1>U2 OIL AND GAS LTD.</h1>
+              <p>DEPOT PERFORMANCE REPORT</p>
+            </div>
+            <dl>
+              <div><dt>PERIOD</dt><dd>{PERIOD_NAME[days] ?? `${days} DAYS`}</dd></div>
+              <div><dt>FROM</dt><dd>{reportWindow.start}</dd></div>
+              <div><dt>TO</dt><dd>{reportWindow.end}</dd></div>
+              <div><dt>PRINTED</dt><dd>{printed}</dd></div>
+            </dl>
+          </header>
+
+          <h2>HEADLINE FIGURES</h2>
+          <table className="report-print-table">
+            <tbody>
+              <tr><th>REVENUE</th><td>{money(report.revenue_kobo)}</td><td>{revenueDelta?.label ?? "—"}</td></tr>
+              <tr><th>AVERAGE ORDER</th><td>{money(average)}</td><td>—</td></tr>
+              <tr><th>GAS SOLD</th><td>{report.gas_sold_kg.toFixed(1)} KG</td><td>{gasDelta?.label ?? "—"}</td></tr>
+              <tr><th>ORDERS</th><td>{report.orders_total}</td><td>—</td></tr>
+              <tr><th>ORDERS FULFILLED</th><td>{report.orders_fulfilled}</td><td>{ordersDelta?.label ?? "—"}</td></tr>
+            </tbody>
+          </table>
+
+          <h2>ORDER OUTCOMES</h2>
+          <table className="report-print-table">
+            <tbody>
+              <tr><th>FULFILMENT RATE</th><td>{Math.round(fulfilmentShare * 100)}%</td></tr>
+              <tr><th>CANCELLED</th><td>{report.orders_cancelled}</td></tr>
+              <tr><th>EXPIRED HOLDS</th><td>{report.orders_expired}</td></tr>
+              <tr><th>LOST TO EXPIRY</th><td>{Math.round(expireShare * 100)}%</td></tr>
+              <tr><th>PICKUP SHARE</th><td>{Math.round(report.pickup_share * 100)}%</td></tr>
+            </tbody>
+          </table>
+
+          {byMethod.length > 0 && (
+            <>
+              <h2>PAYMENTS BY METHOD</h2>
+              <table className="report-print-table">
+                <tbody>
+                  {byMethod.map(([method, kobo]) => (
+                    <tr key={method}>
+                      <th>{method.replace(/_/g, " ").toUpperCase()}</th>
+                      <td>{money(kobo)}</td>
+                      <td>{report.revenue_kobo > 0 ? Math.round((kobo / report.revenue_kobo) * 100) : 0}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          {report.orders_by_type && (
+            <>
+              <h2>WHAT WAS BOUGHT</h2>
+              <table className="report-print-table">
+                <tbody>
+                  {(["gas", "accessory", "mixed"] as const).map((kind) => (
+                    <tr key={kind}>
+                      <th>{kind.toUpperCase()}</th>
+                      <td>{report.orders_by_type![kind]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
+          <h2>DAY BY DAY</h2>
+          <table className="report-print-table is-daily">
+            <thead>
+              <tr><th>DATE</th><th>REVENUE</th><th>ORDERS</th></tr>
+            </thead>
+            <tbody>
+              {trend.map((d) => (
+                <tr key={d.date}>
+                  <th>{d.date}</th>
+                  <td>{money(d.revenue_kobo)}</td>
+                  <td>{d.orders}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th>TOTAL</th>
+                <td>{money(trend.reduce((s, d) => s + d.revenue_kobo, 0))}</td>
+                <td>{trend.reduce((s, d) => s + d.orders, 0)}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <footer className="report-print-foot">
+            <p>U2 OIL AND GAS LTD. — GENERATED BY THE U2 GAS DEPOT SYSTEM</p>
+          </footer>
+        </section>
+      )}
     </div>
   );
 }

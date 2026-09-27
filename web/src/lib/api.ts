@@ -358,6 +358,12 @@ export interface GasStock {
   rate_kobo_per_kg: number;
   fill_percent: number;
   days_remaining: number | null;
+  /** Recent burn, in kg/day, and the sample the estimate was read from. */
+  burn_kg_per_day?: number;
+  burn_basis_days?: number;
+  burn_sample_kg?: number;
+  /** 0 none, 1 running low, 2 low, 3 almost empty. */
+  low_gas_level?: 0 | 1 | 2 | 3;
   updated_at: string;
 }
 

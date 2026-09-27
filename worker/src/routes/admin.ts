@@ -33,8 +33,9 @@ admin.get("/stock", async (c) => {
   const available =
     Number(stock.total_received_kg) - Number(stock.reserved_kg) - Number(stock.deducted_kg);
 
-  // Burn rate over the last 14 days, for the "predicted to last N more days"
-  // line the tank screen shows.
+  // How fast the depot is actually burning gas, over the last 14 days. The
+  // estimate is a guess from usage, not a promise: it is what the last two
+  // weeks say, and the screen words it that way.
   const since = new Date(Date.now() - 14 * 864e5).toISOString();
   const recent = await select<any[]>(
     c.get("admin").from("order")
@@ -43,7 +44,21 @@ admin.get("/stock", async (c) => {
       .eq("status", "fulfilled")
       .gte("fulfilled_at", since),
   );
-  const perDay = recent.reduce((s, o) => s + Number(o.gas_amount_kg), 0) / 14;
+  const usedKg = recent.reduce((s, o) => s + Number(o.gas_amount_kg), 0);
+  const perDay = usedKg / 14;
+
+  // Three warnings, escalating. A number with no threshold is not a warning,
+  // and by the time the tank is at zero the depot has already stopped selling.
+  // Days come from the burn rate, so a quiet depot gets no false alarm and a
+  // busy one is told before the shelves are bare.
+  const daysLeft = perDay > 0 ? Math.floor(Math.max(available, 0) / perDay) : null;
+  const fillPct = Number(stock.total_received_kg) > 0
+    ? (Math.max(available, 0) / Number(stock.total_received_kg)) * 100 : 0;
+  const lowGasLevel: 0 | 1 | 2 | 3 =
+    available <= 0 || (daysLeft !== null && daysLeft <= 1) ? 3
+    : (daysLeft !== null && daysLeft <= 3) || fillPct <= 10 ? 2
+    : (daysLeft !== null && daysLeft <= 7) || fillPct <= 25 ? 1
+    : 0;
 
   return c.json({
     ok: true,
@@ -53,9 +68,13 @@ admin.get("/stock", async (c) => {
       deducted_kg: Number(stock.deducted_kg),
       available_kg: Math.max(available, 0),
       rate_kobo_per_kg: stock.rate_kobo_per_kg,
-      fill_percent: stock.total_received_kg > 0
-        ? Math.round((available / Number(stock.total_received_kg)) * 100) : 0,
-      days_remaining: perDay > 0 ? Math.floor(available / perDay) : null,
+      fill_percent: Math.round(fillPct),
+      // The guess, its basis, and how much of the guess the sample supports.
+      days_remaining: daysLeft,
+      burn_kg_per_day: Math.round(perDay * 10) / 10,
+      burn_basis_days: 14,
+      burn_sample_kg: Math.round(usedKg),
+      low_gas_level: lowGasLevel,
       updated_at: stock.updated_at,
     },
   });

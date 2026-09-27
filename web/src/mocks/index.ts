@@ -656,6 +656,8 @@ async function route(
   /* ---- Admin ---------------------------------------------------------- */
   if (method === "GET" && rawPath === "/admin/stock") {
     const available = availableKg();
+    const fillPct = Math.round((available / state.stockReceivedKg) * 100);
+    const days = available > 0 ? Math.floor(available / fx.BURN_KG_PER_DAY) : 0;
     return {
       stock: {
         total_received_kg: state.stockReceivedKg,
@@ -663,8 +665,12 @@ async function route(
         deducted_kg: state.stockDeductedKg,
         available_kg: available,
         rate_kobo_per_kg: state.rateKoboPerKg,
-        fill_percent: Math.round((available / state.stockReceivedKg) * 100),
-        days_remaining: available > 0 ? Math.floor(available / 180) : 0,
+        fill_percent: fillPct,
+        days_remaining: days,
+        burn_kg_per_day: fx.BURN_KG_PER_DAY,
+        burn_basis_days: 14,
+        burn_sample_kg: fx.BURN_KG_PER_DAY * 14,
+        low_gas_level: fx.lowGasLevel(available, days, fillPct),
         updated_at: new Date().toISOString(),
       },
     };

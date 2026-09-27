@@ -89,12 +89,22 @@ export default function Tank() {
 
   const tonsAvailable = stock.available_kg / 1000;
   const asTons = (kg: number) => `${(kg / 1000).toFixed(1)}T`;
+  // The days line is a guess from usage, so it is worded as one: "about", and
+  // the basis rides underneath it. The worker floors the figure and returns the
+  // burn rate it read, so nothing here invents a date the data cannot support.
   // 1:3902 is one `<p>` split by a `<br>`, so the days are replaced inside the
   // line rather than by rewriting the node: replacing the whole string would
   // drop the `<br>` and change the drawn structure.
   const textReplacements: Record<string, string | string[]> = stock.days_remaining === null
     ? { "TO LAST 34 MORE DAYS*": "TO LAST AN UNKNOWN NUMBER OF DAYS*" }
-    : { "34 MORE DAYS": `${stock.days_remaining} MORE DAYS` };
+    : { "34 MORE DAYS": `ABOUT ${stock.days_remaining} MORE DAYS` };
+
+  const level = stock.low_gas_level ?? 0;
+  const warnings: { level: 0 | 1 | 2 | 3; text: string }[] = [
+    { level: 1, text: "RUNNING LOW — TOP UP SOON" },
+    { level: 2, text: "LOW ON GAS — ORDER A REFILL" },
+    { level: 3, text: "GAS ALMOST EMPTY — REFILL NOW" },
+  ];
 
   return (
     <div className="screen figma-route-scroll">
@@ -121,6 +131,23 @@ export default function Tank() {
         </div>
       )}
 
+      {/* Three warnings, escalating with the level the worker computed. Only
+          the current one shows: three stacked alarms is alarm fatigue, and the
+          level already says how bad it is. */}
+      {level > 0 && (
+        <div className={`gas-warning is-level-${level}`} role="status">
+          <span className="gas-warning-dot" aria-hidden="true" />
+          <div>
+            <b>{warnings.find((w) => w.level === level)?.text}</b>
+            <em>
+              {stock.days_remaining !== null
+                ? `ABOUT ${stock.days_remaining} DAY${stock.days_remaining === 1 ? "" : "S"} LEFT AT TODAY'S USE`
+                : "USE IS TOO UNEVEN TO GUESS"}
+            </em>
+          </div>
+        </div>
+      )}
+
       {/* The gauge draws one number. The three that produce it are what a
           manager actually reconciles against a delivery note. */}
       <div style={{ marginTop: "var(--s-8)" }}>
@@ -129,6 +156,27 @@ export default function Tank() {
         <div className="row"><span>USED</span><b>{asTons(stock.deducted_kg)}</b></div>
         <div className="row is-total"><span>AVAILABLE</span><b>{asTons(stock.available_kg)}</b></div>
       </div>
+
+      {/* The guess, and what it was read from. A forecast with no visible basis
+          is a number a manager cannot argue with or trust. */}
+      {stock.burn_kg_per_day !== undefined && (
+        <div style={{ marginTop: "var(--s-6)" }}>
+          <p className="label" style={{ textAlign: "left" }}>HOW FAST IT'S GOING</p>
+          <div style={{ marginTop: "var(--s-3)" }}>
+            <div className="row">
+              <span>RECENT USE</span>
+              <b>{stock.burn_kg_per_day} KG/DAY</b>
+            </div>
+            <div className="row">
+              <span>MEASURED OVER</span>
+              <b>LAST {stock.burn_basis_days ?? 14} DAYS</b>
+            </div>
+          </div>
+          <p className="label" style={{ marginTop: "var(--s-3)", textAlign: "left" }}>
+            A GUESS FROM RECENT USE, NOT A PROMISE
+          </p>
+        </div>
+      )}
 
       <div style={{ marginTop: "var(--s-8)" }}>
         <p className="label" style={{ textAlign: "left" }}>RATE</p>

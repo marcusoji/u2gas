@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, newIdempotencyKey, type Order } from "../../lib/api";
-import { money, Pill } from "../../components/primitives";
+import { BackButton, money, Pill } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import "../../styles/figma-route.css";
 
@@ -193,14 +193,11 @@ export default function Collect() {
           <button className="figma-route-interactive" aria-label="Confirm payment" disabled={!enough || busy} style={{ left: 89, top: 580, width: 173, height: 72 }} onClick={takePayment} />
         )}
         {/* The artboard draws no back control and its topmost element starts at
-            y=52, so this sits in the clear band above the artwork rather than
-            in the empty space below it, where nothing would look tappable. */}
-        <button
-          className="figma-route-interactive"
-          aria-label="Back"
-          style={{ left: 12, top: 6, width: 48, height: 44 }}
-          onClick={() => nav("/staff/queue")}
-        />
+            y=52, so the button sits in the clear band above the artwork. It is
+            the app's own visible BackButton rather than a transparent hotspot:
+            a hotspot with nothing drawn under it looks like empty space, and a
+            cashier mid-transaction needs to see the way out. */}
+        <BackButton to="/staff/queue" />
 
         {/* Already paid. The frame is a till — it is drawn for an order that
             still owes money — so for a paid order it would show a keypad with

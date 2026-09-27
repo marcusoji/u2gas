@@ -615,7 +615,6 @@
 .scanner {
   aspect-ratio: 1 / 1.15;
   border-radius: 26px;
-  border: 2px dashed var(--ink);
   overflow: hidden;
   position: relative;
   background: radial-gradient(circle, #D9D9DB, #ADADB0);
@@ -623,11 +622,21 @@
   align-items: center;
   justify-content: center;
 }
-.scanner video { width: 100%; height: 100%; object-fit: cover; }
-.scanner.is-ok   { background: radial-gradient(circle, #8BE8A8, #2FA95C); border-color: #1E7A40; }
-.scanner.is-fail { background: radial-gradient(circle, #F0A19B, #C4352C); border-color: #8E241D; }
+.scanner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scanner.is-ok   { background: radial-gradient(circle, #8BE8A8, #2FA95C); }
+.scanner.is-fail { background: radial-gradient(circle, #F0A19B, #C4352C); }
 
-.scanner-glyph { width: 56%; filter: grayscale(1) contrast(1.6); }
+/* The file's viewfinder. Absolute so it overlays whatever the feed, the tint
+   or the halftone glyph paints underneath. */
+.scanner-reticle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.scanner-glyph { position: relative; width: 56%; filter: grayscale(1) contrast(1.6); }
 
 /* --- Tank gauge ---------------------------------------------------------- */
 
@@ -930,18 +939,20 @@ img.is-unavailable { filter: blur(1.5px); }
   align-items: center;
   gap: var(--s-2);
   min-height: 44px;
-  padding: 0 var(--s-2);
+  padding: 0 var(--s-4);
   margin-bottom: var(--s-4);
-  background: none;
+  background: var(--blue);
   border: 0;
-  color: var(--blue);
+  border-radius: var(--r-pill);
+  box-shadow: 0 4px 10px rgba(19, 23, 228, .28);
+  color: var(--white);
   font-family: var(--font-px);
   font-size: var(--t-card);
   letter-spacing: .1em;
   cursor: pointer;
 }
 .screen-back::before { content: "\2190"; font-size: 1.4em; line-height: 1; }
-.screen-back:active { color: var(--blue-deep); }
+.screen-back:active { background: var(--blue-deep); }
 
 /* The route-level variant sits on the plate, alongside the artwork. */
 .figma-route-frame > .screen-back {
@@ -953,10 +964,8 @@ img.is-unavailable { filter: blur(1.5px); }
   /* The plate is scaled to fit narrow viewports (see --plate-fit). This
      button is the app's own, not artwork, so it cancels that scale and keeps
      a full-size touch target at every width. */
-  min-height: calc(44px / var(--plate-fit, 1));
+  min-height: calc(48px / var(--plate-fit, 1));
   font-size: calc(var(--t-card) / var(--plate-fit, 1));
-  background: rgba(255, 255, 255, .86);
-  border-radius: var(--r-pill);
   padding: 0 calc(var(--s-4) / var(--plate-fit, 1));
 }
 .figma-route-frame > .screen-back::before {
@@ -1517,6 +1526,236 @@ body:has(.app-nav) .mockbar {
   font-style: normal;
   text-align: right;
   white-space: nowrap;
+}
+
+/* --- Report polish --------------------------------------------------------
+   Reports is the screen a manager reads at the end of a day, so the figures
+   are given depth and a colour accent rather than sitting as a flat wall of
+   outlines. The palette is the app's own: ink blue, the halftone, the field
+   grey. Nothing new is introduced. */
+
+.report-hero {
+  border-color: transparent;
+  background: linear-gradient(180deg, var(--blue) 0%, var(--blue-deep, #0d1099) 100%);
+  color: var(--white);
+  box-shadow: 0 8px 20px rgba(19, 23, 228, .28);
+}
+.report-hero-label { color: rgba(255, 255, 255, .72); }
+.report-hero-value { color: var(--white); }
+.report-delta { color: rgba(255, 255, 255, .8); }
+.report-delta.is-up { color: #B9FFCB; }
+.report-delta.is-down { color: #FFC9C2; }
+.report-hero-side > div {
+  border-color: rgba(255, 255, 255, .24);
+  background: rgba(255, 255, 255, .08);
+}
+.report-hero-side dt { color: rgba(255, 255, 255, .72); }
+.report-hero-side dd { color: var(--white); }
+
+.report-strip-cell {
+  background: var(--white);
+  background-image: var(--noise);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .06);
+}
+
+/* A section is a card, so the eye can group it and skip it. */
+.report-section {
+  padding: var(--s-5);
+  border: 1px solid var(--field);
+  border-radius: var(--r-card, 20px);
+  background: var(--white);
+  background-image: var(--noise);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+}
+.report-section > h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.report-section > h2::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.report-cell {
+  background: var(--field);
+  background-image: var(--noise);
+  border-color: transparent;
+}
+.report-cell.is-accent {
+  border: 1px solid var(--blue);
+  background: rgba(19, 23, 228, .05);
+}
+
+.report-actions-row { display: grid; }
+
+/* Keep the daily bar readable at 90 days: below ~3px the bars vanish. */
+.report-trend { gap: 2px; height: 140px; }
+
+/* --- Printing ------------------------------------------------------------
+   The printed sheet is a plain document, not the dashboard. The screen tree is
+   hidden and `.report-print` takes its place, on the page background, in full
+   width — the fixed 440px plate and the phone chrome have no meaning on A4. */
+
+.report-print { display: none; }
+
+@media print {
+  @page { margin: 16mm 14mm; }
+
+  html, body { background: #fff !important; }
+
+  /* Hide everything by default, then reveal the report's own print sheet. */
+  body * { visibility: hidden !important; }
+  .report-screen .report-print,
+  .report-screen .report-print * { visibility: visible !important; }
+
+  .report-print {
+    display: block !important;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    font-family: var(--font-px), Arial, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .report-print-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #000;
+  }
+  .report-print-head h1 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: -.02em;
+  }
+  .report-print-head p { margin: 2px 0 0; letter-spacing: .1em; }
+  .report-print-head dl {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 2px 12px;
+    margin: 0;
+    text-align: right;
+  }
+  .report-print-head dl > div { display: flex; gap: 6px; justify-content: flex-end; }
+  .report-print-head dt { letter-spacing: .08em; opacity: .6; }
+  .report-print-head dd { margin: 0; font-weight: 700; }
+
+  .report-print h2 {
+    margin: 16px 0 6px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #999;
+    font-size: 12px;
+    letter-spacing: .1em;
+  }
+  .report-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .report-print-table th,
+  .report-print-table td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+  }
+  .report-print-table thead th {
+    border-bottom: 1px solid #000;
+    letter-spacing: .08em;
+  }
+  .report-print-table tfoot th,
+  .report-print-table tfoot td {
+    border-top: 2px solid #000;
+    border-bottom: 0;
+    font-weight: 700;
+  }
+  .report-print-table th:first-child { width: 46%; }
+  .report-print-table td { font-variant-numeric: tabular-nums; }
+  .report-print-table td:not(:first-child),
+  .report-print-table th:not(:first-child) { text-align: right; }
+  .report-print-table.is-daily th:first-child { width: 40%; }
+
+  /* A long daily table must not split a row across pages. */
+  .report-print-table tr { break-inside: avoid; }
+
+  .report-print-foot {
+    margin-top: 20px;
+    padding-top: 8px;
+    border-top: 1px solid #999;
+    font-size: 9px;
+    letter-spacing: .08em;
+    opacity: .7;
+  }
+}
+
+/* --- Low-gas warning ------------------------------------------------------
+   Three levels, from a nudge to an alarm. The colour deepens with the level so
+   the severity is legible before the words are read. */
+
+.gas-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding: var(--s-4) var(--s-5);
+  border-radius: var(--r-card, 16px);
+  border: 1px solid var(--field);
+  background: var(--white);
+  background-image: var(--noise);
+  text-align: left;
+}
+.gas-warning b {
+  display: block;
+  font-family: var(--font-px);
+  font-weight: 400;
+  font-size: var(--t-card);
+  letter-spacing: .06em;
+  color: var(--blue);
+}
+.gas-warning em {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-px);
+  font-style: normal;
+  font-size: var(--t-caption);
+  letter-spacing: .06em;
+  color: var(--grey);
+}
+.gas-warning-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 0 4px rgba(19, 23, 228, .15);
+}
+/* Level 1 is the quietest; level 3 gets the alarm treatment and a pulse. */
+.gas-warning.is-level-2 { border-color: var(--blue); }
+.gas-warning.is-level-3 {
+  border-color: var(--danger);
+  background: rgba(196, 53, 44, .06);
+  animation: gas-warning-pulse 1.6s ease-in-out infinite;
+}
+.gas-warning.is-level-3 b { color: var(--danger); }
+.gas-warning.is-level-3 .gas-warning-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(196, 53, 44, .18);
+}
+@keyframes gas-warning-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 53, 44, .22); }
+  50%      { box-shadow: 0 0 0 6px rgba(196, 53, 44, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gas-warning.is-level-3 { animation: none; }
 }
 
 /* ---------------------------------------------------------------------------
