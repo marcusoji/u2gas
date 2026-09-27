@@ -14,8 +14,11 @@ React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
 - `npm run check:assets` ŌĆö fails if a font/image referenced by CSS is missing
 - `bash scripts/check-figma-parity.sh` (repo root) ŌĆö proves `web/src/figma/screens/`
   still matches `docs/u2gas-all-screens.html` byte for byte (generator `--check`)
-- `npm run build` currently fails at `tsc -b` on pre-existing type errors in
-  `Product.tsx`, `DriverScan.tsx`, `Collect.tsx`. `vite build` alone succeeds.
+- `npm run build` — asset check, `tsc -b`, `vite build`, then the CSP header.
+  It fails if `VITE_API_ORIGIN` is unset, because the CSP names the API origin
+  explicitly; the script reads Vite's own `.env` (loading it via `loadEnv`), so
+  the value does not have to be exported a second time. A
+  `VITE_USE_MOCKS=true` build contacts no API and may omit the origin.
 
 Demo mode: `VITE_USE_MOCKS=true`. Role links use `?as=<role>`.
 
