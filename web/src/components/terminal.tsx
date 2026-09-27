@@ -108,18 +108,28 @@ export function Terminal({ metal, caption = "AMOUNT IN NAIRA", children }: {
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "×", "0", "PAY"];
 
 /**
- * The physical keypad. `×` clears the last digit, `PAY` submits.
+ * The physical keypad. `×` clears the last digit, the last key submits.
  *
  * Disabled state dims the keys rather than hiding them — the machine is still
  * there, it just isn't taking input, which is what the insufficient-stock
  * screen needs to communicate.
+ *
+ * `submitLabel` renames the last key. The lookup screen is not a till: the
+ * drawing of the till says PAY, but the same machine is used to search, and a
+ * button labelled PAY on a search screen is a mislabel a cashier has to learn
+ * around. The key is the same size and position either way.
  */
-export function Keypad({ onDigit, onClear, onSubmit, disabled, submitDisabled }: {
+export function Keypad({
+  onDigit, onClear, onSubmit, disabled, submitDisabled, submitLabel = "PAY", onManual,
+}: {
   onDigit: (d: string) => void;
   onClear: () => void;
   onSubmit: () => void;
   disabled?: boolean;
   submitDisabled?: boolean;
+  submitLabel?: string;
+  /** The drawn hand. Where supplied, it opens manual entry for this screen. */
+  onManual?: () => void;
 }) {
   return (
     <div className="keypad">
@@ -131,13 +141,23 @@ export function Keypad({ onDigit, onClear, onSubmit, disabled, submitDisabled }:
             key={k}
             className="key"
             disabled={disabled || (isPay && submitDisabled)}
-            aria-label={isPay ? "Pay" : isClear ? "Delete last digit" : k}
+            aria-label={isPay ? submitLabel : isClear ? "Delete last digit" : k}
             onClick={() => isPay ? onSubmit() : isClear ? onClear() : onDigit(k)}
           >
-            {k}
+            {isPay ? submitLabel : k}
           </button>
         );
       })}
+      {onManual && (
+        <button
+          className="key is-manual"
+          onClick={onManual}
+          aria-label="Enter it by hand"
+          title="Enter it by hand"
+        >
+          <span aria-hidden="true">✍</span>
+        </button>
+      )}
     </div>
   );
 }

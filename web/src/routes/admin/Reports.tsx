@@ -1,18 +1,33 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, ApiError, type ReportSummary } from "../../lib/api";
-import { ErrorState, LoadBar, Stamp, Tabs, money } from "../../components/primitives";
+import { ErrorState, LoadBar, OptionalBack, Stamp, Tabs, money } from "../../components/primitives";
 import { TankGauge } from "../../components/illustrated";
 import { Ticker } from "../../components/terminal";
 
 /**
- * Admin reports (Item 10). Previously a tab inside the audit screen, which
- * buried it — the numbers a manager checks daily should not live behind a
- * screen labelled LOG.
+ * Admin reports.
  *
- * The design has no charts anywhere, so this reuses the tank gauge's
- * fill-and-ruler language. A charting library would also cost more than the
- * entire initial JS budget.
+ * Three loose rows under one gauge was "tank enough" that a manager had to read
+ * every line to find the two figures that need a person today. The numbers are
+ * grouped now — today's problems, what came in, how it was paid, what it was —
+ * each with the change against the period before it, because a figure with no
+ * comparison is a figure nobody can act on.
+ *
+ * The design has no charts anywhere, so the trend reuses the tank gauge's
+ * fill-and-ruler language rather than pulling in a charting library that would
+ * cost more than the entire initial JS budget.
  */
+
+/** Change against the previous period, as a signed percentage. */
+function delta(current: number, previous: number | undefined): { label: string; up: boolean } | null {
+  if (previous === undefined) return null;
+  if (previous === 0) return current === 0 ? null : { label: "NEW", up: true };
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return { label: "LEVEL", up: true };
+  return { label: `${pct > 0 ? "+" : ""}${pct}%`, up: pct > 0 };
+}
+
 export default function Reports() {
   const [days, setDays] = useState(30);
   const [report, setReport] = useState<ReportSummary | null>(null);
@@ -56,8 +71,30 @@ export default function Reports() {
 
   if (error) return <div className="screen"><ErrorState message={error} onRetry={load} /></div>;
 
+  const outstanding = (flagged?.refunds ?? 0) + (flagged?.failed ?? 0);
+  const expireShare = report && report.orders_total > 0
+    ? report.orders_expired / report.orders_total
+    : 0;
+  const byMethod = Object.entries(report?.revenue_by_method ?? {})
+    .map(([method, kobo]) => [method, Number(kobo)] as const)
+    .sort((a, b) => b[1] - a[1]);
+  const methodPeak = Math.max(1, ...byMethod.map(([, kobo]) => kobo));
+  const revenueDelta = report ? delta(report.revenue_kobo, report.previous?.revenue_kobo) : null;
+  const gasDelta = report ? delta(report.gas_sold_kg, report.previous?.gas_sold_kg) : null;
+  const ordersDelta = report ? delta(report.orders_fulfilled, report.previous?.orders_fulfilled) : null;
+  const average = report && report.orders_fulfilled > 0
+    ? Math.round(report.revenue_kobo / report.orders_fulfilled)
+    : 0;
+  const trend = report?.revenue_by_day ?? [];
+  const trendPeak = Math.max(1, ...trend.map((d) => d.revenue_kobo));
+  const best = trend.reduce(
+    (top, d) => (d.revenue_kobo > top.revenue_kobo ? d : top),
+    { date: "", revenue_kobo: 0, orders: 0 },
+  );
+
   return (
     <div className="screen">
+      <OptionalBack to="/admin" />
       <Ticker static>
         {report ? `${money(report.revenue_kobo)} IN ${days} DAYS` : "ADDING IT UP"}
       </Ticker>
@@ -87,56 +124,174 @@ export default function Reports() {
 
       {report && (
         <>
-          <TankGauge
-            availableKg={report.orders_fulfilled}
-            totalKg={Math.max(report.orders_total, 1)}
-            unit="DONE"
-            labelLines={["ORDERS", "FULFILLED"]}
-            ariaLabel={`${report.orders_fulfilled} of ${report.orders_total} orders fulfilled`}
-            note={`${report.orders_fulfilled} OF ${report.orders_total} ORDERS FULFILLED`}
-          />
+          {/* The four figures a manager reads first, before the detail. Each
+              carries its change against the period before it — a number with
+              no comparison is a number nobody can act on. */}
+          <div className="report-hero">
+            <div className="report-hero-main">
+              <p className="report-hero-label">REVENUE</p>
+              <p className="report-hero-value">{money(report.revenue_kobo)}</p>
+              {revenueDelta && (
+                <p className={`report-delta${revenueDelta.up ? " is-up" : " is-down"}`}>
+                  {revenueDelta.label} VS PREVIOUS {days} DAYS
+                </p>
+              )}
+            </div>
+            <dl className="report-hero-side">
+              <div>
+                <dt>AVERAGE ORDER</dt>
+                <dd>{money(average)}</dd>
+              </div>
+              <div>
+                <dt>GAS SOLD</dt>
+                <dd>{report.gas_sold_kg.toFixed(1)}<small>KG</small></dd>
+              </div>
+            </dl>
+          </div>
 
-          <div style={{ marginTop: "var(--s-8)" }}>
-            <div className="row is-total"><span>REVENUE</span><b>{money(report.revenue_kobo)}</b></div>
-            <div className="row"><span>GAS SOLD</span><b>{report.gas_sold_kg.toFixed(1)}KG</b></div>
-            <div className="row"><span>EXPIRED HOLDS</span><b>{report.orders_expired}</b></div>
-            <div className="row"><span>CANCELLED</span><b>{report.orders_cancelled}</b></div>
-            <div className="row">
-              <span>PICKUP SHARE</span><b>{Math.round(report.pickup_share * 100)}%</b>
+          <div className="report-strip">
+            <div className="report-strip-cell">
+              <span>ORDERS</span>
+              <b>{report.orders_total}</b>
+              <em>{report.orders_fulfilled} FULFILLED</em>
+            </div>
+            <div className="report-strip-cell">
+              <span>FULFILMENT</span>
+              <b>{ordersDelta?.label ?? "—"}</b>
+              <em>VS LAST {days} DAYS</em>
+            </div>
+            <div className="report-strip-cell">
+              <span>GAS SOLD</span>
+              <b>{gasDelta?.label ?? "—"}</b>
+              <em>VS LAST {days} DAYS</em>
             </div>
           </div>
 
-          {flagged && (flagged.refunds > 0 || flagged.failed > 0) && (
-            <div style={{ marginTop: "var(--s-6)" }}>
-              <p className="label" style={{ textAlign: "left" }}>NEEDS SOMEONE</p>
-              <div style={{ marginTop: "var(--s-3)" }}>
-                {flagged.refunds > 0 && (
-                  <div className="row"><span>REFUNDS PENDING</span><b>{flagged.refunds}</b></div>
-                )}
-                {flagged.failed > 0 && (
-                  <div className="row"><span>FAILED DROPS</span><b>{flagged.failed}</b></div>
-                )}
+          {/* Today's problems first. These are the only figures on the screen
+              that mean somebody has to act, so they sit at the top rather than
+              after the revenue, and each opens the queue that resolves it. */}
+          {flagged && (
+            <section className="report-section">
+              <h2>NEEDS SOMEONE TODAY</h2>
+              <div className="report-actions">
+                <Link className={`report-action${flagged.refunds > 0 ? " is-urgent" : ""}`} to="/admin/orders">
+                  <span>REFUNDS PENDING</span>
+                  <b>{flagged.refunds}</b>
+                  <i>{flagged.refunds > 0 ? "OPEN THE QUEUE" : "NONE OWED"}</i>
+                </Link>
+                <Link className={`report-action${flagged.failed > 0 ? " is-urgent" : ""}`} to="/admin/orders">
+                  <span>FAILED DROPS</span>
+                  <b>{flagged.failed}</b>
+                  <i>{flagged.failed > 0 ? "REASSIGN A DRIVER" : "ALL CLEAR"}</i>
+                </Link>
               </div>
-            </div>
+              {outstanding === 0 && (
+                <p className="label" style={{ textAlign: "left", marginTop: "var(--s-3)" }}>
+                  NOTHING IS WAITING ON ANYONE
+                </p>
+              )}
+            </section>
           )}
 
-          <div style={{ marginTop: "var(--s-8)" }}>
-            <p className="label" style={{ textAlign: "left" }}>HOW THEY PAID</p>
-            <div style={{ marginTop: "var(--s-3)" }}>
-              {Object.entries(report.revenue_by_method ?? {}).map(([method, kobo]) => (
-                <div className="row" key={method}>
-                  <span>{method.replace(/_/g, " ").toUpperCase()}</span>
-                  <b>{money(Number(kobo))}</b>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* The trend, drawn with the gauge's own language: one bar per day,
+              the busiest day labelled so the shape has a scale. */}
+          {trend.length > 1 && (
+            <section className="report-section">
+              <h2>DAY BY DAY</h2>
+              <div
+                className="report-trend"
+                role="img"
+                aria-label={`Daily revenue for the last ${days} days`}
+              >
+                {trend.map((d) => (
+                  <i
+                    key={d.date}
+                    className={d.revenue_kobo > 0 ? "has-value" : ""}
+                    style={{ height: `${Math.max(2, (d.revenue_kobo / trendPeak) * 100)}%` }}
+                    title={`${d.date} · ${money(d.revenue_kobo)} · ${d.orders} orders`}
+                  />
+                ))}
+              </div>
+              <p className="report-trend-note">
+                <span>{trend[0]?.date}</span>
+                {best.revenue_kobo > 0 && <span>BEST {best.date} · {money(best.revenue_kobo)}</span>}
+                <span>{trend[trend.length - 1]?.date}</span>
+              </p>
+            </section>
+          )}
 
-          {report.orders_total > 0 &&
-           report.orders_expired / report.orders_total > 0.15 && (
+          <section className="report-section">
+            <h2>WHAT CAME IN</h2>
+            <TankGauge
+              availableKg={report.orders_fulfilled}
+              totalKg={Math.max(report.orders_total, 1)}
+              unit="DONE"
+              labelLines={["ORDERS", "FULFILLED"]}
+              ariaLabel={`${report.orders_fulfilled} of ${report.orders_total} orders fulfilled`}
+              note={`${report.orders_fulfilled} OF ${report.orders_total} ORDERS FULFILLED`}
+            />
+
+            <dl className="report-grid" style={{ marginTop: "var(--s-5)" }}>
+              <div className="report-cell">
+                <dt>PICKUP SHARE</dt>
+                <dd>{Math.round(report.pickup_share * 100)}<small style={{ fontSize: 14 }}>%</small></dd>
+              </div>
+              <div className="report-cell">
+                <dt>CANCELLED</dt>
+                <dd>{report.orders_cancelled}</dd>
+              </div>
+              <div className={`report-cell${expireShare > 0.15 ? " is-accent" : ""}`}>
+                <dt>EXPIRED HOLDS</dt>
+                <dd>{report.orders_expired}</dd>
+              </div>
+              <div className="report-cell">
+                <dt>LOST TO EXPIRY</dt>
+                <dd>{Math.round(expireShare * 100)}<small style={{ fontSize: 14 }}>%</small></dd>
+              </div>
+            </dl>
+          </section>
+
+          {byMethod.length > 0 && (
+            <section className="report-section">
+              <h2>HOW THEY PAID</h2>
+              <div className="report-bars">
+                {byMethod.map(([method, kobo]) => (
+                  <div className="report-bar" key={method}>
+                    <span>{method.replace(/_/g, " ").toUpperCase()}</span>
+                    <i
+                      style={{ width: `${Math.max(2, (kobo / methodPeak) * 100)}%` }}
+                      role="presentation"
+                    />
+                    <em>{money(kobo)}</em>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {report.orders_by_type && (
+            <section className="report-section">
+              <h2>WHAT THEY BOUGHT</h2>
+              <div className="report-bars">
+                {(["gas", "accessory", "mixed"] as const).map((kind) => {
+                  const n = report.orders_by_type![kind];
+                  const peak = Math.max(1, ...Object.values(report.orders_by_type!));
+                  return (
+                    <div className="report-bar" key={kind}>
+                      <span>{kind.toUpperCase()}</span>
+                      <i style={{ width: `${Math.max(2, (n / peak) * 100)}%` }} role="presentation" />
+                      <em>{n} {n === 1 ? "ORDER" : "ORDERS"}</em>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {expireShare > 0.15 && (
             <div className="stamp-wrap" style={{ marginTop: "var(--s-6)" }}>
               <Stamp>
-                {Math.round((report.orders_expired / report.orders_total) * 100)}% EXPIRE
+                {Math.round(expireShare * 100)}% EXPIRE
                 — THE HOLD MAY BE TOO SHORT
               </Stamp>
             </div>

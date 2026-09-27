@@ -5,8 +5,8 @@ import { signOut } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { mediaUrl } from "../../lib/media";
 import {
-  ErrorState, LoadBar, Pill, Segmented, Stamp, U2Mark,
-} from "../../components/primitives";
+  ErrorState, LoadBar, OptionalBack, Pill, Segmented, Stamp,
+  U2Mark} from "../../components/primitives";
 
 type Status = "available" | "busy" | "offline";
 
@@ -66,6 +66,7 @@ export default function DriverMe() {
 
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/driver" />
       <FigmaRouteFrame node="1:4968" values={values}>
         {driver.profile?.avatar_asset?.base_path && (
           <img
@@ -74,6 +75,17 @@ export default function DriverMe() {
             style={{ position: "absolute", left: 149, top: 106, width: 142, height: 139, objectFit: "cover", zIndex: 10 }}
           />
         )}
+        {/* The completed figure is drawn as a caption at (131,403) on the
+            board, but it is the number a driver taps when they want to see what
+            they actually did. The hotspot sits on the drawn line, not on the
+            name above it: the old box at y=268 covered the signature and left
+            the figure — the thing that reads as a link — untappable. */}
+        <button
+          className="figma-route-interactive"
+          aria-label={`See all ${driver.completed_deliveries} completed deliveries`}
+          onClick={() => nav("/driver?scope=completed")}
+          style={{ left: 60, top: 392, width: 320, height: 40, zIndex: 15 }}
+        />
         <div style={{ position: "absolute", left: 24, top: 500, width: 392, zIndex: 20 }}>
           <p className="label">ARE YOU TAKING DROPS</p>
           <div style={{ marginTop: 12 }}>

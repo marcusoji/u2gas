@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type AuditEntry } from "../../lib/api";
-import { Empty, ErrorState, LoadBar, Stamp, Tabs } from "../../components/primitives";
+import { Empty, ErrorState, LoadBar, OptionalBack, Stamp, Tabs } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 const FILTERS = [
@@ -39,6 +39,7 @@ export default function Audit() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/admin" />
       <Ticker static>{entries ? `${entries.length} RECORDED` : "READING THE LOG"}</Ticker>
 
       <div style={{ height: "var(--s-5)" }} />

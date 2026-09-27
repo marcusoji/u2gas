@@ -123,14 +123,19 @@ function newOrder(fields: Partial<import("../lib/api").Order>): import("../lib/a
 }
 
 function summarise(o: import("../lib/api").Order) {
+  // Identity comes from the order. It used to be hardcoded to "Ade Balogun"
+  // over a guest phone for every row, which named the wrong person and — since
+  // the detail response carried no identity at all — made the row and the
+  // screen it opened disagree about who the order was for.
   return {
     order_id: o.order_id, order_number: o.order_number,
     status: o.status, payment_status: o.payment_status,
     fulfillment_type: o.fulfillment_type, total_kobo: o.total_kobo,
-    gas_amount_kg: o.gas_amount_kg, guest_name: "Walk-in customer",
-    guest_phone: "+2348030000009", created_at: o.created_at,
+    gas_amount_kg: o.gas_amount_kg,
+    guest_name: o.guest_name ?? null, guest_phone: o.guest_phone ?? null,
+    created_at: o.created_at,
     hold_expires_at: o.hold_expires_at,
-    profile: { display_name: "Ade Balogun", phone: "+2348030000001" },
+    profile: o.profile ?? null,
   };
 }
 
@@ -503,6 +508,11 @@ async function route(
       fulfillment_type: body?.fulfillment ?? "pickup",
       gas_amount_kg: kg, gas_subtotal_kobo: gasSubtotal(kg),
       total_kobo: gasSubtotal(kg),
+      // The name and phone the cashier just typed belong to this order. Without
+      // them the till that opens next had no identity to show and called the
+      // customer "WALK-IN" immediately after they were named.
+      guest_name: body.guest_name.trim(), guest_phone: body.guest_phone.trim(),
+      profile: null,
     });
     fx.orders.unshift(order);
     return { order };
@@ -932,9 +942,12 @@ function withDeliveryOrder(deliveryId: string) {
   if (!order) throw fail("NOT_FOUND", 404, "NO ORDER FOR DELIVERY");
   return {
     ...order,
-    guest_name: "Walk-in customer",
-    guest_phone: "+2348030000009",
-    profile: { display_name: "Ade Balogun", phone: "+2348030000001" },
+    // The delivery's own order carries the customer, or the fallback guest
+    // identity when it has none. Both the drop list and the drop screen read
+    // these, so they must agree with each other.
+    guest_name: order.guest_name ?? "Walk-in customer",
+    guest_phone: order.guest_phone ?? "+2348030000009",
+    profile: order.profile ?? { display_name: "Ade Balogun", phone: "+2348030000001" },
     order_item: order.items ?? [],
   };
 }

@@ -7,12 +7,12 @@ compiled into the browser bundle and readable by anyone who opens devtools.
 
 Set with `wrangler secret put <NAME>`. Never in `wrangler.toml`, never in git.
 
-| Name | Where it comes from | What breaks without it |
+| Name | Example | What breaks without it |
 |---|---|---|
 | `SUPABASE_URL` | Supabase → Settings → API | Everything |
-| `SUPABASE_ANON_KEY` | same | RLS-scoped reads |
-| `SUPABASE_SERVICE_ROLE_KEY` | same | All writes. **Never send to a browser** |
-| `SUPABASE_JWT_SECRET` | same | Auth — every request reads as anonymous |
+| `SUPABASE_PUBLISHABLE_KEY` | same | RLS-scoped reads. `SUPABASE_ANON_KEY` is the legacy name, still accepted as a fallback |
+| `SUPABASE_SECRET_KEY` | same | All writes. **Never send to a browser.** `SUPABASE_SERVICE_ROLE_KEY` is the legacy name, still accepted as a fallback |
+| `SUPABASE_JWT_SECRET` | same | Only needed on legacy projects still signing HS256 |
 | `PAYSTACK_SECRET_KEY` | Paystack dashboard | Payments and webhook signatures |
 | `PAYSTACK_PUBLIC_KEY` | same | Checkout initialisation |
 | `RESEND_API_KEY` | Resend dashboard | Transactional mail |
@@ -36,6 +36,7 @@ All public. Anything secret here is a leak.
 | Name | Example |
 |---|---|
 | `VITE_API_BASE` | `https://api.u2gas.ng/api` |
+| `VITE_API_ORIGIN` | `https://api.u2gas.ng` — required by the build; it is written into the CSP in `dist/_headers` and the build fails without it |
 | `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | the sb_publishable_ key, never the secret key |
 | `VITE_SUPABASE_ANON_KEY` | optional. Legacy name for the same public key, still accepted as a fallback so an older deployment keeps working. Set the publishable key on anything new. |

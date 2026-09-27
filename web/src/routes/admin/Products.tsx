@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type AdminProduct } from "../../lib/api";
 import {
-  Empty, ErrorState, Input, LoadBar, Modal, Pill, ProductImage, Stamp, money,
-} from "../../components/primitives";
+  Empty, ErrorState, Input, LoadBar, Modal, OptionalBack,
+  Pill, ProductImage, Stamp, money} from "../../components/primitives";
 import { ImagePicker } from "../../components/ImagePicker";
 import { mediaUrl } from "../../lib/media";
 import { Ticker } from "../../components/terminal";
@@ -149,6 +149,7 @@ export default function Products() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/admin" />
       <Ticker static>
         {items ? `${items.filter((i) => i.active).length} ITEMS ON SALE` : "LOADING"}
       </Ticker>

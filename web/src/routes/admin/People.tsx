@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type AdminStaff, type AdminDriver } from "../../lib/api";
 import {
-  ErrorState, Input, LoadBar, Pill, Segmented, Sheet, Stamp,
+  ErrorState, Input, LoadBar, OptionalBack, Pill, Segmented, Sheet, Stamp,
 } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
@@ -251,6 +251,7 @@ export default function People() {
   /* --- The grid (1:2747 STAFF LAYOUT 2) ----------------------------------- */
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/admin" />
       <FigmaRouteFrame node="1:2747" textReplacements={gridValues}>
         <button className="figma-route-interactive" aria-label="Notifications"
           onClick={() => nav("/admin/notifs")} style={{ left: 362, top: 63, width: 50, height: 56 }} />

@@ -166,6 +166,19 @@ export const tankBase = { total_received_kg: 5_000, deducted_kg: 1_500 };
 
 /* --- Orders --------------------------------------------------------------- */
 
+// Who each order is for. The queue row and the order detail are two different
+// responses, and both have to name the same person: the row used to hardcode
+// "Ade Balogun" over the guest phone while the detail returned no identity at
+// all, so opening a row showed a named customer as "WALK-IN".
+const signedIn = {
+  guest_name: null, guest_phone: null,
+  profile: { display_name: "Ade Balogun", phone: "+2348030000001" },
+};
+const asWalkIn = {
+  guest_name: "Walk-in customer", guest_phone: "+2348030000009",
+  profile: null,
+};
+
 const line = (name: string, qty: number, unit: number) => ({
   order_item_id: `oi-${Math.random().toString(36).slice(2, 8)}`,
   quantity: qty, unit_price_kobo: unit, bundle_id: null,
@@ -182,6 +195,7 @@ export const orders: Order[] = [
     hold_expires_at: iso(4 * HOUR), created_at: iso(-2 * HOUR),
     fulfilled_at: null, delivery_address: null, rate_at_purchase: RATE_KOBO_PER_KG,
     items: [], payments: [], delivery: null,
+    ...asWalkIn,
   },
   {
     order_id: "o-paid", order_number: "U2-100044", order_type: "gas",
@@ -193,6 +207,7 @@ export const orders: Order[] = [
     fulfilled_at: null, delivery_address: null, rate_at_purchase: RATE_KOBO_PER_KG,
     items: [], payments: [{ method: "card", status: "success", amount_kobo: 12 * RATE_KOBO_PER_KG, paid_at: iso(-5 * HOUR) }],
     delivery: null,
+    ...signedIn,
   },
   {
     order_id: "o-delivery", order_number: "U2-100045", order_type: "mixed",
@@ -205,6 +220,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [line("High Pressure Hose", 1, 250_000)],
     payments: [{ method: "card", status: "success", amount_kobo: 6 * RATE_KOBO_PER_KG + 400_000, paid_at: iso(-7 * HOUR) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-1", status: "en_route",
       delivery_address: "12 Awolowo Road, Ikoyi",
@@ -221,6 +237,7 @@ export const orders: Order[] = [
     gas_amount_kg: 6, gas_subtotal_kobo: 6 * RATE_KOBO_PER_KG,
     items_subtotal_kobo: 0, delivery_fee_kobo: 0,
     total_kobo: 6 * RATE_KOBO_PER_KG,
+    ...signedIn,
     hold_expires_at: iso(-2 * DAY), created_at: iso(-3 * DAY),
     fulfilled_at: iso(-2 * DAY), delivery_address: null,
     rate_at_purchase: RATE_KOBO_PER_KG, items: [],
@@ -233,6 +250,7 @@ export const orders: Order[] = [
     gas_amount_kg: 15, gas_subtotal_kobo: 15 * RATE_KOBO_PER_KG,
     items_subtotal_kobo: 0, delivery_fee_kobo: 0,
     total_kobo: 15 * RATE_KOBO_PER_KG,
+    ...asWalkIn,
     hold_expires_at: iso(-5 * DAY), created_at: iso(-6 * DAY),
     fulfilled_at: null, delivery_address: null, rate_at_purchase: RATE_KOBO_PER_KG,
     items: [], payments: [], delivery: null,
@@ -253,6 +271,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [],
     payments: [{ method: "cash", status: "success", amount_kobo: 10 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-4 * HOUR) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-2", status: "assigned",
       delivery_address: "4 Marina Street, Yaba",
@@ -273,6 +292,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [],
     payments: [{ method: "card", status: "success", amount_kobo: 12 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-2 * DAY) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-3", status: "delivered",
       delivery_address: "19 Bode Thomas, Surulere",
@@ -298,6 +318,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [],
     payments: [{ method: "card", status: "success", amount_kobo: 5 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-3 * HOUR) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-4", status: "assigned",
       delivery_address: "7 Kingsway Road, Ikoyi",
@@ -318,6 +339,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [],
     payments: [{ method: "cash", status: "success", amount_kobo: 8 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-3 * DAY) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-5", status: "delivered",
       delivery_address: "22 Bourdillon Road, Ikoyi",
@@ -339,6 +361,7 @@ export const orders: Order[] = [
     rate_at_purchase: RATE_KOBO_PER_KG,
     items: [],
     payments: [{ method: "card", status: "refunded", amount_kobo: 10 * RATE_KOBO_PER_KG + 200_000, paid_at: iso(-4 * DAY) }],
+    ...signedIn,
     delivery: {
       delivery_id: "dl-6", status: "returned",
       delivery_address: "5 Glover Road, Ikoyi",
@@ -438,20 +461,43 @@ export function summarise(o: Order): OrderSummary {
     order_id: o.order_id, order_number: o.order_number,
     status: o.status, payment_status: o.payment_status,
     fulfillment_type: o.fulfillment_type, total_kobo: o.total_kobo,
-    gas_amount_kg: o.gas_amount_kg, guest_name: "Walk-in customer",
-    guest_phone: "+2348030000009", created_at: o.created_at,
+    gas_amount_kg: o.gas_amount_kg,
+    guest_name: o.guest_name ?? null, guest_phone: o.guest_phone ?? null,
+    created_at: o.created_at,
     hold_expires_at: o.hold_expires_at,
-    profile: { display_name: "Ade Balogun", phone: "+2348030000001" },
+    profile: o.profile ?? null,
   };
 }
 
 export function report(days: number): ReportSummary {
   const cutoff = now - days * DAY;
+  const prevCutoff = now - 2 * days * DAY;
   const inRange = orders.filter((o) => new Date(o.created_at).getTime() >= cutoff);
+  const prev = orders.filter((o) => {
+    const t = new Date(o.created_at).getTime();
+    return t >= prevCutoff && t < cutoff;
+  });
   const fulfilled = inRange.filter((o) => o.status === "fulfilled");
   const revenue = inRange
     .filter((o) => o.payment_status === "paid")
     .reduce((s, o) => s + o.total_kobo, 0);
+
+  // Same daily buckets the Worker builds, so the demo trend is the same shape
+  // as production rather than a different-looking mock.
+  const buckets = new Map<string, { date: string; revenue_kobo: number; orders: number }>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now - i * DAY).toISOString().slice(0, 10);
+    buckets.set(d, { date: d, revenue_kobo: 0, orders: 0 });
+  }
+  for (const o of inRange) {
+    const b = buckets.get(o.created_at.slice(0, 10));
+    if (!b) continue;
+    b.orders += 1;
+    if (o.payment_status === "paid") b.revenue_kobo += o.total_kobo;
+  }
+
+  const byType = { gas: 0, accessory: 0, mixed: 0 };
+  for (const o of inRange) if (o.order_type in byType) byType[o.order_type] += 1;
 
   return {
     period_days: days,
@@ -465,6 +511,16 @@ export function report(days: number): ReportSummary {
     pickup_share: inRange.length
       ? inRange.filter((o) => o.fulfillment_type === "pickup").length / inRange.length
       : 0,
+    orders_by_type: byType,
+    revenue_by_day: [...buckets.values()],
+    previous: {
+      orders_total: prev.length,
+      orders_fulfilled: prev.filter((o) => o.status === "fulfilled").length,
+      gas_sold_kg: prev.reduce((s, o) => s + o.gas_amount_kg, 0),
+      revenue_kobo: prev
+        .filter((o) => o.payment_status === "paid")
+        .reduce((s, o) => s + o.total_kobo, 0),
+    },
   };
 }
 
@@ -475,8 +531,9 @@ export function adminOrders(): AdminOrder[] {
     refund_status: null, total_kobo: o.total_kobo,
     order_type: o.order_type, fulfillment_type: o.fulfillment_type,
     gas_amount_kg: o.gas_amount_kg, created_at: o.created_at,
-    guest_phone: "+2348030000009",
-    profile: { display_name: "Ade Balogun", phone: "+2348030000001" },
+    guest_name: o.guest_name ?? null,
+    guest_phone: o.guest_phone ?? null,
+    profile: o.profile ?? null,
     delivery: o.delivery
       ? { status: o.delivery.status, driver_id: "d-1", delivery_address: o.delivery.delivery_address }
       : null,

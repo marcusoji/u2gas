@@ -35,7 +35,7 @@ That is what makes the guarantees hold:
 
 ## Getting started
 
-All twenty-two migrations, in order. There is no shorter path: stopping early
+All twenty-four migrations, in order. There is no shorter path: stopping early
 leaves real defects in the database, not just missing features.
 
 ```bash
@@ -69,7 +69,9 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
   -f supabase/migrations/0019_correctness_fixes.sql \
   -f supabase/migrations/0020_drop_stale_overloads.sql \
   -f supabase/migrations/0021_stock_entry_photo.sql \
-  -f supabase/migrations/0022_low_stock_alert.sql
+  -f supabase/migrations/0022_low_stock_alert.sql \
+  -f supabase/migrations/0023_asset_refs_and_transitions.sql \
+  -f supabase/migrations/0024_staff_lifecycle.sql
 ```
 
 **0019 and 0020 are not optional.** 0019 finishes the notification state

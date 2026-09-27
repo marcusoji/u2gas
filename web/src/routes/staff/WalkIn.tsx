@@ -1,7 +1,7 @@
 import { useRef, useState, type MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError, newIdempotencyKey } from "../../lib/api";
-import { Input, Pill, Segmented, Sheet, Stamp } from "../../components/primitives";
+import { Input, OptionalBack, Pill, Segmented, Sheet, Stamp } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
@@ -61,8 +61,14 @@ export default function WalkIn() {
 
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/staff" />
       <FigmaRouteFrame
         node="1:4466"
+        // The LED readout's node carries no id, so the amount is bound by the
+        // file's own drawn text. At rest it must read `0KG`, not Figma's sample
+        // `1KG` — the old route left the sample on screen, so an empty keypad
+        // still claimed 1kg and PAY would have reserved a kilogram nobody typed.
+        textReplacements={{ "1KG": `${kg}KG` }}
         onClick={handleClick}
       >
       </FigmaRouteFrame>

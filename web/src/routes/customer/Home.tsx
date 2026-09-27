@@ -322,11 +322,13 @@ export default function Home() {
 
       <div className="spacer" />
 
-      <Link to="/shop" style={{
-        display: "block", textAlign: "center", color: "var(--blue-faint)",
-        fontSize: "var(--t-body)", textDecoration: "none", padding: "var(--s-5) 0",
-      }}>
-        SHOP FOR ACCESSORIES
+      <Link to="/shop" className="home-shop-link">
+        <span className="home-shop-icon" aria-hidden="true">🛒</span>
+        <span className="home-shop-copy">
+          <b>SHOP FOR ACCESSORIES</b>
+          <i>CYLINDERS · HOSES · REGULATORS · BATTERIES</i>
+        </span>
+        <span className="home-shop-go" aria-hidden="true" />
       </Link>
 
       {/* No U2Mark here: the HOME frame (above) already draws Figma's own

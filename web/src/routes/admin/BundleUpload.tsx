@@ -5,7 +5,7 @@ import { useAuth } from "../../lib/auth";
 import { useImageCompressor } from "../../lib/useImageCompressor";
 import { mediaUrl } from "../../lib/media";
 import {
-  Input, LoadBar, Pill, Stamp, money,
+  BackButton, Input, LoadBar, Pill, Stamp, money,
 } from "../../components/primitives";
 
 type SlotMode = "empty" | "existing" | "new";
@@ -211,6 +211,7 @@ export default function BundleUpload() {
 
   return (
     <div className="screen">
+      <BackButton to="/admin/products" />
       {productsError && <Stamp>{productsError}</Stamp>}
       <h1 className="screen-title">NEW BUNDLE</h1>
       <div style={{ height: "var(--s-5)" }} />

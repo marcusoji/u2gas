@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type NotificationRow, type StockEntry } from "../../lib/api";
-import { LoadBar } from "../../components/primitives";
+import { LoadBar, BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
@@ -71,6 +71,7 @@ export default function Notifications() {
       .toUpperCase();
     return (
       <div className="screen figma-route-scroll">
+        <BackButton to="/admin" />
         <FigmaRouteFrame node="83:246" textReplacements={{
           "2 TONS ADDED \u2014 MARCH 23RD, 2026": `${latest.amount_kg / 1000} TONS ${moveWord} \u2014 ${when}`,
           "4.54 TONS": `${(previousKg / 1000).toFixed(2)} TONS`,
@@ -92,6 +93,7 @@ export default function Notifications() {
   if (!items.length) {
     return (
       <div className="screen figma-route-scroll">
+        <BackButton to="/admin" />
         <FigmaRouteFrame node="1:3461" />
       </div>
     );
@@ -111,6 +113,7 @@ export default function Notifications() {
 
   return (
     <div className="screen figma-route-scroll">
+      <BackButton to="/admin" />
       <FigmaRouteFrame node="1:3245" textReplacements={textReplacements}>
         {items.slice(0, 3).map((n, i) => (
           <button

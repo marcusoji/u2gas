@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, type AdminZone, type AdminSetting } from "../../lib/api";
 import {
-  ErrorState, Input, LoadBar, Modal, Pill, Stamp, money,
-} from "../../components/primitives";
+  ErrorState, Input, LoadBar, Modal, OptionalBack, Pill,
+  Stamp, money} from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 /**
@@ -94,6 +94,7 @@ export default function Settings() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/admin" />
       <Ticker static>{zones.filter((z) => z.active).length} ZONES ACTIVE</Ticker>
       <div style={{ height: "var(--s-5)" }} />
 

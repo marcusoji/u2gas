@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, newIdempotencyKey, type Order } from "../../lib/api";
-import { money } from "../../components/primitives";
+import { money, Pill } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import "../../styles/figma-route.css";
 
@@ -10,9 +10,17 @@ type Method = "cash" | "card_terminal" | "bank_transfer" | "opay";
 /**
  * Counter collection/payment flow.
  *
- * The artwork is now the exact Figma cashier payment frame. All mutable
- * controls remain React-owned transparent overlays so payment semantics,
+ * The artwork is the exact Figma cashier payment frame and the mutable
+ * controls are React-owned transparent overlays, so payment semantics,
  * validation and API behaviour are unchanged.
+ *
+ * The frame is a *till*: it is drawn for an order that still owes money. An
+ * order that has already been paid — which is what the PAID queue is — used to
+ * reach this screen and be shown a keypad with nothing to type into it, over a
+ * headline that read PAID. The drawing stays (it is the file's own board for
+ * this route) but for a paid order the till is inert and the hand-over details
+ * are painted where the empty keypad was: who to give it to, what they bought,
+ * and the one thing left to do.
  */
 export default function Collect() {
   const { orderId } = useParams();
@@ -32,7 +40,16 @@ export default function Collect() {
     api.order(orderId).then(r => setOrder(r.order)).catch((e: ApiError) => setError(e.message));
   }, [orderId]);
 
-  if (error && !order) return <div className="screen"><div className="stamp-wrap"><div className="stamp">{error}</div></div></div>;
+  if (error && !order) {
+    return (
+      <div className="screen">
+        <button className="screen-back" onClick={() => nav("/staff/queue")}>
+          BACK TO THE QUEUE
+        </button>
+        <div className="stamp-wrap"><div className="stamp">{error}</div></div>
+      </div>
+    );
+  }
   if (!order) return <div className="screen"><div style={{ minHeight: 240, display: "grid", placeItems: "center" }}>FETCHING THE ORDER…</div></div>;
 
   const current = order;
@@ -40,6 +57,35 @@ export default function Collect() {
   const tenderedKobo = Number(tendered || 0) * 100;
   const changeKobo = tenderedKobo - current.total_kobo;
   const enough = method !== "cash" || tenderedKobo >= current.total_kobo;
+
+  /* --- Already paid: this is a hand-over, not a till. -------------------- */
+  const paidInfo = paid ? (
+    <div className="collect-handover">
+      <p className="label">GIVE TO</p>
+      <p className="collect-handover-name">
+        {current.profile?.display_name ?? current.guest_name ?? "WALK-IN"}
+      </p>
+      {(current.guest_phone ?? current.profile?.phone) && (
+        <p className="card-sub">
+          {current.guest_phone ?? current.profile?.phone}
+        </p>
+      )}
+      <p className="label" style={{ marginTop: "var(--s-4)" }}>WHAT THEY BOUGHT</p>
+      {current.gas_amount_kg > 0 && (
+        <p className="card-sub">{current.gas_amount_kg}KG OF GAS</p>
+      )}
+      {(current.items ?? []).map((it, i) => (
+        <p className="card-sub" key={i}>{it.product?.name ?? "ITEM"} ×{it.quantity}</p>
+      ))}
+      <p className="card-sub">PAID {money(current.total_kobo)}</p>
+      <p className="label" style={{ marginTop: "var(--s-4)", lineHeight: 2 }}>
+        NOTHING IS LEFT TO CHARGE.
+      </p>
+      <div style={{ marginTop: "var(--s-4)" }}>
+        <Pill onClick={() => nav("/staff")}>SCAN THEIR CODE</Pill>
+      </div>
+    </div>
+  ) : null;
 
   async function takePayment() {
     const fingerprint = [current.order_id, method, tenderedKobo, reference.trim()].join("|");
@@ -92,9 +138,29 @@ export default function Collect() {
   const values = {
     "1:4595": "C0PYRIGHT 2026 U2 OIL AND GAS LTD.",
   };
+  const led = paid ? "PAID" : tendered ? `${tendered}NGN` : `${(order.total_kobo / 100).toLocaleString("en-NG")}NGN`;
+  // The board's LED is captioned `AMOUNT IN KG`, which is a lie once the order
+  // is settled — there is no amount left to key. The caption is the file's own
+  // text with no data-node id, so it is rebound by value like the LED.
+  //
+  // The drawn LED sample is `1KG` and the live value is painted by the overlay
+  // above it, so the sample has to go: left in place it stayed legible *under*
+  // the live figure, and the till read `14,000NGN` over a stray `1KG`. It is
+  // bound by value for the same reason as the caption.
+  const textReplacements: Record<string, string> = { "1KG": "" };
+  if (paid) textReplacements["AMOUNT IN KG"] = "ALREADY PAID";
 
   function handleArtworkClick(e: React.MouseEvent<HTMLDivElement>) {
-    const el = (e.target as HTMLElement).closest(".key") as HTMLElement | null;
+    const target = e.target as HTMLElement;
+    // The hand the file draws beside CONFIRM. Every other screen with a hand
+    // opens manual entry from it; at the till there is no code to key, so it
+    // opens the finder — the "type it in instead" for an order that was reached
+    // by tapping a queue row. It worked on no state of this route before.
+    if (target.closest('[data-node="1:4641"]')) { nav("/staff/lookup"); return; }
+    // Nothing else on the drawn till applies once the order is paid: it has no
+    // amount to key in and no payment to take.
+    if (paid) return;
+    const el = target.closest(".key") as HTMLElement | null;
     if (!el) return;
     const key = el.textContent?.trim();
     if (key === "PAY" || !key) {
@@ -113,12 +179,13 @@ export default function Collect() {
       <FigmaRouteFrame
         node="1:4592"
         values={values}
+        textReplacements={textReplacements}
         onClick={handleArtworkClick}
         className={sheet ? undefined : "is-keypad"}
       >
         {/* Live LED value: the Figma LED geometry remains untouched. */}
         <div className="figma-route-overlay-text" style={{ left: 138, top: 198, width: 164, color: "#ff0303", fontFamily: "jgs5, monospace", fontSize: 38, lineHeight: 1 }}>
-          {paid ? "PAID" : tendered ? `${tendered}NGN` : `${(order.total_kobo / 100).toLocaleString("en-NG")}NGN`}
+          {led}
         </div>
 
         {/* The Figma keypad has no per-key node ids; delegated interaction keeps its exact geometry. */}
@@ -132,8 +199,15 @@ export default function Collect() {
           className="figma-route-interactive"
           aria-label="Back"
           style={{ left: 12, top: 6, width: 48, height: 44 }}
-          onClick={() => nav("/staff/walk-in")}
+          onClick={() => nav("/staff/queue")}
         />
+
+        {/* Already paid. The frame is a till — it is drawn for an order that
+            still owes money — so for a paid order it would show a keypad with
+            nothing to type into it. It stays on screen (it is the file's own
+            drawing of this route), with the hand-over details painted over the
+            empty keypad area and the PAY action made inert. */}
+        {paidInfo}
 
         {/* Payment-method controls are intentionally invisible: the artwork's visual selector stays authoritative.
             They sit over the sheet's drawn PAY CASH / TRANSFER row (1:4643), not over the keypad (1:4601). */}
@@ -144,7 +218,7 @@ export default function Collect() {
           </div>
         )}
 
-        {method === "cash" && (
+        {method === "cash" && !paid && (
           <div className="figma-route-overlay-text" style={{ left: 80, top: 910, width: 280, fontSize: 20 }}>
             TENDERED ₦{Number(tendered || 0).toLocaleString("en-NG")} · CHANGE {changeKobo >= 0 ? money(changeKobo) : "SHORT"}
           </div>

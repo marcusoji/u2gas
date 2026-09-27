@@ -3,8 +3,8 @@ import {
   api, ApiError, type Refund, type AdminOrder, type AdminDriver, type FlaggedQueue,
 } from "../../lib/api";
 import {
-  Empty, ErrorState, Input, LoadBar, Modal, Pill, Stamp, Tabs, money,
-} from "../../components/primitives";
+  Empty, ErrorState, Input, LoadBar, Modal, OptionalBack,
+  Pill, Stamp, Tabs, money} from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 type View = "all" | "flagged";
@@ -109,6 +109,7 @@ export default function Orders() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/admin" />
       <Ticker static>
         {flagged ? `${flagged.total} NEED ATTENTION` : "ORDERS"}
       </Ticker>
@@ -266,7 +267,7 @@ export default function Orders() {
               <div className="card-body">
                 <p className="card-title">{o.order_number}</p>
                 <p className="card-sub">
-                  {o.profile?.display_name ?? "WALK-IN"} · {money(o.total_kobo)}
+                  {o.profile?.display_name ?? o.guest_name ?? o.guest_phone ?? "WALK-IN"} · {money(o.total_kobo)}
                 </p>
                 <p className="card-sub">
                   {o.status.toUpperCase()} · {o.payment_status.toUpperCase()} ·

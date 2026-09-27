@@ -878,6 +878,19 @@ img.is-unavailable { filter: blur(1.5px); }
 .screen > .stack,
 .screen > .chips { width: 440px; max-width: 100%; }
 
+/* A bare wrapper around a list of cards is the one block that must not shrink
+   to fit. `.screen` centres its children, so a wrapper with no width of its own
+   collapsed to its widest row — the staff queue measured 132px of a 440px
+   screen, which truncated every order number and name. Scoped with :has(.card)
+   so it only touches list wrappers and never the artboards, which size
+   themselves. */
+.screen > div:has(.card),
+.screen > section:has(.card) {
+  width: 440px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* App-rendered list switch for the driver's drops. The drawing has no control
    that changes lists, so this sits above the plate as chrome and never reaches
    inside `.frame`. */
@@ -1101,3 +1114,442 @@ body:has(.app-nav) .mockbar {
   background: #1317e4;
   border-color: #797bf4;
 }
+
+/* ---------------------------------------------------------------------------
+   Customer home — the way into the shop.
+
+   The entry was a bare text link at the same weight and colour as the
+   copyright line, so a customer reading the terminal had nothing that said
+   "this is a door". It is a button now, in the terminal's own key language:
+   the drawn key's noise face, its inset shadow and its blue label, with the
+   cart glyph and a chevron so the affordance is legible before it is read.
+   --------------------------------------------------------------------------- */
+.home-shop-link {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  width: 440px;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: var(--s-5) 0 0;
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--blue-faint);
+  border-radius: 64px;
+  background: var(--white);
+  background-image: var(--noise);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, .12), 0 4px 10px rgba(0, 0, 0, .18);
+  color: var(--blue);
+  text-decoration: none;
+  /* The terminal is 1597px of artboard, so the entry sat 800px below the fold
+     — a customer saw the keypad and never the shop. Pinning it to the bottom
+     edge makes it a permanent door: visible on arrival, and it stays put while
+     the plate scrolls past it. */
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+}
+.home-shop-link:active {
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, .22);
+  transform: translateY(1px);
+}
+.home-shop-icon { font-size: 26px; line-height: 1; }
+.home-shop-copy { display: flex; flex-direction: column; gap: 4px; flex: 1; text-align: left; }
+.home-shop-copy b {
+  font-family: var(--font-px);
+  font-size: var(--t-card);
+  letter-spacing: .1em;
+  font-weight: 400;
+}
+.home-shop-copy i {
+  font-family: var(--font-px);
+  font-style: normal;
+  font-size: var(--t-caption);
+  letter-spacing: .08em;
+  color: var(--grey);
+}
+/* The chevron that says "this opens something". Drawn from borders so it
+   needs no glyph or asset, and sized off the link's own type. */
+.home-shop-go {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--blue);
+  display: grid;
+  place-items: center;
+}
+.home-shop-go::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid var(--blue);
+  border-right: 2px solid var(--blue);
+  transform: rotate(45deg) translate(-1px, 1px);
+}
+/* ---------------------------------------------------------------------------
+   Shop — the search field.
+
+   SHOP - SEARCH (1:1438) draws the price readout (1:1459/1:1460) in the same
+   top-right corner the app had been putting its search input, at left:326
+   top:79 94x52. The input sat exactly on the drawing, so a typed query was
+   hidden behind the LED. The drawing keeps its price readout and the search
+   field is app chrome that lives in the clear band the file leaves between the
+   heading (which ends at ~y=134) and the first row of tiles (y=215). It is
+   opaque, so nothing in the artwork can ever paint over it.
+   --------------------------------------------------------------------------- */
+.shop-search {
+  position: absolute;
+  z-index: 25;
+  left: 20px;
+  top: 146px;
+  width: 400px;
+  height: 52px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid var(--blue-faint);
+  border-radius: 64px;
+  background: var(--white);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, .1), 0 2px 8px rgba(0, 0, 0, .12);
+}
+.shop-search-icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--blue);
+  border-radius: 50%;
+  position: relative;
+}
+.shop-search-icon::after {
+  content: "";
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  width: 8px;
+  height: 2px;
+  background: var(--blue);
+  transform: rotate(45deg);
+}
+.shop-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--blue);
+  font-family: var(--font-px);
+  font-size: var(--t-body);
+  letter-spacing: .04em;
+}
+.shop-search input::placeholder { color: var(--grey); letter-spacing: .08em; }
+.shop-search-clear {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blue-soft, #e7e7fb);
+  color: var(--blue);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.shop-search-count {
+  position: absolute;
+  z-index: 24;
+  left: 20px;
+  top: 206px;
+  width: 400px;
+  text-align: right;
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .08em;
+  color: var(--grey);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Admin reports.
+
+   The numbers a manager checks daily sat as loose rows under a single gauge.
+   They are a dense, scannable panel now: a period strip, the gauge, then
+   grouped figures with the ones that need a person today called out first.
+   --------------------------------------------------------------------------- */
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+.report-cell {
+  border: 1px solid var(--field);
+  border-radius: var(--r-card, 16px);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 78px;
+  justify-content: center;
+}
+.report-cell.is-wide { grid-column: 1 / -1; }
+.report-cell.is-accent { border-color: var(--blue); }
+.report-cell dt {
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  color: var(--grey);
+  margin: 0;
+}
+.report-cell dd {
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: 24px;
+  letter-spacing: -.04em;
+  color: var(--blue);
+}
+.report-cell.is-accent dd { color: var(--blue-deep, #0d1099); }
+.report-section { margin-top: var(--s-8); }
+
+/* Reports is the one screen built from app-rendered blocks rather than an
+   artboard, so it is the one that has to claim its own width. Without this the
+   centred `.screen` collapsed each panel to its widest child — the sections
+   measured 214px of 440 and the whole report read as a narrow strip. */
+.report-hero,
+.report-strip,
+.report-section {
+  width: 440px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* The four figures a manager reads first. Revenue is the headline; the two
+   beside it are what a single number cannot say — what an order is worth, and
+   how much gas it moved. */
+.report-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1px solid var(--blue-faint);
+  border-radius: var(--r-card, 16px);
+  background: var(--white);
+  background-image: var(--noise);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, .1), 0 4px 10px rgba(0, 0, 0, .12);
+}
+.report-hero-main { grid-column: 1 / -1; }
+.report-hero-label {
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  color: var(--grey);
+}
+.report-hero-value {
+  margin: 6px 0 0;
+  font-family: var(--font-px);
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -.04em;
+  color: var(--blue);
+}
+.report-delta {
+  margin: 8px 0 0;
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .08em;
+  color: var(--grey);
+}
+.report-delta.is-up { color: var(--blue); }
+.report-delta.is-down { color: var(--danger); }
+.report-hero-side { display: contents; }
+.report-hero-side > div {
+  border: 1px solid var(--field);
+  border-radius: var(--r-card, 16px);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.report-hero-side dt {
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .1em;
+  color: var(--grey);
+}
+.report-hero-side dd {
+  margin: 0;
+  font-family: var(--font-px);
+  font-size: 20px;
+  letter-spacing: -.04em;
+  color: var(--blue);
+}
+.report-hero-side dd small { font-size: 12px; margin-left: 2px; }
+
+/* The three secondary counters, in one row so they read as a set. */
+.report-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+}
+.report-strip-cell {
+  border: 1px solid var(--field);
+  border-radius: var(--r-card, 16px);
+  padding: var(--s-3) var(--s-3) var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.report-strip-cell span {
+  font-family: var(--font-px);
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--grey);
+}
+.report-strip-cell b {
+  font-family: var(--font-px);
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: -.04em;
+  color: var(--blue);
+}
+.report-strip-cell em {
+  font-family: var(--font-px);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--grey);
+}
+
+/* The two figures that mean somebody has to do something today. Each opens
+   the queue that resolves it, so the number is not a dead end. */
+.report-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.report-action {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--s-4);
+  border: 1px solid var(--field);
+  border-radius: var(--r-card, 16px);
+  text-decoration: none;
+  color: inherit;
+}
+.report-action.is-urgent { border-color: var(--blue); background: rgba(19, 23, 228, .04); }
+.report-action span {
+  font-family: var(--font-px);
+  font-size: 11px;
+  letter-spacing: .1em;
+  color: var(--grey);
+}
+.report-action b {
+  font-family: var(--font-px);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--blue);
+}
+.report-action i {
+  font-family: var(--font-px);
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: .06em;
+  color: var(--grey);
+}
+.report-action:active { transform: translateY(1px); }
+
+/* One bar per day, at the gauge's own proportions. The bar is the drawing's
+   fill-and-ruler language, not a new chart vocabulary. */
+.report-trend {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  padding: 0 var(--s-2);
+  border-bottom: 1px solid var(--field);
+}
+.report-trend i {
+  flex: 1 1 0;
+  min-width: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--field);
+}
+.report-trend i.has-value { background: var(--blue); background-image: var(--noise); }
+.report-trend-note {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin: var(--s-3) 0 0;
+  font-family: var(--font-px);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--grey);
+}
+.report-section > h2 {
+  font-family: var(--font-px);
+  font-size: var(--t-card);
+  letter-spacing: .1em;
+  color: var(--blue);
+  margin: 0 0 var(--s-4);
+}
+.report-bars { display: flex; flex-direction: column; gap: var(--s-3); }
+.report-bar {
+  display: grid;
+  grid-template-columns: 110px 1fr 74px;
+  align-items: center;
+  gap: var(--s-3);
+  font-family: var(--font-px);
+  font-size: var(--t-caption);
+  letter-spacing: .06em;
+  color: var(--blue);
+}
+.report-bar i {
+  display: block;
+  height: 10px;
+  border-radius: 6px;
+  background: var(--blue);
+  background-image: var(--noise);
+  min-width: 2px;
+}
+.report-bar em {
+  font-style: normal;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Counter collection, already-paid order.
+
+   The Figma frame is a till: its panel (1:4592, drawn at 53,141 334x406) holds
+   a keypad for an amount that still has to be taken. Once the order is paid
+   there is nothing to key in, so the hand-over details paint over the key area
+   — from just under the LED readout down to the foot of the panel — and the
+   artwork behind is dimmed out. The LED and the drawn frame stay visible.
+   --------------------------------------------------------------------------- */
+.collect-handover {
+  position: absolute;
+  z-index: 30;
+  left: 53px;
+  top: 252px;
+  width: 334px;
+  height: 295px;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: var(--s-4) var(--s-5);
+  border-radius: 24px;
+  background: var(--field);
+  background-image: var(--noise);
+  box-shadow: inset 0 4px 10px rgba(0, 0, 0, .16);
+  text-align: left;
+}
+.collect-handover .label { text-align: left; margin: 0; }
+.collect-handover-name {
+  margin: 6px 0 0;
+  font-family: var(--font-px);
+  font-size: var(--t-body);
+  letter-spacing: -.02em;
+  color: var(--blue);
+}
+.collect-handover .card-sub { margin: 4px 0 0; }

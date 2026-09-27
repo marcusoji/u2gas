@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
-import {
-  Empty, ErrorState, LoadBar, Segmented, money,
-} from "../../components/primitives";
+import { Empty, ErrorState, LoadBar, OptionalBack, Segmented, money } from "../../components/primitives";
 import { Ticker } from "../../components/terminal";
 
 type Kind = "paid" | "unpaid";
@@ -19,17 +17,24 @@ export default function Queue() {
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     const requestId = ++requestRef.current;
-    setOrders(null);
-    setError(null);
+    // A background refresh must not blank the list. `setOrders(null)` is what
+    // draws the LOADING panel, so clearing it every 20s made the queue flicker
+    // away and back while a cashier was reading it — the row they were about to
+    // tap vanished under their finger. Only a deliberate load (a tab change or
+    // a retry) shows the loading state; the poll swaps the data in place.
+    if (!background) { setOrders(null); setError(null); }
     try {
       const r = await api.staff.queue(kind);
       if (requestId !== requestRef.current) return;
       setOrders(r.orders);
+      setError(null);
     } catch (e) {
       if (requestId !== requestRef.current) return;
-      setError((e as ApiError).message);
+      // A failed poll keeps the rows already on screen; it only reports when
+      // there is nothing to show, so a blip does not wipe a working till.
+      if (!background) setError((e as ApiError).message);
     }
   }, [kind]);
 
@@ -41,13 +46,14 @@ export default function Queue() {
   // the moment it isn't — a tab left open overnight should not keep polling.
   useEffect(() => {
     const t = setInterval(() => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") void load(true);
     }, 20_000);
     return () => clearInterval(t);
   }, [load]);
 
   return (
     <div className="screen">
+      <OptionalBack to="/staff" />
       <Ticker static>
         {orders ? `${orders.length} ${kind === "paid" ? "WAITING TO COLLECT" : "WAITING TO PAY"}` : "LOADING"}
       </Ticker>
@@ -66,7 +72,7 @@ export default function Queue() {
 
       <div style={{ height: "var(--s-6)" }} />
 
-      {error && <ErrorState message={error} onRetry={load} />}
+      {error && <ErrorState message={error} onRetry={() => void load()} />}
 
       {!error && !orders && (
         <div style={{ minHeight: 220, display: "grid", placeItems: "center" }}>
@@ -86,11 +92,15 @@ export default function Queue() {
               <p className="card-title">{o.order_number}</p>
               <p className="card-sub">
                 {o.profile?.display_name ?? o.guest_name ?? "WALK-IN"}
-                {o.guest_phone ? ` · ${o.guest_phone}` : ""}
+                {(() => {
+                  const phone = o.guest_phone ?? o.profile?.phone;
+                  return phone ? ` · ${phone}` : "";
+                })()}
               </p>
               <p className="card-sub">
                 {o.gas_amount_kg > 0 ? `${o.gas_amount_kg}KG · ` : ""}
                 {money(o.total_kobo)}
+                {kind === "unpaid" ? " · DUE" : ""}
               </p>
             </div>
             <span className="card-go" aria-hidden="true" />

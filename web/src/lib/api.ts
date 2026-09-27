@@ -253,6 +253,13 @@ export interface Order {
   items?: OrderItem[];
   payments?: { method: string; status: string; amount_kobo: number; paid_at: string | null }[];
   delivery?: Delivery | null;
+  // Who the order is for. A signed-in order carries `profile`; a walk-in or
+  // guest order carries `guest_name`/`guest_phone`. Staff screens read both, so
+  // the detail response has to return them — without them the hand-over screen
+  // had no name to show and fell back to "WALK-IN" for a named customer.
+  guest_name?: string | null;
+  guest_phone?: string | null;
+  profile?: { display_name: string | null; phone: string | null } | null;
 }
 
 /** Queue and lookup rows carry less than a full order. */
@@ -408,6 +415,15 @@ export interface ReportSummary {
   revenue_kobo: number;
   revenue_by_method: Record<string, number>;
   pickup_share: number;
+  /** Optional: absent from older responses, so every read is guarded. */
+  orders_by_type?: { gas: number; accessory: number; mixed: number };
+  revenue_by_day?: { date: string; revenue_kobo: number; orders: number }[];
+  previous?: {
+    orders_total: number;
+    orders_fulfilled: number;
+    gas_sold_kg: number;
+    revenue_kobo: number;
+  };
 }
 
 export interface Refund {
@@ -443,6 +459,7 @@ export interface AdminOrder {
   fulfillment_type: "pickup" | "delivery";
   gas_amount_kg?: number | null;
   created_at: string;
+  guest_name?: string | null;
   guest_phone?: string | null;
   profile?: { display_name: string | null; phone?: string | null } | null;
   delivery?: {

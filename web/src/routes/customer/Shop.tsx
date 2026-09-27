@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type ShopItem } from "../../lib/api";
-import { BackButton } from "../../components/primitives";
+import { BackButton, Stamp } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { mediaUrl } from "../../lib/media";
 
@@ -69,23 +69,53 @@ export default function Shop() {
             />
           ) : null;
         })}
-        <input
-          aria-label="Search accessories"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape") setQuery("");
-          }}
-          className="figma-route-input"
-          style={{ left: 326, top: 79, width: 94, height: 52, fontSize: 12 }}
-          placeholder="SEARCH"
-        />
+
+        {/* The drawing puts its price readout in the top-right corner, so the
+            search field is app chrome in the clear band the file leaves between
+            the heading and the first row of tiles. It is opaque, so the LED can
+            never paint over a typed query again. */}
+        <div className="shop-search">
+          <span className="shop-search-icon" aria-hidden="true" />
+          <input
+            aria-label="Search accessories"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setQuery(""); }}
+            placeholder="SEARCH THE SHOP"
+          />
+          {query && (
+            <button
+              type="button"
+              className="shop-search-clear"
+              aria-label="Clear the search"
+              onClick={() => setQuery("")}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {items && (
+          <p className="shop-search-count">
+            {query || category
+              ? `${items.length} ${items.length === 1 ? "MATCH" : "MATCHES"}`
+              : `${items.length} ON THE SHELVES`}
+          </p>
+        )}
       </FigmaRouteFrame>
 
       {error && <div className="error-state" role="alert">{error}</div>}
       {!error && !items && <div className="sr-only">Loading accessories…</div>}
+      {items && items.length === 0 && (
+        <div className="stamp-wrap" style={{ marginTop: "var(--s-6)" }}>
+          <Stamp>{query ? `NOTHING MATCHES “${query.toUpperCase()}”` : "NOTHING ON THE SHELVES"}</Stamp>
+        </div>
+      )}
       {items && items.length > IMAGE_NODES.length && (
-        <div className="sr-only">Showing the first {IMAGE_NODES.length} accessories in the Figma artboard.</div>
+        <p className="label" style={{ marginTop: "var(--s-4)" }}>
+          SHOWING {IMAGE_NODES.length} OF {items.length} — SEARCH TO NARROW IT DOWN
+        </p>
       )}
     </div>
   );

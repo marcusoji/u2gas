@@ -310,6 +310,7 @@ admin.get("/orders", async (c) => {
     .select(`
       order_id, order_number, channel, order_type, status, payment_status,
       fulfillment_type, total_kobo, gas_amount_kg, created_at,
+      guest_name, guest_phone,
       profile:user_id ( display_name, phone )
     `)
     .order("created_at", { ascending: false })
@@ -651,21 +652,51 @@ admin.get("/audit", async (c) => {
 
 admin.get("/reports/summary", async (c) => {
   const days = Math.min(Number(c.req.query("days") ?? 30), 365);
-  const since = new Date(Date.now() - days * 864e5).toISOString();
+  const now = Date.now();
+  const since = new Date(now - days * 864e5).toISOString();
+  const before = new Date(now - 2 * days * 864e5).toISOString();
   const db = c.get("admin");
 
-  const [orders, paymentsRows] = await Promise.all([
+  const [orders, paymentsRows, prevOrders, prevPayments] = await Promise.all([
     select<any[]>(db.from("order")
       .select("status, order_type, fulfillment_type, total_kobo, gas_amount_kg, created_at")
       .gte("created_at", since)),
     select<any[]>(db.from("payment")
-      .select("method, amount_kobo, status").eq("status", "paid").gte("paid_at", since)),
+      .select("method, amount_kobo, status, paid_at").eq("status", "paid").gte("paid_at", since)),
+    // The period before this one, for the deltas the screen shows beside each
+    // figure. A number with no comparison is a number nobody can act on.
+    select<any[]>(db.from("order")
+      .select("status, gas_amount_kg")
+      .gte("created_at", before).lt("created_at", since)),
+    select<any[]>(db.from("payment")
+      .select("amount_kobo").eq("status", "paid").gte("paid_at", before).lt("paid_at", since)),
   ]);
 
   const fulfilled = orders.filter((o) => o.status === "fulfilled");
   const byMethod: Record<string, number> = {};
   for (const p of paymentsRows) {
     byMethod[p.method] = (byMethod[p.method] ?? 0) + Number(p.amount_kobo);
+  }
+
+  // One bucket per calendar day, oldest first, so the screen can draw a trend
+  // without re-bucketing. Days with no orders stay in the series as zero —
+  // dropping them would draw a flat line through a closed depot.
+  const dayKeys: string[] = [];
+  for (let i = days - 1; i >= 0; i--) dayKeys.push(new Date(now - i * 864e5).toISOString().slice(0, 10));
+  const revenueByDay = new Map(dayKeys.map((d) => [d, { date: d, revenue_kobo: 0, orders: 0 }]));
+  for (const p of paymentsRows) {
+    const bucket = revenueByDay.get(String(p.paid_at).slice(0, 10));
+    if (bucket) bucket.revenue_kobo += Number(p.amount_kobo);
+  }
+  for (const o of orders) {
+    const bucket = revenueByDay.get(String(o.created_at).slice(0, 10));
+    if (bucket) bucket.orders += 1;
+  }
+
+  const ordersByType = { gas: 0, accessory: 0, mixed: 0 };
+  for (const o of orders) {
+    const key = o.order_type as keyof typeof ordersByType;
+    if (key in ordersByType) ordersByType[key] += 1;
   }
 
   return c.json({
@@ -680,6 +711,16 @@ admin.get("/reports/summary", async (c) => {
     revenue_by_method: byMethod,
     pickup_share: orders.length
       ? orders.filter((o) => o.fulfillment_type === "pickup").length / orders.length : 0,
+    orders_by_type: ordersByType,
+    revenue_by_day: [...revenueByDay.values()],
+    previous: {
+      orders_total: prevOrders.length,
+      orders_fulfilled: prevOrders.filter((o) => o.status === "fulfilled").length,
+      gas_sold_kg: prevOrders
+        .filter((o) => o.status === "fulfilled")
+        .reduce((s, o) => s + Number(o.gas_amount_kg), 0),
+      revenue_kobo: prevPayments.reduce((s, p) => s + Number(p.amount_kobo), 0),
+    },
   });
 });
 

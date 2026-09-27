@@ -1,14 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
-import { ErrorState, LoadBar, Segmented } from "../../components/primitives";
+import { ErrorState, LoadBar, OptionalBack, Segmented } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 type Scope = "active" | "completed";
 
 export default function Drops() {
   const nav = useNavigate();
-  const [scope, setScope] = useState<Scope>("active");
+  const [params, setParams] = useSearchParams();
+  // The driver's profile links its completed figure here, so the scope is
+  // part of the URL: `/driver?scope=completed` opens the finished list rather
+  // than making the driver find the toggle themselves.
+  const [scope, setScope] = useState<Scope>(
+    params.get("scope") === "completed" ? "completed" : "active",
+  );
   const [drops, setDrops] = useState<any[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestRef = useRef(0);
@@ -30,6 +36,21 @@ export default function Drops() {
   // Not `useEffect(load, …)`: load is async, so it returns a Promise, which
   // React would take as the cleanup function and call on unmount.
   useEffect(() => { void load(); }, [load]);
+
+  // Keep the URL honest when the toggle is used, so a reload or a back gesture
+  // returns to the list the driver was actually looking at.
+  useEffect(() => {
+    const current = params.get("scope");
+    if (scope === "completed" && current !== "completed") {
+      const next = new URLSearchParams(params);
+      next.set("scope", "completed");
+      setParams(next, { replace: true });
+    } else if (scope === "active" && current === "completed") {
+      const next = new URLSearchParams(params);
+      next.delete("scope");
+      setParams(next, { replace: true });
+    }
+  }, [scope, params, setParams]);
 
   const first = drops?.[0];
   const second = drops?.[1];
@@ -96,6 +117,7 @@ export default function Drops() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/" />
       {/* The file has no control to switch lists, and the route never called
           setScope, so the completed artboard was unreachable. This toggle is
           app-rendered chrome outside `.frame`; the drawing is untouched. */}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError, newIdempotencyKey } from "../../lib/api";
-import { ErrorState, Input, LoadBar, Pill, Stamp, money } from "../../components/primitives";
+import { ErrorState, Input, LoadBar, OptionalBack, Pill, Stamp, money } from "../../components/primitives";
 import { Receipt, Ticker, receiptDate } from "../../components/terminal";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -72,6 +72,7 @@ export default function Shift() {
 
   return (
     <div className="screen">
+      <OptionalBack to="/staff" />
       <Ticker static>{closed ? "SHIFT CLOSED" : "SHIFT OPEN"}</Ticker>
       <div style={{ height: "var(--s-5)" }} />
 

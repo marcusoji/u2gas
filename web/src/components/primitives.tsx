@@ -1,6 +1,6 @@
 import {
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode,
-  useEffect, useRef,
+  forwardRef, useEffect, useRef,
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { mediaUrl } from "../lib/media";
@@ -21,10 +21,17 @@ export function Pill({ variant = "primary", className = "", ...rest }: PillProps
 
 type InputProps = InputHTMLAttributes<HTMLInputElement> & { error?: string };
 
-export function Input({ error, id, ...rest }: InputProps) {
+/**
+ * Text input. `forwardRef` so a screen can focus or select it — the lookup
+ * screen's hand opens a field and moves the caret into it.
+ */
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { error, id, ...rest }, ref,
+) {
   return (
     <div>
       <input
+        ref={ref}
         id={id}
         className="input"
         aria-invalid={error ? "true" : undefined}
@@ -34,7 +41,7 @@ export function Input({ error, id, ...rest }: InputProps) {
       {error && <p className="field-error" id={id ? `${id}-error` : undefined}>{error}</p>}
     </div>
   );
-}
+});
 
 export function Segmented<T extends string>({ options, value, onChange, label }: {
   options: { value: T; label: string }[];
@@ -330,7 +337,18 @@ export function useBackTo(to: string) {
     // only return to a screen this app pushed. `history.length` is deliberately
     // not consulted: it already counts the entry the tab booted on, so it reads
     // as "there is somewhere to go back to" in a brand-new tab.
-    if (location.key !== "default") nav(-1);
+    //
+    // `idx` is the stronger signal. `key !== "default"` alone is not enough:
+    // when a screen navigates with `nav(to, { replace: true })` — the cart
+    // bouncing an emptied basket to the shop, a route swapping a query state —
+    // the replacement entry keeps a non-default key but is still the *first*
+    // entry in the session, so popping it would leave the app. The router
+    // tracks the index within the session on `history.state.idx`; 0 means
+    // there is nothing of ours behind us. Where that is unavailable the
+    // original check is kept.
+    const idx = (window.history.state as { idx?: number } | null)?.idx;
+    const cold = location.key === "default" || (typeof idx === "number" && idx <= 0);
+    if (!cold) nav(-1);
     else nav(to, { replace: true });
   };
 }
@@ -339,6 +357,36 @@ export function BackButton({ to, label = "BACK" }: { to: string; label?: string 
   const back = useBackTo(to);
   return (
     <button className="screen-back" onClick={back}>
+      {label}
+    </button>
+  );
+}
+
+/**
+ * A back affordance for the tab roots and the screens that draw their own.
+ *
+ * Every screen the app pushes carries its own BackButton, which knows the
+ * screen it belongs to. The tab roots are the top of their own stack: reached
+ * cold — a deep link, a reload, an installed shortcut — there is nothing of
+ * ours behind them, so an arrow there would either leave the site or point at
+ * the screen it is already on. Reached by tapping a tab there is, and that is
+ * exactly when "back" means "the tab I came from". This renders the arrow only
+ * in that case, and it pops rather than naming a destination.
+ *
+ * `to` is for a screen that must always show a way back — a deep link into a
+ * queue or a report has no history to pop, and leaving the reader with only the
+ * browser button is the dead end this exists to remove. When there is nothing
+ * to pop it goes to `to` instead, replacing the entry so back does not bounce.
+ * With no `to` the original behaviour is kept: nothing to pop means no arrow.
+ */
+export function OptionalBack({ label = "BACK", to }: { label?: string; to?: string }) {
+  const nav = useNavigate();
+  const location = useLocation();
+  const idx = (window.history.state as { idx?: number } | null)?.idx;
+  const canGoBack = location.key !== "default" && !(typeof idx === "number" && idx <= 0);
+  if (!canGoBack && !to) return null;
+  return (
+    <button className="screen-back" onClick={() => (canGoBack ? nav(-1) : nav(to!, { replace: true }))}>
       {label}
     </button>
   );

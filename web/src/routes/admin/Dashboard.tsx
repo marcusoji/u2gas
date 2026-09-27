@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type AdminStaff, type GasStock } from "../../lib/api";
-import { LoadBar } from "../../components/primitives";
+import { LoadBar, OptionalBack} from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
@@ -66,6 +66,7 @@ export default function Dashboard() {
 
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/" />
       <FigmaRouteFrame node={blueprint ? "1:2299" : "1:2454"} textReplacements={textReplacements}>
         {/* The bell the file draws top-right is the notification counter. */}
         <button className="figma-route-interactive" aria-label="Notifications"

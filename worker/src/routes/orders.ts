@@ -251,6 +251,7 @@ orders.get("/:id", rateLimit("order.read", 60, 60_000), async (c) => {
     db.from("order")
       .select(`
         *,
+        profile:user_id ( display_name, phone ),
         order_item ( order_item_id, quantity, unit_price_kobo, bundle_id,
                      product:product_id ( name, subtitle, image_asset ( base_path ) ) ),
         payment ( payment_id, method, status, amount_kobo, paid_at ),
@@ -423,6 +424,12 @@ function publicOrder(o: any, detailed = false) {
 
   return {
     ...base,
+    // The staff hand-over screen needs a name to give the order to. It reads
+    // `guest_name` first and `profile.display_name` second, so the detail
+    // response has to carry both or a named customer is shown as "WALK-IN".
+    guest_name: o.guest_name ?? null,
+    guest_phone: o.guest_phone ?? null,
+    profile: o.profile ?? null,
     delivery_address: o.delivery_address,
     rate_at_purchase: o.rate_at_purchase,
     items: o.order_item ?? [],

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, type NotificationRow, type OrderSummary } from "../../lib/api";
-import { LoadBar } from "../../components/primitives";
+import { LoadBar, BackButton } from "../../components/primitives";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
 /**
@@ -79,6 +79,7 @@ export default function Notifications() {
 
   return (
     <div className="screen figma-route-scroll">
+      <BackButton to="/staff" />
       <FigmaRouteFrame node={node} textReplacements={textReplacements}>
         {/* The drawn filter chips and bell are transparent controls over the
             artwork; the file paints the selected chip itself. */}

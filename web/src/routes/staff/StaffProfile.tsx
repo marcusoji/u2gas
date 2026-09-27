@@ -4,7 +4,7 @@ import { api, ApiError, type Profile } from "../../lib/api";
 import { signOut } from "../../lib/auth";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 import { mediaUrl } from "../../lib/media";
-import { ErrorState, LoadBar, Pill } from "../../components/primitives";
+import { ErrorState, LoadBar, OptionalBack, Pill } from "../../components/primitives";
 
 /**
  * Cashier profile (1:4665).
@@ -39,6 +39,7 @@ export default function StaffProfile() {
 
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/staff" />
       <FigmaRouteFrame node="1:4665" values={{ "1:4671": `[ ${name} ] - ${role}` }}>
         {profile.avatar_asset?.base_path && (
           <img

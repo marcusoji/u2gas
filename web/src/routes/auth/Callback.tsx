@@ -71,6 +71,9 @@ export default function Callback() {
 
       <div style={{ marginTop: "var(--s-8)" }}>
         <Pill onClick={() => nav("/auth/login")}>SEND A NEW LINK</Pill>
+        <Pill variant="ghost" onClick={() => nav("/auth/login", { replace: true })}>
+          BACK TO THE DOOR
+        </Pill>
       </div>
 
       <div className="spacer" />

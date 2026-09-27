@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, ApiError } from "../../lib/api";
+import { Input, OptionalBack, Pill, Sheet } from "../../components/primitives";
 import { Scanner, type ScanState } from "../../components/illustrated";
 import { FigmaRouteFrame } from "../../figma/FigmaRouteFrame";
 
@@ -11,6 +12,8 @@ export default function Scan() {
   const [message, setMessage] = useState<string | null>(null);
   const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [flagged, setFlagged] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manual, setManual] = useState("");
 
   const onResult = useCallback(async (token: string) => {
     setState("idle"); setMessage(null); setFlagged(null);
@@ -34,6 +37,12 @@ export default function Scan() {
     const target = e.target as HTMLElement;
     const nodeEl = target.closest<HTMLElement>("[data-node]");
     const id = nodeEl?.dataset.node;
+    // The hand the file draws beside SCAN opens manual entry on every state of
+    // this screen. A code that will not scan still has to be honoured, and
+    // sending the cashier away to type it elsewhere is how a sale is lost.
+    if (id === "1:4445" || id === "1:4385" || id === "1:4415") {
+      setManual(""); setManualOpen(true); return;
+    }
     if (id === "1:4443" || id === "1:4383" || id === "1:4413") {
       if (state === "ok") { nav("/staff/queue"); return; }
       setMessage(null); setFlagged(null); setOrderNumber(null); setState("scanning");
@@ -44,6 +53,7 @@ export default function Scan() {
 
   return (
     <div className="screen figma-route-scroll">
+      <OptionalBack to="/" />
       <FigmaRouteFrame node={node} values={values} onClick={handleClick}>
         {/* The drawing's bell is the notification counter. It has no node id of
             its own, so the target sits on the group the file draws at (362,63). */}
@@ -66,6 +76,38 @@ export default function Scan() {
           </div>
         )}
       </FigmaRouteFrame>
+
+      {/* The hand. It reads the same token the camera would have decoded, so a
+          code that will not scan is still honoured at the counter. */}
+      <Sheet open={manualOpen} onClose={() => setManualOpen(false)} label="Enter the code by hand">
+        <p className="label">TYPE THE CODE UNDER THEIR QR</p>
+        <div style={{ marginTop: "var(--s-4)" }}>
+          <Input
+            autoFocus
+            value={manual}
+            onChange={(e) => setManual(e.target.value)}
+            placeholder="COLLECTION CODE"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && manual.trim()) {
+                setManualOpen(false);
+                void onResult(manual.trim());
+              }
+            }}
+          />
+        </div>
+        <p className="label" style={{ marginTop: "var(--s-4)", lineHeight: 2 }}>
+          IT IS THE SHORT CODE ON THE CUSTOMER'S RECEIPT, NOT THE ORDER NUMBER.
+        </p>
+        <div style={{ marginTop: "var(--s-5)" }}>
+          <Pill
+            disabled={!manual.trim()}
+            onClick={() => { setManualOpen(false); void onResult(manual.trim()); }}
+          >
+            HAND IT OVER
+          </Pill>
+          <Pill variant="ghost" onClick={() => setManualOpen(false)}>CANCEL</Pill>
+        </div>
+      </Sheet>
     </div>
   );
 }

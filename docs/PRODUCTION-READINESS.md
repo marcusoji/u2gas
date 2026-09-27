@@ -196,7 +196,7 @@ Deploying only through `0018`, as earlier versions of these docs described,
 leaves the database with the defects `0019` fixes — notifications that can
 stay claimed forever, idempotency keys that match across callers, and the
 webhook, QR and delivery races — and with the stale function overloads that
-`0020` removes. Apply all twenty-two in order, then run both suites.
+`0020` removes. Apply all twenty-four in order, then run both suites.
 
 There are no known defects. There is no known missing functionality. Every part
 of the brief that can be satisfied by changing the repository has been. What
