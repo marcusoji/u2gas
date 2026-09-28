@@ -160,6 +160,9 @@ export default function People() {
       <div className="screen figma-route-scroll">
         <button className="screen-back" onClick={() => setSelected(null)}>BACK TO THE ROSTER</button>
         <FigmaRouteFrame node="1:2803" values={values}>
+          {/* The drawn BACK the re-issue adds at (367,173). */}
+          <button className="figma-route-interactive" aria-label="Back to the roster"
+            onClick={() => setSelected(null)} style={{ left: 360, top: 168, width: 60, height: 22 }} />
           {/* The drawn REMOVE STAFF. A driver is not a staff_member row, so the
               same control is inert for them rather than removing the wrong thing. */}
           <button
@@ -201,6 +204,9 @@ export default function People() {
         }>
           <button className="figma-route-interactive" aria-label="Back to the roster"
             onClick={() => setQuery({ state: null })} style={{ left: 12, top: 6, width: 48, height: 44 }} />
+          {/* The drawn BACK the re-issue adds at (367,173). */}
+          <button className="figma-route-interactive" aria-label="Back to the roster"
+            onClick={() => setQuery({ state: null })} style={{ left: 360, top: 168, width: 60, height: 22 }} />
           <button className="figma-route-interactive" aria-label="Notifications"
             onClick={() => nav("/admin/notifs")} style={{ left: 362, top: 63, width: 50, height: 56 }} />
           {/* The plus the file draws at (351,145) in the empty slot. */}
@@ -223,6 +229,9 @@ export default function People() {
         }>
           <button className="figma-route-interactive" aria-label="Back to the grid"
             onClick={() => setQuery({ layout: null })} style={{ left: 12, top: 6, width: 48, height: 44 }} />
+          {/* The drawn ADD STAFF the re-issue adds at (323,174). */}
+          <button className="figma-route-interactive" aria-label="Add a staff member"
+            onClick={() => setQuery({ state: "add" })} style={{ left: 317, top: 168, width: 105, height: 22 }} />
           <button className="figma-route-interactive" aria-label="Notifications"
             onClick={() => nav("/admin/notifs")} style={{ left: 362, top: 63, width: 50, height: 56 }} />
           {rows.slice(0, 4).map((person, i) => (
@@ -291,6 +300,9 @@ export default function People() {
       }>
         <button className="figma-route-interactive" aria-label="Notifications"
           onClick={() => nav("/admin/notifs")} style={{ left: 362, top: 63, width: 50, height: 56 }} />
+        {/* The drawn ADD STAFF the re-issue adds at (323,174). */}
+        <button className="figma-route-interactive" aria-label="Add a staff member"
+          onClick={() => setQuery({ state: "add" })} style={{ left: 317, top: 168, width: 105, height: 22 }} />
         {rows.slice(0, 6).map((person, index) => (
           <button
             key={(person as AdminStaff).staff_id ?? (person as AdminDriver).driver_id}
