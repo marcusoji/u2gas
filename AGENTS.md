@@ -711,3 +711,33 @@ inside a group, and `figma-pixels` renders the *markup* (which matched) rather
 than the live file. Read tick opacity and the `%` suffix straight from live
 `style`/`characters`, not from the drawn snapshot.
 
+
+## The shop strip: a drawn element the gallery never carried
+
+`docs/u2gas-all-screens.html` is a hand-maintained snapshot, so when the file
+re-issues a board it can gain *structure*, not just a recoloured leaf. The four
+product boards never carried the strip the live file now draws on `SHOP - Single
+ITEM` and `SHOP - ITEM UNAVAILABLE`: a group at (48,845) 447x183 holding four
+tall product photographs (a jar, a pack, a bottle, a cylinder) and the faded
+`SHOP FOR OTHER` / `ACCESSORIES` label. Nothing in the app can render what the
+gallery does not hold, so both boards showed a blank band where the file draws
+the row.
+
+`SHOP FOR ACCESSORIES` (the `ADD to Cart` boards' own button) and `SHOP FOR
+OTHER ACCESSORIES` (this strip) are different strings, so the copy diff flags
+the strip and not the button — do not "fix" the button.
+
+The strip is spliced by `.figdiff/patch_shop_strip.py`: four new `--a17`..`--a20`
+pictures appended to the gallery's `:root` asset block, then the group inserted
+before each board's watermark, then `python3 build/gen_react.py`. Use the
+`figma_download_figma_images` *cropped* exports (`.figdiff/stripc/`), not the raw
+node renders — the live fills are `scaleMode: STRETCH` with an `imageTransform`,
+so the uncropped bitmap is padded and the picture sits small inside its box.
+`check-figma-parity.sh` still passes because it compares gallery to generated
+markup (both changed together); only a live render (`shot_frame.mjs` against
+`.figdiff/live/live-250-5655.png`) can see the strip land.
+
+Two boards only. `SHOP - SEARCH` (`1:1438`) draws `SHOP FOR` / `ACCESSORIES` as
+its heading with an LED button, not this strip; `Cart` and the checkout sheets
+draw their own `SHOP OTHER ACCESSORIES` dashed rows. Do not spread the strip
+around.
