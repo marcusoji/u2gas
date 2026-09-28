@@ -4,16 +4,26 @@ U2GAS fonts
 The Figma file specifies two faces. Both are freely licensed, so both can be
 committed here and served from our own origin.
 
-  jgs7.woff2 / .woff             the pixel face — every heading, label, button
-  jgs5.woff2                     the LED face — readouts and tickers only
-  homemade-apple.woff2 / .woff   the handwriting face — names on profile only
+  jgs7.woff2 / .woff / .ttf     the pixel face — every heading, label, button
+  jgs5.woff2 / .woff / .ttf     the LED face — readouts and tickers only
+  homemade-apple.woff2 / .woff  the handwriting face — names on profile only
+
+  jgs9.woff2 / .woff / .ttf     the third member of the family; not used by any
+                                artboard, kept so the family is complete
+  jgs_Font.ttf                  the family master; same, not used on a screen
 
 STATUS: present and committed. Nothing to do before a build.
 
   jgs5.woff2                 5,872 B
+  jgs5.woff                  9,156 B
+  jgs5.ttf                  25,448 B
   jgs7.woff2                 6,820 B
   jgs7.woff                  9,968 B
   jgs7.ttf                  26,152 B
+  jgs9.woff2                 5,736 B
+  jgs9.woff                  8,940 B
+  jgs9.ttf                  27,628 B
+  jgs_Font.ttf              41,192 B
   homemade-apple.woff2      34,012 B
   homemade-apple.woff       39,912 B
   u2-pixel-400.woff          3,196 B
@@ -36,7 +46,11 @@ Sources and licences
 --------------------
 jgs Font            Adél Faure — github.com/adelfaure/jgs_font
                     jgs7 is the 7px variant, which is what the file specifies.
+                    jgs5 and jgs9 are the 10px- and 18px-multiple variants.
                     Keep the upstream LICENSE file next to the font.
+                    The upstream repository ships whole as `jgs-main.zip` at the
+                    repo root, so the masters can be refreshed from it without
+                    network access.
 
 Homemade Apple      Google Fonts, SIL Open Font License 1.1
                     github.com/google/fonts/tree/main/apache/homemadeapple
