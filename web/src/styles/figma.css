@@ -354,6 +354,14 @@
   white-space: nowrap; text-align: center;
 }
 
+/* The AVAILABLE QUANTITY readout the re-issued file paints on the admin,
+   staff and driver boards: a 16px Barlow label, a 96px quantity and TONS,
+   all centred in the scanner body and set in white. */
+.readout-label, .readout-qty, .readout-tons {
+  position: absolute; color: #fff; text-align: center; white-space: nowrap;
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif; font-weight: 600;
+}
+
 /* --------------------------------------------------------------------------
    Artboard containment.
 

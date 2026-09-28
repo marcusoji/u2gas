@@ -112,7 +112,7 @@ export default function Collect() {
   if (done?.orphaned) {
     return (
       <div className="screen">
-        <FigmaRouteFrame node="1:4527" values={{ "1:4530": "COPYRIGHT 2026 U2 OIL AND GAS LTD." }}>
+        <FigmaRouteFrame node="1:4527" values={{ "1:4530": "C0PYRIGHT 2026 U2 OIL AND GAS LTD." }}>
           <div className="figma-route-overlay-text" style={{ left: 55, top: 700, width: 330, fontSize: 22 }}>HOLD EXPIRED — {done.number}</div>
           <button className="figma-route-interactive" aria-label="Start a new order" style={{ left: 90, top: 580, width: 262, height: 72 }} onClick={() => nav("/staff/walk-in")} />
           <button className="figma-route-interactive" aria-label="Back to queue" style={{ left: 90, top: 670, width: 262, height: 72 }} onClick={() => nav("/staff/queue")} />
@@ -136,7 +136,7 @@ export default function Collect() {
   }
 
   const values = {
-    "1:4595": "COPYRIGHT 2026 U2 OIL AND GAS LTD.",
+    "1:4595": "C0PYRIGHT 2026 U2 OIL AND GAS LTD.",
   };
   const led = paid ? "PAID" : tendered ? `${tendered}NGN` : `${(order.total_kobo / 100).toLocaleString("en-NG")}NGN`;
   // The board's LED is captioned `AMOUNT IN KG`, which is a lie once the order

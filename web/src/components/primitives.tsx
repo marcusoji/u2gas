@@ -361,7 +361,7 @@ export function U2Mark() {
   return (
     <footer className="u2">
       <div className="u2-mark">U2</div>
-      <div className="u2-copy">COPYRIGHT 2026 U2 OIL AND GAS LTD.</div>
+      <div className="u2-copy">C0PYRIGHT 2026 U2 OIL AND GAS LTD.</div>
     </footer>
   );
 }
