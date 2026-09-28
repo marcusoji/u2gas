@@ -670,6 +670,23 @@ redraw renumbers every node to the live ids, so the gallery splice, `gen_react`,
 and those route bindings have to move in the same change — patch the text alone
 and the route goes dead.
 
+**Splice a label as a sibling, not into the anchor's tag.** `1:4047`'s added
+`CASH` label (live `459:18335`) was first inserted by replacing the chip's
+`style="position:absolute;` prefix with `style="position:absolute;<p …>CASH</p>`,
+which put the `<p>` *inside* the opening `<div>` tag: the chip lost its
+`left`/`transform` (it collapsed to the stream and rendered on top of its
+neighbour) and the `left:205.58px;…` tail spilled as literal text. The tag
+counters still balanced, so nothing structural flagged it — `pixmask.py` showed
+the board hot at (125,27) instead. Insert before the anchor element, never inside
+its attribute list, and check the chip's own box after a splice.
+
+`1:4592`'s `CASH` / `BANK TRANS` tile labels need no splice: its
+`payment medium` group (`459:18810`) is **`visible: false`** in the re-issued
+file, so the gallery correctly draws the bare tile outline there and the live
+render agrees pixel for pixel. Only `1:4047`, whose group is visible, carries the
+labels. This is the hidden-leaf trap again — enumerate the `visible` flag before
+reading a live label as missing.
+
 ## PERSONAL DTS 2 (`1:2244`)
 
 The gallery already carries the full field set — `FIRST NAME`, `LAST NAME`,
