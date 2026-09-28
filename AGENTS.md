@@ -688,3 +688,26 @@ rows. Two traps produced a false "missing" reading and are worth recording:
   watermark and reads the heading as `PERSONAL`, hence the spurious
   `PERSONAL DETAILS` vs `DETAILS` report. It is not a difference.
 
+## The admin gauge axis: a real refinement the four gates could not see
+
+The re-issued file redrew the admin gauge scale, and the change is invisible to
+every gate because it is neither structural nor a font/colour *token* the
+harness compares:
+
+- The tick labels (`100`…`00`) have **no `opacity`** in the live file — they are
+  solid black. The gallery painted them at `opacity:0.45`, so the whole scale
+  read as light grey against the file's black. Set it to `1` on all seven
+  gauge boards (`1:2299`, `1:2454`, `1:3075`, `1:2847`, `1:3887`, `1:3245`,
+  `1:3461`).
+- The `%` suffix is **not** on every board. Only the three older admin boards
+  (`1:3887`, `1:3245`, `1:3461`) label the `60` tick `60%`; the four redrawn
+  ones (`1:2299`, `1:2454`, `1:3075`, `1:2847`) draw bare numbers. The gallery
+  had applied `60%` to all seven — including `40%` on `1:2454` — so those four
+  boards drew a percent the file does not.
+
+Both are the "value that is right but formatted differently" class: `dom-parity`
+compares colour/tracking tokens but the axis text is a `[data-node]`-less leaf
+inside a group, and `figma-pixels` renders the *markup* (which matched) rather
+than the live file. Read tick opacity and the `%` suffix straight from live
+`style`/`characters`, not from the drawn snapshot.
+
