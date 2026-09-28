@@ -741,3 +741,52 @@ Two boards only. `SHOP - SEARCH` (`1:1438`) draws `SHOP FOR` / `ACCESSORIES` as
 its heading with an LED button, not this strip; `Cart` and the checkout sheets
 draw their own `SHOP OTHER ACCESSORIES` dashed rows. Do not spread the strip
 around.
+
+## The shop *grid*: the same re-issue, on the paid boards
+
+The re-issue did not stop at the strip. `415:15001` PAYMENT SUCCESSFUL and
+`459:17639` PAYMENT FAILED now draw the same `SHOP FOR ACCESSORIES` group the
+gas-input boards (`1:175`, `1:251`, `1:1344`, `1:326`, `1:583`, the three
+receipts) already carried: four product photographs in a dashed 400x428 grid at
+(20,929) with the faded label at (72,891), group box (20,891) 400x466. Both live
+grids are byte-identical to `1:175`'s down to the four `imageRef`s, so it is the
+file's own grid copied onto two more boards, not a new drawing.
+
+`1:421` and `1:502` are the two gallery boards that *stopped* at the paid stamp:
+the app rendered the SUCCESS/FAILED LED and the thumbs-up with no upsell row
+below. The copy diff cannot see a missing group — it only pairs text leaves, and
+the pair that would flag it is the label the *sibling* boards already carry — so
+this only surfaced by pixel-banding the two boards against `.figdiff/live/`.
+
+`.figdiff/patch_shop_grid.py` lifts the `1:250`/`1:241` block out of `1:175`
+verbatim and re-ids its six nodes (`<board>-shop`, `-shopgrid`, `-shop1..4`), then
+inserts it before each board's watermark and regenerates. The ids are not live
+ids on purpose: these are gallery-splice ids, the same convention the strip patch
+uses, and `dom-parity` compares them as drawn structure.
+
+Same rule as the strip: only the boards the live file actually draws it on. Do
+not spread the grid to `LOG IN`, `SHOP - SEARCH`, the cart or the checkout
+sheets.
+
+## The thumbs-up glow is a state colour, not a shadow
+
+The six boards that draw the two-tone thumbs-up (`1:421`, `1:502`, the four scan
+boards) all carried the *same* black `drop-shadow(0px 20px 100px rgba(0,0,0,1))`
+in the gallery. The live file gives each state its own colour: white on
+`415:15001` PAYMENT SUCCESSFUL, red `#ae0000` on `459:17639` PAYMENT FAILED and
+on every scan-failure board, green `#24b400` on `459:18532` / `459:19086` (the
+two scan-successful boards). The black glow washed the picture into the page on
+every board, so the state depended on reading the small LED underneath.
+
+`.figdiff/patch_thumb_glow.py` swaps only the `filter` colour on each existing
+span, keyed by gallery node — the picture, its box and the 20px/100px offsets are
+untouched, and the six spare spans (`1:500` / `1:581`) follow their siblings.
+
+Two measurement traps in chasing this. A board's mean pixel shift can look like a
+*wrong image* when it is only a *wrong glow*: the gallery `--a6` / `--a7` bytes
+are the file's own export, verified by normalised correlation against the live
+`imageRef` (a6/success 0.90, a7/fail 0.72, and a6 against fail 0.01 — so they are
+not swapped). The white glow is invisible on the white board, but the red and
+green are real and must be measured with the glow **on**; stripping every
+`drop-shadow` and re-rendering changed nothing on `1:421` but 64/px on `1:4938`.
+
