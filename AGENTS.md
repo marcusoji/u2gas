@@ -486,12 +486,15 @@ What actually changed, and how to see it:
   gallery already carries the drawn equivalents under the old ids. Confirm a
   live-only string's frame path before "refining" it, or you will copy scrap
   copy onto a screen.
-- **A new readout was drawn on the chrome, not composed.** The re-issued admin,
-  staff and driver boards paint a white `AVAILABLE QUANTITY / 6.54 / TONS`
-  readout over the scanner body; the printed sample is `6.54`, not the full
-  tank. It is injected into the gallery and carried by `.readout-label`,
-  `.readout-qty`, `.readout-tons` (16px/96px Barlow Condensed, white) in both
-  `figma.css` and the gallery's inline CSS, then regenerated like any artboard.
+- **Readouts the file marks hidden are not refinements.** Every admin, cashier
+  and driver board carries an `AVAILABLE QUANTITY / 6.54 / TONS` group, but the
+  live file marks all three leaves **`visible: false`** — the boards draw the
+  bare scanner instead, and only the two functional tank screens (`UPDATE GAS`,
+  `GAS LVL CHECK`) show a real readout. Enumerating text by id alone (without
+  the `visible` flag) reads those hidden leaves as new copy and paints them on;
+  that was a regression, now reverted. The checklist in "Measuring drift"
+  applies here too: a node that is `visible: false` in Figma but rendered in the
+  gallery (or an injected one the file hides) is the signature.
 - **The scan screens were redrawn.** The live scanner body is an image-backed
   frame (`Frame 60` holding `Frame 65`), not the old vector module; bringing
   that across verbatim is a larger, image-dependent job than the copy pass and
