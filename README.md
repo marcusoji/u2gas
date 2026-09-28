@@ -95,14 +95,18 @@ Full setup is in `docs/DEPLOYMENT.md`. Keys are in `docs/ENVIRONMENT.md`.
 
 Every screen can be opened from in-browser fixtures — no Supabase project, no
 Worker, no network. Useful for design review and for looking at a role you are
-not signed in as.
+not signed in as. It needs no setup at all: `web/.env.development` is committed
+and turns the embedded mode on for `vite dev`.
 
 ```
 cd web
-cp .env.example .env          # then set VITE_EMBEDDED_API=true
 npm ci
 npm run dev
 ```
+
+(The file is read only in dev mode — `vite build` reads `.env`, so it can never
+reach a production bundle. To point a dev server at a real API instead, copy
+`.env.example` to `.env` and set `VITE_EMBEDDED_API=false`.)
 
 A switch appears bottom-right. It changes which role the app answers as,
 because each app is behind a role gate a real deployment authorises on the
@@ -142,6 +146,7 @@ when they land. See `docs/DEPLOYMENT.md` §5.
 | File | What it is |
 |---|---|
 | `docs/ARCHITECTURE.md` | How the pieces fit, and where each rule is enforced |
+| `docs/HANDOVER.md` | Getting the dev server running with no API, adding a page, the asset workflow, and what is left to match Figma |
 | `docs/DEPLOY-NO-CLI.md` | Step-by-step deployment using only web dashboards |
 | `docs/PRODUCTION-READINESS.md` | What was fixed, what remains, the verdict |
 | `docs/ENVIRONMENT.md` | Every variable, where it comes from, what rotating costs |
