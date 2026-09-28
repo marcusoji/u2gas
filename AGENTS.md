@@ -457,3 +457,50 @@ importing the full registry (lazy-load the artboards or `FigmaScreen` per
 route) ŌĆö but the role-separation requirement is met. Measure the preload set in
 `dist/index.html`, not the build log: the log shows a small `index` chunk and
 hides what is preloaded.
+
+## The re-issued GIFT-TECH file: node ids moved, geometry did not
+
+The live file was re-issued under a new name (GIFT-TECH) and page (`u2` =
+`152:2265`), and it reassigned **every** node id (`1:*` → `4xx:*`). The gallery
+and `web/src/figma` key on the old `1:*` ids, and `check-figma-parity.sh` only
+proves gallery-vs-generated, so a re-issue lands as *silent* drift: all four
+gates stay green while the drawing has moved underneath them.
+
+What actually changed, and how to see it:
+
+- **Geometry is stable.** A node's box is within a pixel or two of its old box,
+  so the two sides can be diffed positionally: for each old gallery node, the
+  live text at the same `(x, y)` is its refinement — "compare `[data-node]`
+  boxes, not whole-page screenshots" is the right instinct here. The gallery
+  resolves `translateX(-50%)`, `bottom:` and `calc(50% ± npx)` in `style=`, so
+  parse those before matching or the centred nodes (titles, footer, tickers)
+  read as no-match.
+- **Copy refinements are real, and `C0PYRIGHT` is one of them.** Every board's
+  footer is now `C0PYRIGHT 2026 U2 OIL AND GAS LTD.` (zero for "o") — the file's
+  own typo, which the parity harness compares character for character. The
+  gallery, `figma.css` and the two app bindings (`primitives.tsx`'s `U2Mark`,
+  `staff/Collect.tsx`'s `1:4530`/`1:4595`) all had to move together.
+- **Live-only strings that are *not* screens live in `ASSETS AND SCRAPS`.** Its
+  `MORE FOR YOU`, `PAYMENT OPTIONS`, `SHOP OTHER ACCESSORIES`, keypad digits and
+  the alternate `Today’s Rate` forms are scrap frames, not the artboards — the
+  gallery already carries the drawn equivalents under the old ids. Confirm a
+  live-only string's frame path before "refining" it, or you will copy scrap
+  copy onto a screen.
+- **A new readout was drawn on the chrome, not composed.** The re-issued admin,
+  staff and driver boards paint a white `AVAILABLE QUANTITY / 6.54 / TONS`
+  readout over the scanner body; the printed sample is `6.54`, not the full
+  tank. It is injected into the gallery and carried by `.readout-label`,
+  `.readout-qty`, `.readout-tons` (16px/96px Barlow Condensed, white) in both
+  `figma.css` and the gallery's inline CSS, then regenerated like any artboard.
+- **The scan screens were redrawn.** The live scanner body is an image-backed
+  frame (`Frame 60` holding `Frame 65`), not the old vector module; bringing
+  that across verbatim is a larger, image-dependent job than the copy pass and
+  is tracked separately. The fetch harness's `change_list.txt` lists the
+  live-only nodes frame by frame.
+
+Removing the `manager` role is a consequence of the same re-issue: the file
+draws customer, cashier (`staff`), driver and admin only. It is gone from the
+`Role` unions (front and Worker), `requireRole`, the add-staff vocabulary, the
+embedded fixtures, `app_role` and the migrations; admin overrides and low-stock
+alerts are admin-only now.
+
