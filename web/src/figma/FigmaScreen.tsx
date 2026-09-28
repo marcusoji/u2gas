@@ -49,8 +49,14 @@ export function FigmaScreen({
       // child would silently *prepend* the live value to the drawn one —
       // "3" + "6.54" reads as "36.54" and "8 ITEMS" + "₦1,400" overflows the
       // LED. Those are drawings, not placeholders, so they are left alone.
+      //
+      // A drawn row is often `<p>LINE ONE<br>LINE TWO</p>`: the `<br>` is an
+      // element child, so a strict "no children" rule skips exactly those
+      // nodes. Tolerate `<br>` alone (nothing else), and the replacement value
+      // may carry `<br>` too (via `escapeWithBreaks`), so a route can bind a
+      // two-line row by id without the value's own markup leaking through.
       const re = new RegExp(
-        `(<[a-z0-9]+\\b[^>]*data-node="${id}"[^>]*>)([^<]*)(</[a-z0-9]+>)`,
+        `(<[a-z0-9]+\\b[^>]*data-node="${id}"[^>]*>)((?:[^<]|<br\\s*/?>)*)(</[a-z0-9]+>)`,
       );
       if (!re.test(out)) {
         // The node is absent, or it is a container rather than a text leaf.
@@ -59,7 +65,7 @@ export function FigmaScreen({
         continue;
       }
       out = out.replace(re, (_match: string, open: string, _old: string, close: string) =>
-        `${open}${escapeText(text)}${close}`);
+        `${open}${escapeWithBreaks(text)}${close}`);
     }
     for (const [id, src] of Object.entries(images ?? {})) {
       // Pictures are the file's `.asset-img` spans; the picture itself lives in

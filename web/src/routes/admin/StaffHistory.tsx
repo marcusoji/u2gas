@@ -8,12 +8,13 @@ import { mediaUrl } from "../../lib/media";
 type Scope = "active" | "history";
 
 /**
- * One driver's delivery history (1:3675 / 1:3781).
+ * One staff member's delivery history (1:3675 driver / 1:3781 cashier).
  *
- * The file draws the same sheet twice — the completed run and the one still in
- * progress — so the route is one screen with a scope switch, and each scope
- * renders the board the file draws for it. The rows carry no node ids and
- * repeat samples, so live drops are bound by their exact drawn strings.
+ * The re-issued file draws the same sheet twice with a role subtitle —
+ * `DRIVER - HISTORY` and `CASHIER - HISTORY` — and a four-row receipt template
+ * (product thumbnail, `1x`, the order line, the LED). The snapshot's plain rows
+ * were redrawn, so the panel is rebuilt in the gallery and the route binds the
+ * order line by the ids the splice adds (`<panel>-row<i>-line`), four per board.
  */
 export default function StaffHistory() {
   const { staffId } = useParams();
@@ -69,34 +70,36 @@ export default function StaffHistory() {
 
   const name = (driver.profile?.display_name ?? "DRIVER").toUpperCase();
   const history = scope === "history";
-  const rows = (history ? finished : active).slice(0, history ? 3 : 2);
+  const rows = (history ? finished : active).slice(0, 4);
 
-  // Drawn samples per board, in document order, paired with the tail sample.
-  const samples = history
-    ? [["U2-100042", "Delivered 14:22 \u00b7 Ikoyi"], ["U2-100039", "Delivered 11:08 \u00b7 Marina"], ["U2-100031", "Returned \u00b7 no answer"]]
-    : [["U2-100051", "En route \u00b7 Yaba"], ["U2-100048", "Delivered 09:40 \u00b7 Surulere"]];
+  const tail = (o: AdminOrder) => {
+    const status = o.delivery?.status ?? "assigned";
+    const where = o.delivery?.delivery_address ?? "";
+    if (status === "en_route") return where ? `En route \u00b7 ${where}` : "En route";
+    if (status === "assigned") return where ? `Assigned \u00b7 ${where}` : "Assigned";
+    if (status === "delivered") return `Delivered \u00b7 ${where || "delivered"}`;
+    return `${status === "returned" ? "Returned" : "Failed"} \u00b7 ${where || "no answer"}`;
+  };
 
-  const textReplacements: Record<string, string | string[]> = {
-    "SMITH\u2019S": `${name}\u2019S`,
+  // Each drawn receipt row is `<p>PRODUCT<br>STATUS</p>`; the splice gives the
+  // line leaf an id (`<panel>-row<i>-line`), so the route binds four rows per
+  // board by id. The board's same sample line is also drawn blurred on the
+  // scanner behind it, where an id would be ambiguous — id scoping keeps the
+  // live record off that decorative copy. Ids are the splice's own, from
+  // `.figdiff/patch_staffhist_panel.py`, not live Figma ids.
+  const panel = history ? "1:3726" : "1:3832";
+  const values: Record<string, string> = {
+    [history ? "1:3729" : "1:3835"]: `${name}\u2019S`,
   };
   rows.forEach((o, i) => {
-    const status = o.delivery?.status ?? "assigned";
-    const tail = status === "en_route"
-      ? `En route \u00b7 ${o.delivery?.delivery_address ?? "on the way"}`
-      : status === "assigned"
-        ? `Assigned \u00b7 ${o.delivery?.delivery_address ?? "waiting"}`
-        : status === "delivered"
-          ? `Delivered \u00b7 ${o.delivery?.delivery_address ?? "delivered"}`
-          : `${status === "returned" ? "Returned" : "Failed"} \u00b7 ${o.delivery?.delivery_address ?? "no answer"}`;
-    textReplacements[samples[i][0]] = o.order_number;
-    textReplacements[samples[i][1]] = tail;
+    values[`${panel}-row${i}-line`] = `${o.order_number}<br>${tail(o)}`;
   });
 
   const setScopeAndKeep = (next: Scope) => setScope(next);
 
   return (
     <div className="screen figma-route-scroll">
-      <FigmaRouteFrame node={history ? "1:3675" : "1:3781"} textReplacements={textReplacements}>
+      <FigmaRouteFrame node={history ? "1:3675" : "1:3781"} values={values}>
         {/* The drawing's avatar frame (1:3679 / 1:3785 camera feed) is the
             driver's picture slot. */}
         {driver.profile?.avatar_asset?.base_path && (

@@ -638,12 +638,57 @@ is the slot key). Leave it.
 `frame_map.json` pairs gallery nodes to live frames, but a handful of live
 frames never became a board of their own — they are the *inner* groups the route
 renders underneath (`BLACK CONCEPT`, `PERSONAL DTS`, the four `DIVIDER`
-rotated-logo frames, two `STAFF HISTORY - DRIVER` sheets). A board whose visible
-difference is "the live side has a frame the gallery does not" is usually one of
-these, not drift. The pixel diff for `1:2244` and `1:2107` also reads high purely
+rotated-logo frames). A board whose visible difference is "the live side has a
+frame the gallery does not" is usually one of these, not drift. The pixel diff for
+`1:2244` and `1:2107` also reads high purely
 because the MCP export of a framed board comes back **480px wide** (a 440px
 board plus a 20px drop-shadow margin each side); `live_diff.mjs` detects and
 crops that symmetric border before comparing, or the margin alone reads as drift.
+
+## STAFF HISTORY - DRIVER / CASHIER (`1:3675` / `1:3781`)
+
+The two boards were re-issued and their panels **redrawn**, not re-worded, so
+they could not be patched leaf by leaf. The live pair is `491:20548` (driver) and
+`498:20655` (cashier); the panel lives at `491:20599` / `498:20706` as a normal
+flow column — `NOTIFS AND FILTERS` (553 tall) holds a `MONTHS` chip row and a
+`HISTORY` group (484 tall) of four rows, 109px each with a 16px gap, so the rows
+land at panel y 69, 194, 319, 444 (board y 332/457/582/707).
+
+The redraw introduced:
+
+- the **role subtitle** under the name (`491:20654` / `498:20710`, 32px at panel
+  (26,125)) — `DRIVER - HISTORY` / `CASHIER - HISTORY`;
+- a **product row template**: a 44.4×49 image (`491:20614`, `box-shadow 0 4px 15px
+  rgba(0,0,0,.3)`), `1x` (16px, white, `-webkit-text-stroke: .5px #000`) at frame
+  (14,21.07), the order line at frame (65,14.07) and a 30px LED at frame (305,10.18)
+  (`opacity .7`);
+- a **state-coloured LED** on the cashier board — green `#1a7113`/`#699f65` on the
+  delivered rows, red `#ae0b0b`/`rgba(53,3,3,.3)` on the returned one; the driver
+  board leaves all four grey `#d5d4d4`/`#cfcfcf`. Each state has its own glyph path,
+  not just a colour;
+- `SEE ALL` (20px, `opacity .3`) under the rows.
+
+`.figdiff/patch_staffhist_panel.py` splices the whole panel subtree from the live
+geometry and adds the product picture as `--a21` (fetched through MCP, downscaled —
+not scraped from Drive). It gives each row's order line a `data-node` id
+(`1:3726-row<i>-line`, `1:3832-row<i>-line`) so `StaffHistory.tsx` can bind a live
+order by id. Binding by value would not do: the same sample line is also drawn
+blurred on the scanner behind the panel, and a value key would hit both.
+
+Two traps paid for here:
+
+- **Appending a `:root` asset by anchoring on the last `--aN:` is wrong.** The
+  last `--aN:` in the file is not the last picture — the gallery repeats custom
+  properties in viewer chrome far below `:root`. Anchor on `--a20` itself, and
+  remember the `;` inside `data:image/png;base64,` is not a declaration end. The
+  first attempt landed `--a21` outside `:root`, so `getComputedStyle`
+  `.getPropertyValue("--a21")` was empty, the thumbnail drew nothing, and
+  `check:figma-pixels` caught it at 1.03% on both boards.
+- **`FigmaScreen`'s `values` path matched only a strict text leaf.** A drawn row
+  is `<p>LINE<br>LINE</p>`, and the `<br>` is an element child, so the leaf regex
+  skipped exactly these nodes and the live value never landed. It now tolerates a
+  `<br>` (and the value may carry one, via `escapeWithBreaks`); the strictness that
+  protects the `6.54` span-split nodes is intact.
 
 ## What the walk-in family still needs (verified deltas)
 
