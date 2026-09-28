@@ -790,3 +790,40 @@ not swapped). The white glow is invisible on the white board, but the red and
 green are real and must be measured with the glow **on**; stripping every
 `drop-shadow` and re-rendering changed nothing on `1:421` but 64/px on `1:4938`.
 
+
+## The re-issue sweep: what is drift and what is the harness
+
+`.figdiff/setdiff.py` (paired by name+height via `.figdiff/namemap.json`) is what
+sees live drift; `.figdiff/pixmask.py` masks the camera-feed box before scoring.
+Four readings recur across the sweep that are **not** gallery gaps, and were
+confirmed board by board:
+
+- **`AVAILABLE QUANTITY / 6.54 / TONS`.** Every scan/notif/gauge board's live
+  group is `visible: false`; the gallery draws the bare blurred scanner instead.
+  `setdiff` reports it as gallery-only (`1:2299`, `1:2454`, `1:2624`, `1:2747`,
+  `1:2686`, `1:2803`, `1:3075`, `1:3245`, `1:3461`, `1:2847`) because it ignores
+  the `visible` flag. Leave the gallery as-is.
+- **`SCAN`.** The staff/driver notif boards (`1:4114` / `459:18361` and family)
+  carry a live `SCAN` the gallery snapshot never drew; their pixel diff is under
+  2% and adding it is a redraw job, not the copy pass — the same call as the
+  scanner body in "The re-issue's camera feed is a real picture".
+- **`ALL / DELIVERIES / COMPLETED / SEE ALL / 1x`** on `1:3675`, `1:4683`,
+  `1:4803`, `1:3245`, `1:3461`. These are the gallery's *sample* rows and the
+  filter chrome; setdiff pairs them badly because the live file draws curly
+  quotes and because a heading leaf is one `[data-node]` over an inner block. The
+  live rows are bound by the route's row template at runtime, so nothing is
+  missing on screen.
+- **`1KG` and the keypad digits** on the walk-in and insufficient boards. The
+  digits carry no data-node in the drawing (the route owns the keypad), so the
+  geometry join reports every one as moved. The readout label is the drawn
+  `AMOUNT IN NAIRA`, and `250:5711` names its own board `INSUFFICIENT- Please
+  redude` — drawn copy, not drift.
+
+Genuinely refined by the re-issue and fixed in the gallery: `1:4047` gains the
+`CASH` chip label (live `459:18335`), and the three cashier NOTIFS boards
+(`1:4114`, `1:4192`, `1:4285`) gain the `FOOTER` — two `U2` marks plus
+`C0PYRIGHT 2026 U2 OIL AND GAS LTD.` — that the snapshot dropped, the same footer
+every other board already carries. `1:2847` GAS HISTORY and the `1:2107` TRANS
+HISTORY panel are the copy pass (`2 TONS - ADDED BY MR GIFT`, the
+`MARCH`…`DECEMBER` strip, the four-segment progress bar), living in
+`figma-route.css` / `HistoryReceipt.tsx` and moving with the drawing.
