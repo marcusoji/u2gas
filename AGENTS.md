@@ -567,3 +567,35 @@ Do not hand-edit `web/src/figma/screens/*` to "fix" a delta the join reported
 until the pair is confirmed by name+height, or a mis-pairing will move the wrong
 board's copy.
 
+## Redrawing a panel the re-issue replaced
+
+Seven notification boards (`1:3245`, `1:3461`, `1:4114`, `1:4192`, `1:4285`,
+`1:4683`, `1:4803`) carry a lower sheet (`1:3398`, `1:3614`, `1:4131`, `1:4209`,
+`1:4302`, `1:4734`, `1:4854`) that the re-issue replaced outright, ids and all,
+so no old node can be patched into the new one. `.figdiff/gen_panel.py` emits
+the live subtree as gallery markup (absolute-positioned children, the file's own
+type and images) and `.figdiff/patch_notif_panels.py` splices it in; the two new
+pictures are the product thumbnail (`--a13`) and the delivery pin map (`--a14`),
+downloaded through MCP and downscaled, not copied from Drive.
+
+Two traps cost real time:
+
+- **Splice the sheet atomically.** Replacing the node's own tag and rewriting its
+  `style=` leaves the old children in the markup, so the file draws the stale
+  rows *and* the new ones — measured as a paint leak in the panel body while every
+  box on both sides was identical. Match the whole element (tag through its
+  matching `</div>`) and replace it. The box walker cannot see this: it compares
+  `[data-node]` geometry, and the leak is an *extra* rectangle at the live node's
+  coordinates, so verify a redraw by pixel-diffing the panel, not by geometry.
+- **A data-URI custom property needs its semicolon.** `--a14: url("…")` with no
+  `;` runs into the next declaration, which then parses under the *previous*
+  property: `--a14` resolved empty, the map drew nothing, and the gallery's
+  `--a13` grew to hold both pictures. The pixel checks still passed, because they
+  compare the app to the gallery and both were equally broken. Read the computed
+  value of a new custom property (`getComputedStyle(documentElement)
+  .getPropertyValue("--a14")`) after adding one; length 0 is the signature.
+
+The re-issued file also stacks two IMAGE fills on a thumbnail and marks the
+**first** `visible: false`. Pick the last image fill in paint order, not the
+first visible one, or the crop hides behind the one that never draws.
+

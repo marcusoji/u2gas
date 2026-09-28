@@ -5,5 +5,104 @@ import * as A from "../assets";
 
 export const node = "1:4285";
 export const height = 1711;
-export const html = `<div data-node="1:4286" style="position:absolute;left:27px;top:46px;width:387px;height:968px;filter:blur(8px)"><div data-node="1:4293" style="position:absolute;left:26px;top:0;width:340px;height:400px;border-radius:64px;overflow:hidden"><div class="asset" style="width:340px;height:400px;border-radius:64px;">camera feed</div><div style="position:absolute;inset:0;border-radius:64px;backdrop-filter:blur(17.5px);-webkit-backdrop-filter:blur(17.5px);background:linear-gradient(135deg,rgba(255,255,255,.224) 0%,rgba(255,255,255,.06) 28%,rgba(255,255,255,0) 46%);box-shadow:inset 1px 1px 0 rgba(255,255,255,.55),inset -1px -1px 0 rgba(0,0,0,.20),inset 0 0 49px rgba(255,255,255,.10),inset 2px 0 0 rgba(0,255,255,.10),inset -2px 0 0 rgba(255,0,255,.10);pointer-events:none"></div><svg viewBox="0 0 340 400" width="340" height="400" style="position:absolute;inset:0;pointer-events:none" aria-hidden="true" focusable="false"><rect x="8.0" y="8.0" width="324" height="384" rx="56.0" fill="none" stroke="#000" stroke-width="16" stroke-dasharray="4 4"/></svg></div></div><div data-node="1:4302" style="position:absolute;left:0;top:80px;width:440px;height:1185px;background:#fff;border-radius:32px 32px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.12)"><div data-node="1:4375" style="position:absolute;left:194px;top:8px;width:44px;height:4px;border-radius:2px;background:#000"></div><p data-node="1:4305" style="position:absolute;left:24px;top:80px;font-size:64px;color:#1317e4;letter-spacing:-2.56px;line-height:37px;white-space:nowrap">NOTIFS</p><div data-node="1:4368" style="position:absolute;left:42px;top:151px;width:357px;height:24px"><div style="position:absolute;left:0px;top:0;width:111px;height:24px;background:#1317e4;border-radius:8px"><span style="position:absolute;left:5px;top:5px;font-size:24px;line-height:14px;letter-spacing:-0.96px;color:#fff;white-space:nowrap">IN-PERSON</span></div><div style="position:absolute;left:145px;top:0;width:78px;height:24px;background:#fff;border-radius:8px"><span style="position:absolute;left:5px;top:5px;font-size:24px;line-height:14px;letter-spacing:-0.96px;color:#1317e4;white-space:nowrap">ONLINE</span></div><div style="position:absolute;left:257px;top:0;width:100px;height:24px;background:#fff;border-radius:8px"><span style="position:absolute;left:5px;top:5px;font-size:24px;line-height:14px;letter-spacing:-0.96px;color:#1317e4;white-space:nowrap">BOOKINGS</span></div></div><p style="position:absolute;left:73px;top:229px;font-size:32px;color:#1317e4;letter-spacing:-1.28px;line-height:18px;white-space:nowrap">ALL</p><p style="position:absolute;left:159px;top:232.5px;font-size:20px;color:#1317e4;letter-spacing:-0.80px;line-height:11px;white-space:nowrap">COMPLETED</p><p style="position:absolute;left:283px;top:232.5px;font-size:20px;color:#1317e4;letter-spacing:-0.80px;line-height:11px;white-space:nowrap">CANCELLED</p><div data-node="1:4308" style="position:absolute;left:26px;top:271px;width:387px;height:685px"><div style="position:absolute;left:0;top:0;width:387px;height:185px;border:2px solid #000;box-sizing:border-box;border-radius:40px"><span class="asset-img" aria-hidden="true" style="--src:url('${A.a2}');position:absolute;left:30.2px;top:31.82px;width:40px;height:45.27px;object-fit:contain;transform:rotate(-5.85deg);filter:drop-shadow(0 4px 15px rgba(0,0,0,.3))"></span><p style="position:absolute;left:42px;top:51px;font-size:16px;color:#fff;-webkit-text-stroke:1px #000;paint-order:stroke fill;letter-spacing:-0.64px;line-height:9px">1x</p><div style="position:absolute;left:333px;top:40px;width:30px;height:30px;border-radius:26px;background:#d5d4d4;box-shadow:inset 0 0 0 1px #cfcfcf"><div style="position:absolute;left:8px;top:8px;width:14px;height:14px;border-radius:5px;background:#fff"></div></div><p style="position:absolute;left:93px;top:44px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p><div class="btn-primary" style="position:absolute;left:85px;top:111px;width:209px;height:48px;background:#1317e4;border-radius:64px;border:1px solid #797bf4;display:grid;place-items:center"><span style="font-size:32px;color:#fff;letter-spacing:-1.28px;line-height:18px">CONFIRM</span></div></div><div style="position:absolute;left:0;top:201px;width:387px;height:109px;border-radius:40px"><span class="asset-img" aria-hidden="true" style="--src:url('${A.a2}');position:absolute;left:30.2px;top:31.82px;width:40px;height:45.27px;object-fit:contain;transform:rotate(-5.85deg);filter:drop-shadow(0 4px 15px rgba(0,0,0,.3))"></span><p style="position:absolute;left:42px;top:51px;font-size:16px;color:#fff;-webkit-text-stroke:1px #000;paint-order:stroke fill;letter-spacing:-0.64px;line-height:9px">1x</p><p style="position:absolute;left:93px;top:44px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p><div style="position:absolute;left:333px;top:40px;width:30px;height:30px;border-radius:26px;background:#d5d4d4;box-shadow:inset 0 0 0 1px #cfcfcf"><div style="position:absolute;left:8px;top:8px;width:14px;height:14px;border-radius:5px;background:#fff"></div></div></div><div style="position:absolute;left:0;top:326px;width:387px;height:109px;border-radius:40px"><span class="asset-img" aria-hidden="true" style="--src:url('${A.a2}');position:absolute;left:30.2px;top:31.82px;width:40px;height:45.27px;object-fit:contain;transform:rotate(-5.85deg);filter:drop-shadow(0 4px 15px rgba(0,0,0,.3))"></span><p style="position:absolute;left:42px;top:51px;font-size:16px;color:#fff;-webkit-text-stroke:1px #000;paint-order:stroke fill;letter-spacing:-0.64px;line-height:9px">1x</p><p style="position:absolute;left:93px;top:44px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p><div style="position:absolute;left:333px;top:40px;width:30px;height:30px;border-radius:26px;background:#d5d4d4;box-shadow:inset 0 0 0 1px #cfcfcf"><div style="position:absolute;left:8px;top:8px;width:14px;height:14px;border-radius:5px;background:#fff"></div></div></div><div style="position:absolute;left:0;top:451px;width:387px;height:109px;border-radius:40px"><span class="asset-img" aria-hidden="true" style="--src:url('${A.a2}');position:absolute;left:30.2px;top:31.82px;width:40px;height:45.27px;object-fit:contain;transform:rotate(-5.85deg);filter:drop-shadow(0 4px 15px rgba(0,0,0,.3))"></span><p style="position:absolute;left:42px;top:51px;font-size:16px;color:#fff;-webkit-text-stroke:1px #000;paint-order:stroke fill;letter-spacing:-0.64px;line-height:9px">1x</p><p style="position:absolute;left:93px;top:44px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p><div style="position:absolute;left:333px;top:40px;width:30px;height:30px;border-radius:26px;background:#d5d4d4;box-shadow:inset 0 0 0 1px #cfcfcf"><div style="position:absolute;left:8px;top:8px;width:14px;height:14px;border-radius:5px;background:#fff"></div></div></div></div></div><div data-node="1:4298" style="position:absolute;left:0;top:1231px;width:440px;
+export const html = `<div data-node="1:4286" style="position:absolute;left:27px;top:46px;width:387px;height:968px;filter:blur(8px)"><div data-node="1:4293" style="position:absolute;left:26px;top:0;width:340px;height:400px;border-radius:64px;overflow:hidden"><div class="asset" style="width:340px;height:400px;border-radius:64px;">camera feed</div><div style="position:absolute;inset:0;border-radius:64px;backdrop-filter:blur(17.5px);-webkit-backdrop-filter:blur(17.5px);background:linear-gradient(135deg,rgba(255,255,255,.224) 0%,rgba(255,255,255,.06) 28%,rgba(255,255,255,0) 46%);box-shadow:inset 1px 1px 0 rgba(255,255,255,.55),inset -1px -1px 0 rgba(0,0,0,.20),inset 0 0 49px rgba(255,255,255,.10),inset 2px 0 0 rgba(0,255,255,.10),inset -2px 0 0 rgba(255,0,255,.10);pointer-events:none"></div><svg viewBox="0 0 340 400" width="340" height="400" style="position:absolute;inset:0;pointer-events:none" aria-hidden="true" focusable="false"><rect x="8.0" y="8.0" width="324" height="384" rx="56.0" fill="none" stroke="#000" stroke-width="16" stroke-dasharray="4 4"/></svg></div></div><div data-node="459:18886" style="position:absolute;left:0px;top:80px;width:440px;height:1185px;background:#ffffff;border-radius:64px 64px 0px 0px;box-shadow:0px -4px 20px rgba(0,0,0,0.1),0px 4px 4px rgba(0,0,0,0.25)">
+  <div data-node="459:18887" style="position:absolute;left:0px;top:1185px;width:440px;height:473px"></div>
+  <div data-node="459:18888" style="position:absolute;left:24px;top:80px;width:209px;height:37px">
+    <p data-node="459:18889" style="position:absolute;left:0px;top:0px;font-size:64px;color:#1317e4;letter-spacing:-2.56px;line-height:14px;white-space:nowrap">NOTIFS</p>
+  </div>
+  <div data-node="459:18890" style="position:absolute;left:27px;top:151px;width:387px;height:805px;border-radius:0px 0px 0px 0px">
+    <div data-node="459:18891" style="position:absolute;left:0px;top:72px;width:387px;height:733px;border-radius:0px 0px 0px 0px">
+      <div data-node="459:18892" style="position:absolute;left:0px;top:48px;width:387px;height:685px;background:#ffffff">
+        <div data-node="459:18893" style="position:absolute;left:0px;top:0px;width:387px;height:185px;border-radius:40px">
+          <div data-node="459:18894" style="position:absolute;left:28px;top:29.93px;width:335px;height:49.11px">
+            <span class="asset-img" data-node="459:18895" aria-hidden="true" style="position:absolute;left:0px;top:-0px;width:44.4px;height:49.11px;--src:url('${A.a13}');background-size:cover;background-position:center"></span>
+            <p data-node="459:18896" style="position:absolute;left:14px;top:21.07px;font-size:16px;color:#ffffff;letter-spacing:-1.28px;line-height:20px;white-space:nowrap">1x</p>
+            <p data-node="459:18897" style="position:absolute;left:65px;top:14.07px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">Order &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE - 12kg</p>
+            <div data-node="459:18898" style="position:absolute;left:305px;top:10.18px;width:30px;height:30px;border-radius:0px 0px 0px 0px;opacity:0.7">
+              <div data-node="459:18899" style="position:absolute;left:0px;top:-0px;width:30px;height:30px;background:#d5d4d4;border-radius:26px"></div>
+              <div data-node="459:18901" style="position:absolute;left:7.53px;top:7.42px;width:15.05px;height:15.05px;border-radius:5px">
+                <div data-node="459:18902" style="position:absolute;left:0.47px;top:0.47px;width:14.11px;height:14.11px;background:#ffffff;border-radius:5px"></div>
+              </div>
+            </div>
+          </div>
+          <div data-node="459:18962" style="position:absolute;left:85px;top:111px;width:209px;height:48px;background:#1317e4;border-radius:64px;box-shadow:0px 4px 10px rgba(0,0,0,0.25),inset 0px 4px 4px rgba(255,255,255,0.5)">
+            <p data-node="459:18963" style="position:absolute;left:21px;top:17px;font-size:24px;color:#ffffff;letter-spacing:-0.96px;line-height:16px;white-space:nowrap">CONFIRM PICK-UP</p>
+          </div>
+        </div>
+        <div data-node="459:18906" style="position:absolute;left:0px;top:201px;width:387px;height:109px;border-radius:40px">
+          <div data-node="459:18907" style="position:absolute;left:28px;top:29.93px;width:335px;height:49.11px">
+            <span class="asset-img" data-node="459:18908" aria-hidden="true" style="position:absolute;left:0px;top:-0px;width:44.4px;height:49.11px;--src:url('${A.a13}');background-size:cover;background-position:center"></span>
+            <p data-node="459:18909" style="position:absolute;left:14px;top:21.07px;font-size:16px;color:#ffffff;letter-spacing:-1.28px;line-height:20px;white-space:nowrap">1x</p>
+            <p data-node="459:18910" style="position:absolute;left:65px;top:14.07px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p>
+            <div data-node="459:18911" style="position:absolute;left:305px;top:10.18px;width:30px;height:30px;border-radius:0px 0px 0px 0px;opacity:0.7">
+              <div data-node="459:18912" style="position:absolute;left:0px;top:-0px;width:30px;height:30px;background:#d5d4d4;border-radius:26px"></div>
+              <div data-node="459:18914" style="position:absolute;left:7.53px;top:7.42px;width:15.05px;height:15.05px;border-radius:5px">
+                <div data-node="459:18915" style="position:absolute;left:0.47px;top:0.47px;width:14.11px;height:14.11px;background:#ffffff;border-radius:5px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-node="459:18916" style="position:absolute;left:0px;top:326px;width:387px;height:109px;border-radius:40px">
+          <div data-node="459:18917" style="position:absolute;left:28px;top:29.93px;width:335px;height:49.11px">
+            <span class="asset-img" data-node="459:18918" aria-hidden="true" style="position:absolute;left:0px;top:-0px;width:44.4px;height:49.11px;--src:url('${A.a13}');background-size:cover;background-position:center"></span>
+            <p data-node="459:18919" style="position:absolute;left:14px;top:21.07px;font-size:16px;color:#ffffff;letter-spacing:-1.28px;line-height:20px;white-space:nowrap">1x</p>
+            <p data-node="459:18920" style="position:absolute;left:65px;top:14.07px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p>
+            <div data-node="459:18921" style="position:absolute;left:305px;top:10.18px;width:30px;height:30px;border-radius:0px 0px 0px 0px;opacity:0.7">
+              <div data-node="459:18922" style="position:absolute;left:0px;top:-0px;width:30px;height:30px;background:#d5d4d4;border-radius:26px"></div>
+              <div data-node="459:18924" style="position:absolute;left:7.53px;top:7.42px;width:15.05px;height:15.05px;border-radius:5px">
+                <div data-node="459:18925" style="position:absolute;left:0.47px;top:0.47px;width:14.11px;height:14.11px;background:#ffffff;border-radius:5px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-node="459:18926" style="position:absolute;left:0px;top:451px;width:387px;height:109px;border-radius:40px">
+          <div data-node="459:18927" style="position:absolute;left:28px;top:29.93px;width:335px;height:49.11px">
+            <span class="asset-img" data-node="459:18928" aria-hidden="true" style="position:absolute;left:0px;top:-0px;width:44.4px;height:49.11px;--src:url('${A.a13}');background-size:cover;background-position:center"></span>
+            <p data-node="459:18929" style="position:absolute;left:14px;top:21.07px;font-size:16px;color:#ffffff;letter-spacing:-1.28px;line-height:20px;white-space:nowrap">1x</p>
+            <p data-node="459:18930" style="position:absolute;left:65px;top:14.07px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p>
+            <div data-node="459:18931" style="position:absolute;left:305px;top:10.18px;width:30px;height:30px;border-radius:0px 0px 0px 0px;opacity:0.7">
+              <div data-node="459:18932" style="position:absolute;left:0px;top:-0px;width:30px;height:30px;background:#d5d4d4;border-radius:26px"></div>
+              <div data-node="459:18934" style="position:absolute;left:7.53px;top:7.42px;width:15.05px;height:15.05px;border-radius:5px">
+                <div data-node="459:18935" style="position:absolute;left:0.47px;top:0.47px;width:14.11px;height:14.11px;background:#ffffff;border-radius:5px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-node="459:18936" style="position:absolute;left:0px;top:576px;width:387px;height:109px;border-radius:40px">
+          <div data-node="459:18937" style="position:absolute;left:28px;top:29.93px;width:335px;height:49.11px">
+            <span class="asset-img" data-node="459:18938" aria-hidden="true" style="position:absolute;left:0px;top:-0px;width:44.4px;height:49.11px;--src:url('${A.a13}');background-size:cover;background-position:center"></span>
+            <p data-node="459:18939" style="position:absolute;left:14px;top:21.07px;font-size:16px;color:#ffffff;letter-spacing:-1.28px;line-height:20px;white-space:nowrap">1x</p>
+            <p data-node="459:18940" style="position:absolute;left:65px;top:14.07px;font-size:16px;color:#1317e4;letter-spacing:-0.64px;line-height:14px;white-space:nowrap">U2 &ldquo;Energizer Ignition Bay&rdquo;<br>ORDER FROM ONLINE STORE</p>
+            <div data-node="459:18941" style="position:absolute;left:305px;top:10.18px;width:30px;height:30px;border-radius:0px 0px 0px 0px;opacity:0.7">
+              <div data-node="459:18942" style="position:absolute;left:0px;top:-0px;width:30px;height:30px;background:#d5d4d4;border-radius:26px"></div>
+              <div data-node="459:18944" style="position:absolute;left:7.53px;top:7.42px;width:15.05px;height:15.05px;border-radius:5px">
+                <div data-node="459:18945" style="position:absolute;left:0.47px;top:0.47px;width:14.11px;height:14.11px;background:#ffffff;border-radius:5px"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-node="459:18946" style="position:absolute;left:46px;top:6px;width:294px;height:18px;background:#ffffff">
+        <p data-node="459:18947" style="position:absolute;left:0px;top:0px;font-size:32px;color:#1317e4;letter-spacing:-1.28px;line-height:14px;white-space:nowrap">ALL</p>
+        <p data-node="459:18948" style="position:absolute;left:86px;top:3.5px;font-size:20px;color:#1317e4;letter-spacing:-0.8px;line-height:14px;opacity:0.5;white-space:nowrap">COMPLETED</p>
+        <p data-node="459:18949" style="position:absolute;left:210px;top:3.5px;font-size:20px;color:#1317e4;letter-spacing:-0.8px;line-height:14px;opacity:0.5;white-space:nowrap">CANCELLED</p>
+      </div>
+      <div data-node="459:18950" style="position:absolute;left:89px;top:-0px;width:6px;height:6px;border-radius:26px">
+        <div data-node="459:18951" style="position:absolute;left:0px;top:0px;width:6px;height:6px;background:#1fcd12;border-radius:26px"></div>
+      </div>
+    </div>
+    <div data-node="459:18953" style="position:absolute;left:15px;top:0px;width:357px;height:24px">
+      <div data-node="459:18954" style="position:absolute;left:0px;top:0px;width:111px;height:24px;background:#1317e4;border-radius:8px">
+        <p data-node="459:18955" style="position:absolute;left:5px;top:5px;font-size:24px;color:#ffffff;letter-spacing:-0.96px;line-height:14px;white-space:nowrap">IN-PERSON</p>
+      </div>
+      <div data-node="459:18956" style="position:absolute;left:145px;top:0px;width:78px;height:24px;background:#ffffff;border-radius:8px">
+        <p data-node="459:18957" style="position:absolute;left:5px;top:5px;font-size:24px;color:#1317e4;letter-spacing:-0.96px;line-height:14px;white-space:nowrap">ONLINE</p>
+      </div>
+      <div data-node="459:18958" style="position:absolute;left:257px;top:0px;width:100px;height:24px">
+        <p data-node="459:18959" style="position:absolute;left:5px;top:5px;font-size:24px;color:#1317e4;letter-spacing:-0.96px;line-height:14px;white-space:nowrap">BOOKINGS</p>
+      </div>
+    </div>
+  </div>
+  <div data-node="459:18960" style="position:absolute;left:194px;top:8px;width:44px;height:4px;background:#000000;border-radius:2px"></div>
+</div><div data-node="1:4298" style="position:absolute;left:0;top:1231px;width:440px;
 height:480px"></div><div data-node="1:4376" style="position:absolute;left:0;top:0;width:440px;height:124px;background:linear-gradient(180deg,rgba(255,255,255,1) 0%,rgba(255,255,255,.57) 43%,rgba(255,255,255,0) 100%)"></div>`;
