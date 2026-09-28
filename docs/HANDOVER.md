@@ -79,6 +79,16 @@ this repo's history came from breaking one of them.
 6. Run all four gates. Then `npm run build` (fails if `VITE_API_ORIGIN` is
    unset and `VITE_EMBEDDED_API` is not `true`).
 
+## Fonts
+
+The pixel faces are Velvetyne's **Jgs** family (SIL OFL): `jgs7` is every
+heading/label/button, `jgs5` the LED readouts and tickers. Both are committed
+under `web/public/fonts/`, byte-identical to the upstream repo. The whole
+upstream repository also ships at the repo root as `jgs-main.zip`, so the
+masters can be refreshed offline; it carries `jgs5`, `jgs7`, `jgs9` and the
+`jgs_Font` master (the last two are not used by any artboard). Inventory and
+licences are in `web/public/fonts/README.txt`.
+
 ## Asset workflow (pictures you bring in a zip)
 
 Pictures for the *drawn* artboards (product tiles, the shop strip/grid, the
