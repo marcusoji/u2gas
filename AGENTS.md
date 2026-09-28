@@ -176,10 +176,22 @@ drawn `HISTORY` heading, the month strip, the panel, the top fade, the
 watermark, the copyright ŌĆö and paints live receipts at the two card boxes the
 file reserves. `HistoryReceipt.tsx` is the row template, carrying the drawing's
 measurements verbatim: 241px paper, `drop-shadow(0 4px 24px rgba(0,0,0,.18))`,
-`RECEIPT` at 14px `-0.56px` 17px down, the date at 32px `-1.28px` 37px down,
-rows at 12px `-0.48px` 9px apart from 90px, the status strip 241x70 `#1317e4`
-with a 1px `#797bf4` edge. Its styles live in `figma-route.css`, not inline, and
-must be changed with the drawing.
+`RECEIPT` at 14px `-0.56px` 17px down, the date at 32px `-1.28px` 37px down.
+
+The re-issued file redrew the receipt body, and the old row model no longer
+matches it. Each line is a **223×37 block 45px apart** from the card's top 87
+(1:2134's rows sit at 87 and 132), not a 12px flex row 9px apart: a 33×37
+product image at the block's left (`opacity: .7`), the label 10px `-0.4px` at
+x33, a dotted leader at x128, `₦` 10px at x177 and the amount 14px `-0.56px`
+at x183. The 100×100 QR (`373:11504`) is stamped 69px below the last row, so
+it follows the row count. The status strip keeps its 241×70 `#1317e4` with a
+1px `#797bf4` edge and its 16px `-0.64px` label, but the dashed slot (1:2201)
+is gone: the file draws a **four-segment progress bar** (445:16125), 158×20
+at (40,38), segments 38×6 radius 3 at x 0/40/80/120 with the last unfilled,
+and `In motion` 10px beneath. The month strip's chips are 24px tall and now
+read MARCH…DECEMBER, 24px type `-0.96px`. All of this lives in
+`figma-route.css` and `HistoryReceipt.tsx`, not inline, and must be changed
+with the drawing.
 
 The receipts are a **row, not a list**. The file draws `1:2134` at x=60 and
 `1:2170` at x=341 ŌĆö 241 wide, 40px apart ŌĆö so the second is cut by the 440px
@@ -506,4 +518,52 @@ draws customer, cashier (`staff`), driver and admin only. It is gone from the
 `Role` unions (front and Worker), `requireRole`, the add-staff vocabulary, the
 embedded fixtures, `app_role` and the migrations; admin overrides and low-stock
 alerts are admin-only now.
+
+## The re-issue is per-board, and a geometry join is not enough to see it
+
+The four gates all compare the *gallery* to the *generated markup* (or to the
+app's render of it). None of them reads the live file, so when the file is
+re-issued they stay green while individual boards have genuinely moved. The way
+to find which boards actually changed is to compare each gallery frame to its
+live counterpart, and the trap is the pairing itself.
+
+The old geometry join (score each gallery frame against every live frame by box
+overlap) produced false pairs: it matched `1:3461` (a 1739-tall cashier NOTIF
+board) to `475:19526` (the 1739-tall admin NOTIF board) because their empty
+chrome overlapped, and it matched `1:2847` (admin GAS HISTORY) to the
+`GAS HISTORY` live frame by name but scored the *wrong* `GAS HISTORY` when two
+existed. Both directions produce noise that reads as "the whole app drifted".
+
+Pair by **name + height** from the gallery caption instead — `figcaption`'s
+`<b>APP</b>Title` and the `440×H` in its `<em>` — then disambiguate the
+duplicate names (`HOME`, `NOTIF STATE`, `DIVIDER`) with the geometry score only
+as a tie-break. `.figdiff/namemap.py` writes that map; `.figdiff/setdiff.py`
+then compares each pair's *own-text* set (a node's direct text, not its
+descendants — `dumpref.mjs` now dumps `own` alongside `text` for this) and
+reports the boards whose vocabulary really differs. Run those two after any
+re-issue; they are the only thing that sees live drift.
+
+What the comparison showed for this re-issue, and what it means:
+
+- **The vocabulary deltas that are real:** TRANS HISTORY (months
+  MARCH…DECEMBER, the QR, the progress bar, `In motion`, `RECEIPT`), and the
+  admin GAS HISTORY panel now reads `2 TONS - ADDED BY MR GIFT` (the `23rd` and
+  `30th` history rows). Those boards are the copy pass.
+- **The rest is mostly not drift.** `AMOUNT IN NAIRA`/`1KG`/`UPDATE`/`WALK-IN`
+  on the PAY boards are the *drawn* labels the gallery already carries, and
+  `C0PYRIGHT`/`Today’s Rate` are the known re-issue strings — `setdiff.py`
+  normalises the punctuation-only forms away so they do not mask a real delta.
+- **The scan screens are a redraw, not a copy pass.** The live scanner body is
+  now an image-backed frame (`Frame 60` holding `Frame 65`), so bringing it
+  across is an image-dependent job; the copy refinements can land first and the
+  scanner body follows separately.
+- **`BLACK CONCEPT` (`306:8081`) and `PERSONAL DTS` (`376:11738`) are live
+  frames the gallery never carried** — BLACK CONCEPT is the profile board with
+  the drawn `RECENT HISTORY`, and PERSONAL DTS is the profile-with-history
+  variant. `1:2090`/`1:2244` are their stale counterparts. Decide per board
+  whether it is "not designed yet" (leave) or a superseded frame (retire).
+
+Do not hand-edit `web/src/figma/screens/*` to "fix" a delta the join reported
+until the pair is confirmed by name+height, or a mis-pairing will move the wrong
+board's copy.
 

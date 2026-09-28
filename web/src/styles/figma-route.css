@@ -351,17 +351,66 @@
   letter-spacing: -1.28px;
   color: #1317e4;
 }
-.history-card-rows { position: absolute; left: 9px; right: 9px; top: 90px; }
-.history-card-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  letter-spacing: -0.48px;
-  color: #1317e4;
-  margin-bottom: 9px;
+.history-card-rows { position: absolute; left: 9px; top: 87px; width: 223px; }
+/* Each row is the file's 223x37 block, 45px apart (1:2134's rows sit at top
+   87 and 132). The product image is 33x37 at the row's left, opacity .7; the
+   label is 10px at x33, the leader 10px at x128, `₦` 10px at x177 and the
+   amount 14px at x183. */
+.history-card-row { position: absolute; left: 0; width: 223px; height: 37px; }
+.history-card-row-img {
+  position: absolute;
+  left: 0; top: 0;
+  width: 33px; height: 37px;
+  background-image: var(--a1);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: .7;
 }
-.history-card-row b { font-weight: 400; white-space: nowrap; }
+.history-card-row-label {
+  position: absolute;
+  left: 33px; top: 10px;
+  width: 84px;
+  font-size: 10px;
+  line-height: 8px;
+  letter-spacing: -0.4px;
+  color: #1317e4;
+}
+.history-card-row-leader {
+  position: absolute;
+  left: 128px; top: 19px;
+  font-size: 10px;
+  line-height: 6px;
+  letter-spacing: -0.4px;
+  color: #1317e4;
+}
+.history-card-row-naira {
+  position: absolute;
+  left: 177px; top: 18px;
+  font-size: 10px;
+  line-height: 6px;
+  letter-spacing: -0.4px;
+  color: #1317e4;
+}
+.history-card-row-value {
+  position: absolute;
+  left: 183px; top: 16px;
+  font-size: 14px;
+  line-height: 8px;
+  letter-spacing: -0.56px;
+  color: #1317e4;
+  font-weight: 400;
+  white-space: nowrap;
+}
+/* The re-issued file stamps a 100x100 QR (373:11504) on the paper, 69px below
+   the last row. */
+.history-card-qr {
+  display: block;
+  width: 100px; height: 100px;
+  border-radius: 8px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
 
 .history-strip {
   width: 241px;
@@ -380,12 +429,25 @@
   color: #fff;
   white-space: nowrap;
 }
-.history-strip-slot {
+/* The re-issued file replaced the dashed slot (1:2201) with a four-segment
+   progress bar (445:16125): 158x20 at (40,38), segments 38x6 radius 3 at
+   0/40/80/120, the last unfilled, with `In motion` 10px beneath. */
+.history-strip-bar { position: absolute; left: 40px; top: 38px; width: 158px; height: 20px; }
+.history-strip-motion {
   position: absolute;
-  left: 40px; top: 38px;
-  width: 158px; height: 20px;
-  border: 1px dashed rgba(255, 255, 255, .5);
-  border-radius: 4px;
+  left: 59px; top: 14px;
+  font-size: 10px;
+  line-height: 6px;
+  letter-spacing: -0.4px;
+  color: #fff;
+  white-space: nowrap;
+}
+.history-strip-seg {
+  position: absolute;
+  top: 0;
+  width: 38px; height: 6px;
+  border-radius: 3px;
+  background: #fff;
 }
 
 /* The month strip is drawn 965px wide — a scroll rail cropped by the 440px
@@ -411,9 +473,9 @@
   border: 1px solid #1317e4;
   border-radius: 8px;
   font: inherit;
-  font-size: 16px;
+  font-size: 24px;
   line-height: 1;
-  letter-spacing: -0.64px;
+  letter-spacing: -0.96px;
   cursor: pointer;
 }
 /* The drawing lays the receipts out in a ROW, not a list: 1:2134 sits at x=60

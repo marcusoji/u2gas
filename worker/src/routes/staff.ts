@@ -231,7 +231,7 @@ staff.post("/payments", rateLimit("staffpay", 120, 60_000),
       refund_required: true,
       payment_id: result.payment_id,
       order_number: order.order_number,
-      message: "THE HOLD EXPIRED — TAKE THIS TO A MANAGER FOR REFUND",
+      message: "THE HOLD EXPIRED — TAKE THIS TO AN ADMIN FOR REFUND",
     });
   }
 

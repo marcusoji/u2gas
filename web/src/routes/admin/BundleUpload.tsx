@@ -121,7 +121,7 @@ export default function BundleUpload() {
   }, [existingIds.join(","), canCheck]);
 
   const compatible = checked && violations.length === 0;
-  const isManager = profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
 
   // Only a *known* conflict blocks publishing. A bundle made entirely of new
   // items cannot be checked here — they have no product_id yet — so requiring
@@ -374,12 +374,12 @@ export default function BundleUpload() {
         </div>
       )}
 
-      {/* --- Manager override ---------------------------------------------- */}
-      {blocked && isManager && (
+      {/* --- Admin override ------------------------------------------------ */}
+      {blocked && isAdmin && (
         <div style={{ marginTop: "var(--s-5)" }}>
           {!overriding ? (
             <Pill variant="ghost" onClick={() => setOverriding(true)}>
-              OVERRIDE — MANAGER ONLY
+              OVERRIDE — ADMIN ONLY
             </Pill>
           ) : (
             <div className="stack is-tight">
@@ -397,9 +397,9 @@ export default function BundleUpload() {
         </div>
       )}
 
-      {blocked && !isManager && (
+      {blocked && !isAdmin && (
         <p className="label" style={{ marginTop: "var(--s-4)", lineHeight: 2 }}>
-          ONLY A MANAGER CAN PUBLISH THIS ANYWAY
+          ONLY AN ADMIN CAN PUBLISH THIS ANYWAY
         </p>
       )}
 

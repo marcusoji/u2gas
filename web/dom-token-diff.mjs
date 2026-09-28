@@ -299,10 +299,16 @@ const STATE_TOGGLED = new Set([
 // comparable, the structure and tokens still are.
 const TEMPLATE_ROWS_HIDDEN = new Set([
   // the sample receipts and the status strip
-  "1:2134", "1:2170", "1:2199", "1:2200", "1:2201",
+  "1:2134", "1:2170", "1:2199", "1:2200",
   // the sample month strip (1:2115) and its nine chips
   "1:2115", "1:2116", "1:2118", "1:2120", "1:2122", "1:2124",
   "1:2126", "1:2128", "1:2130", "1:2132",
+  // the re-issued file redrew the strip's dashed slot (1:2201) as a four-segment
+  // progress bar (`445:16125` and its label/segments) and added a QR code to
+  // each sample receipt (`373:11502`/`373:11504`, `373:11733`/`373:11734`).
+  // They are children of the hidden template rows, so they are template too.
+  "445:16125", "445:16124", "447:16134", "447:16133", "447:16132", "445:16122",
+  "373:11502", "373:11504", "373:11733", "373:11734",
 ]);
 
 // The artboards are Figma's *frozen example* of each screen — the gallery

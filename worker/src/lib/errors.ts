@@ -171,7 +171,7 @@ const MAP: Record<string, Mapping> = {
   },
   BUNDLE_SIZE: { status: 400, message: () => "A BUNDLE HOLDS TWO OR THREE ITEMS" },
   BUNDLE_DUPLICATE_ITEM: { status: 400, message: () => "THAT ITEM IS ALREADY IN THIS BUNDLE" },
-  OVERRIDE_FORBIDDEN: { status: 403, message: () => "ONLY A MANAGER CAN OVERRIDE THIS" },
+  OVERRIDE_FORBIDDEN: { status: 403, message: () => "ONLY AN ADMIN CAN OVERRIDE THIS" },
   OVERRIDE_REASON_REQUIRED: {
     status: 400,
     message: () => "WRITE WHY YOU'RE OVERRIDING THIS — AT LEAST TEN CHARACTERS",
