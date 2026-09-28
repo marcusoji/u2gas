@@ -309,6 +309,12 @@ const TEMPLATE_ROWS_HIDDEN = new Set([
   // They are children of the hidden template rows, so they are template too.
   "445:16125", "445:16124", "447:16134", "447:16133", "447:16132", "445:16122",
   "373:11502", "373:11504", "373:11733", "373:11734",
+  // Admin GAS HISTORY (`1:2847`) draws a history panel whose month strip
+  // (`475:19788`) is the file's sample months and whose two cards
+  // (`475:19808`/`475:19840`) are the file's example movements. The route hides
+  // all three and paints the depot's real entries at the same coordinates, so
+  // they are the row template's source, not content.
+  "475:19788", "475:19808", "475:19840",
 ]);
 
 // The artboards are Figma's *frozen example* of each screen — the gallery
