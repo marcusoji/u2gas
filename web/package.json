@@ -11,9 +11,7 @@
     "lighthouse": "lhci autorun",
     "check:assets": "node scripts/check-assets.mjs",
     "check:figma-registry": "node scripts/check-figma-registry.mjs",
-    "check:frontend": "node scripts/check-assets.mjs && node scripts/check-figma-registry.mjs",
-    "check:figma-pixels": "node genboards.mjs && node static-diff.mjs",
-    "check:dom-parity": "node dom-token-diff.mjs"
+    "check:frontend": "node scripts/check-assets.mjs && node scripts/check-figma-registry.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

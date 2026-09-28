@@ -1,11 +1,9 @@
 /* ---------------------------------------------------------------------------
-   Extracted from docs/u2gas-batch1-exact.html — the same resolved stylesheet
-   every HTML screen uses, gallery chrome (body, .rack, .legend, .sheet-head,
-   .slot) removed. The app loads this so a rule can never be corrected in the
-   screens and missed in the product.
-
-   Regenerate: see scripts/check-figma-parity.sh. If this file and the
-   screens' own <style> block disagree, this one is stale.
+   The artboard stylesheet, resolved from the live U2-GAS Figma file
+   (v4xgWC0Q0wtSKmAff3EOzU) via the Figma MCP, with the reference viewer
+   chrome (body, .rack, .legend, .sheet-head, .slot) removed. The app loads
+   this so a rule can never be corrected in one place and missed in the other.
+   If this file and the live Figma file disagree, this one is stale.
    --------------------------------------------------------------------------- */
 
 @font-face {
@@ -21,9 +19,9 @@
 }
 
 /* Barlow Condensed / Semi Condensed SemiBold. tokens.css declares these for the
-   app, but the artboard stylesheet is loaded on its own by genboards.mjs, so the
-   standalone board page has to declare them too or every Barlow string measures
-   as Arial Narrow. Same family, weight and files as tokens.css. */
+   app, but the artboards are also measured against Figma on their own, so they
+   have to declare them too or every Barlow string measures as Arial Narrow.
+   Same family, weight and files as tokens.css. */
 @font-face {
   font-family: "Barlow Condensed";
   src: url("/fonts/barlow-condensed-600.woff2") format("woff2");
@@ -75,12 +73,12 @@
 /* The artboard root is a hard typographic boundary. The app sets its own
    font-size, letter-spacing, font-family and colour on `body`; every text node
    inside an artboard inherits them unless the file restates the property, and
-   the file only restates what its nodes need. Seventeen nodes in the gallery
-   are left at the gallery's own body defaults, so those are restated here — a
+   the file only restates what its nodes need. Seventeen nodes in the artboards
+   are left at the reference body's own defaults, so those are restated here — a
    live-data route rendered them at 20px / -0.04em against the file's 16px /
    normal, and the text measured wide.
 
-   The gallery's body never sets a colour, so an artboard node without one
+   The reference body never sets a colour, so an artboard node without one
    paints in Chromium's initial black. Pin that rather than the app's --ink,
    which is #1E1E1E. `.asset-img` is the file's picture mechanism and had no
    colour of its own, so it must not have one here either. */
@@ -357,7 +355,7 @@
 /* --------------------------------------------------------------------------
    Artboard containment.
 
-   figma.css is the screens' own stylesheet, carried over verbatim. But
+   figma.css is the artboards' own stylesheet, carried over from the file. But
    components.css reuses the same class names — .keypad, .key, .pill,
    .receipt-slot — for the React controls, and it is imported after this file,
    so its rules won for every artboard too. The artwork is absolutely

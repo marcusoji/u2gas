@@ -278,9 +278,9 @@ export default function Home() {
       {/*
         figma 1:251 — the whole terminal (ticker, LED readout, keypad,
         receipt slot, watermark) as the file draws it. See
-        web/src/figma/README.md and scripts/check-figma-parity.sh: this is
-        the same markup docs/u2gas-batch1-exact.html carries for HOME, so the
-        two cannot drift apart the way the hand-built version did.
+        web/src/figma/README.md: this is the same markup the live Figma file
+        (v4xgWC0Q0wtSKmAff3EOzU) carries for HOME, so the two cannot drift
+        apart the way the hand-built version did.
 
         1:257 is the ticker text, 1:296 the LED readout — the only two spots
         with live data. Everything else is the file's own placement.

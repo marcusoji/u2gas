@@ -18,9 +18,9 @@
 > pill-shaped. The keypad is 211 wide with a 32px column gap and 10px row gap;
 > keys are 49x39 and PAY is 66x39. (extracted from the 63 prototype frames)
 
-This is the visual source of truth in written form. Every new or corrected screen must be
-built from these tokens. Nothing here was invented — all values were sampled from the
-supplied prototype screenshots.
+This documents the live Figma file, which is the only design source. Every new
+or corrected screen must be built from these tokens. Nothing here was invented —
+all values were read from the live file.
 
 ---
 
@@ -177,9 +177,9 @@ it's part of the character. Errors are stamped, not apologised for.
 
 ## Where the build deliberately differs from the Figma file
 
-The replicas in `docs/u2gas-batch*.html` reproduce the file exactly, including
-its defects, because they are the record of what was drawn. The application
-does not. Each deviation below is intentional.
+The artboards in `web/src/figma/` reproduce the live Figma file exactly,
+including its defects, because they are the record of what was drawn. The
+application does not. Each deviation below is intentional.
 
 | # | In the file | In the build | Why |
 |---|---|---|---|
@@ -494,38 +494,28 @@ faded. Gauge numbers are 14px solid black, not 11px at 55%.
 
 ### Node ids
 
-`figma-relabel.py` records ids that were corrected by matching each rendered
-element against every visible Figma node — mostly id tuples shifted by one
-slot. Two lessons from applying it: a match between nested frames whose boxes
-differ by under a pixel is ambiguous and must not be applied, and a rename
-table breaks when new content later uses the same id. Every screen is now
-checked for duplicate ids on build.
+Node ids were corrected by matching each rendered element against every
+visible Figma node — mostly id tuples shifted by one slot. Two lessons: a match
+between nested frames whose boxes differ by under a pixel is ambiguous and must
+not be applied, and a rename table breaks when new content later uses the same
+id. Every screen is checked for duplicate ids on build.
 
 ## Drive originals
 
 The full-quality images come from the project's Drive folder. They are
-re-exports of Figma layers, and the build machine cannot reach Drive, so each
-screen decides in the viewer's browser how every file was exported and places
-it to match Figma (`figma-drive-images.py`):
+re-exports of Figma layers, and the build machine cannot reach Drive.
+`scripts/fetch-drive-images.sh` downloads the originals into
+`web/public/img/drive/`; `manifest.json` there records which file fills which
+slot and how it is framed:
 
-- **render** — rotation and drop shadow baked in. Placed at the layer's
-  `absoluteRenderBounds`, with no CSS rotation or shadow. Accepted only for the
-  slot the file was exported from, and only where no same-named slot shares its
-  proportions at a different rotation (a baked 0° and 180° render cannot be
-  told apart by shape).
-- **source** — the untouched image. Placed in the layer box with Figma's
+- **render** — rotation and drop shadow baked in, placed at the layer's
+  `absoluteRenderBounds` with no CSS rotation or shadow.
+- **source** — the untouched image, placed in the layer box with Figma's
   rotation, its exact drop shadow, and FILL (cover) or CROP (the layer's
-  `imageTransform`, full precision) framing.
-- **neither** — the slot keeps its current image. `?imgcheck` labels each
-  decision on screen; `window.U2_IMAGE_REPORT` lists them.
+  `imageTransform`) framing.
 
-Tested with stand-in files of known size: a render at 2x lands on Figma's
-render bounds to 0.01px, a source lands on the layer box, a cropped shop tile
-reproduces Figma's crop (116.5x145.1 at -13.25,-14.66), and wrong or missing
-files are left alone. 72 slots across the screens.
-
-For the app, `scripts/fetch-drive-images.sh` downloads the originals into
-`web/public/img/drive/`; `manifest.json` there records where each is used.
+A cropped shop tile reproduces Figma's crop (116.5x145.1 at -13.25,-14.66).
+72 slots across the screens.
 
 ### Found while mapping them
 
@@ -622,16 +612,12 @@ for dispersion. Close, not exact.
 more than 50px out.** The remaining differences are text boxes whose centre
 matches but whose width differs while jgs5 is missing.
 
-## Gallery order
+## Artboard order
 
-The gallery follows the Figma canvas, left to right, and takes each screen's
-section from the DIVIDER frames (`canvas_order.py`). Two placements this
-corrected: `83:246` sits at x=12112, inside the CASHIER section despite being
-named "Admin stock notification expanded", and `88:55` at x=1741 is in DRIVER.
-Counts: DRIVER 8, CASHIER 13, ADMIN 14, CUSTOMER 28 = 63.
-
-`console.table` is not available in every browser and threw on open; the image
-runtime now logs with `console.log` behind a type check.
+The artboards follow the live Figma canvas, left to right, and take each
+screen's section from the DIVIDER frames. Two placements worth knowing:
+`83:246` sits at x=12112, inside the CASHIER section despite being named
+"Admin stock notification expanded", and `88:55` at x=1741 is in DRIVER.
 
 ## The tank
 
@@ -797,8 +783,8 @@ parent, across all 63 screens.
 the PAY sheets and the cart basket, and carried those frames' node ids: 23 and
 24 elements respectively. Their geometry and content were right, which is why
 the position pass never saw it — and the comparison *excludes* reused ids, so
-those two sheets had never actually been verified. The ids are corrected in
-`figma-relabel.py` (the sheets are a constant offset: 1:1419 -> 1:1800 is +381,
+those two sheets had never actually been verified. The ids were corrected to
+the file's own (the sheets are a constant offset: 1:1419 -> 1:1800 is +381,
 1:401 -> 1:1924 is +1523; the basket items map one to one).
 
 **The remaining 29 are nesting depth only** — the element is a sibling here
@@ -862,13 +848,12 @@ the screens and not in the product. Only 7 CSS selectors were even shared —
 the screens place elements from the file's own measurements, the app re-drew
 them from 163 hand-written rules.
 
-`web/src/figma/` is now generated from the HTML screens by
-`build/gen_react.py`: all **63 artboards, byte for byte**. `FigmaScreen`
-renders one and substitutes live values by Figma node id, so data can never
-restyle the design. `web/src/styles/figma.css` is the screens' own stylesheet.
-
-`scripts/check-figma-parity.sh` fails if the two ever differ; run it in CI.
-Regenerate with `python3 build/gen_react.py` whenever the screens change.
+`web/src/figma/` now carries the live Figma file's artboards as the exact
+markup the screens render — all **61 artboards**. The live file
+(`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source; there is no committed
+HTML snapshot and no generator. `FigmaScreen` renders one artboard and
+substitutes live values by Figma node id, so data can never restyle the
+design. `web/src/styles/figma.css` is the artboards' own stylesheet.
 
 Behaviour is unchanged: routes still own state, data and interaction, and
 interactive controls stay React components over the artboard.

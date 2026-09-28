@@ -45,7 +45,7 @@ npm run dev
 5. The real Vite application opens in a browser.
 6. Check the registered application routes in the actual React runtime, not the static Figma HTML alone.
 7. Capture screenshots at the Figma reference viewport (440px-wide mobile artboards where applicable).
-8. Compare the rendered React screens against `u2gas-all-screens-2.html` / the Figma reference screens for spacing, typography, sizing, borders, colors, icons, imagery, and state.
+8. Compare the rendered React screens against the live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) for spacing, typography, sizing, borders, colors, icons, imagery, and state.
 9. Record console errors and failed network requests separately from visual differences.
 
 ## Important

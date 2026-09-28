@@ -12,9 +12,10 @@ type Scope = "active" | "history";
  *
  * The re-issued file draws the same sheet twice with a role subtitle —
  * `DRIVER - HISTORY` and `CASHIER - HISTORY` — and a four-row receipt template
- * (product thumbnail, `1x`, the order line, the LED). The snapshot's plain rows
- * were redrawn, so the panel is rebuilt in the gallery and the route binds the
- * order line by the ids the splice adds (`<panel>-row<i>-line`), four per board.
+ * (product thumbnail, `1x`, the order line, the LED). The plain rows the app
+ * carried were redrawn, so the panel is rebuilt from the file and the route
+ * binds the order line by the ids the rebuild adds (`<panel>-row<i>-line`),
+ * four per board.
  */
 export default function StaffHistory() {
   const { staffId } = useParams();

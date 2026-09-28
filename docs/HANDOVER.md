@@ -34,28 +34,27 @@ npm run check:assets        # no CSS font/image reference is missing
 npm run typecheck           # tsc --noEmit
 ```
 
-The four parity gates, and what each actually proves (they are not
-interchangeable — see AGENTS.md "What the four parity checks cannot see"):
+The checks:
 
 | command | requires | proves |
 |---|---|---|
-| `bash scripts/check-figma-parity.sh` (repo root) | python3 | generated `web/src/figma/` == `docs/u2gas-all-screens.html`, byte for byte |
-| `npm run check:figma-pixels` | dev server on :12001 | the app's artboard *rendering* matches the gallery |
-| `npm run check:dom-parity` | dev server on :12001 | the live *demo* DOM matches the gallery (structure + tokens) |
 | `npm run check:frontend` | — | registry/assets consistency |
 
 ## The one contract to keep
 
-`docs/u2gas-all-screens.html` is the **design source of truth**. The app renders
-that markup verbatim through `FigmaScreen` / `FigmaRouteFrame`. Two rules:
+The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`, page `u2`) is the only
+design source.** There is no committed HTML snapshot. The app carries the file's
+markup verbatim in `web/src/figma/` and renders it through `FigmaScreen` /
+`FigmaRouteFrame`. Two rules:
 
-1. **Never hand-edit `web/src/figma/{assets,screens,artboards}.ts`.** They are
-   generated. After changing the gallery, run `python3 build/gen_react.py` from
-   the repo root.
+1. **`web/src/figma/` is not generated from anything in this repo.** To change a
+   screen, change it in Figma, re-read the frame through the Figma MCP, and
+   update the matching module by hand. Never edit a screen without a matching
+   live-file change.
 2. **Nothing may reach inside `.frame`** to change layout, colour, or text
    metrics. A value the file draws is drawn text, including its typos
-   (`C0PYRIGHT`, `INSUFFICIENT- Please redude`) — the parity harness compares
-   character for character.
+   (`C0PYRIGHT`, `INSUFFICIENT- Please redude`) — match it character for
+   character.
 
 When you add a back control, a new page, or a state, clear it against the rules
 in AGENTS.md first (visible-back-hotspot, state-vs-template, `data-node`
@@ -65,19 +64,18 @@ this repo's history came from breaking one of them.
 ## Adding a new page
 
 1. Draw it in Figma. Get the frame's node id.
-2. Add it to the gallery (`docs/u2gas-all-screens.html`) as a `<figure
-   class="slot">` with a `<div class="frame" data-node="…">` and a
-   `<figcaption>` naming app + title + `440×H`.
-3. `python3 build/gen_react.py` → regenerates `web/src/figma/screens/*.ts`.
-4. Register the artboard in `web/src/figma/artboards.ts` and add a route that
-   renders `<FigmaScreen node="…" />`. A registry entry must name an artboard
-   *and* say which row template fills it, if any; `check:frontend` fails on a
-   claimed-but-unrendered board.
-5. Bind live data with `values={{ "node-id": text }}`; text you leave unbound
+2. Read the frame through the Figma MCP (file `v4xgWC0Q0wtSKmAff3EOzU`) and add
+   its markup to `web/src/figma/screens/<Name>.ts`, then register it in
+   `web/src/figma/artboards.ts`.
+3. Add a route that renders `<FigmaScreen node="…" />`. A registry entry in
+   `routeRegistry.ts` must name an artboard *and* say which row template fills
+   it, if any; `check:frontend` fails on a claimed-but-unrendered board.
+4. Bind live data with `values={{ "node-id": text }}`; text you leave unbound
    keeps the file's drawn sample. Rows the file does not id must be painted
    over a reserved band (see the `/history` and `/cart` patterns in AGENTS.md).
-6. Run all four gates. Then `npm run build` (fails if `VITE_API_ORIGIN` is
-   unset and `VITE_EMBEDDED_API` is not `true`).
+5. Run `npm run check:frontend`, `npm run check:assets` and `npm run typecheck`.
+   Then `npm run build` (fails if `VITE_API_ORIGIN` is unset and
+   `VITE_EMBEDDED_API` is not `true`).
 
 ## Fonts
 
@@ -89,32 +87,32 @@ masters can be refreshed offline; it carries `jgs5`, `jgs7`, `jgs9` and the
 `jgs_Font` master (the last two are not used by any artboard). Inventory and
 licences are in `web/public/fonts/README.txt`.
 
-## Asset workflow (pictures you bring in a zip)
+## Asset workflow (pictures the artboards embed)
 
 Pictures for the *drawn* artboards (product tiles, the shop strip/grid, the
-notification panel thumbnail and pin map) are the gallery's `--aN` custom
-properties in `docs/u2gas-all-screens.html`, painted by
-`.frame .asset-img { background-image: var(--src) }`.
+notification panel thumbnail and pin map) are the modules in
+`web/src/figma/assets.ts`, one data URI each, painted by the artboard markup's
+`--src` custom property.
 
-To add new drawn pictures:
+To add or replace a drawn picture:
 
-1. Put the source files somewhere the repo does not track (e.g. `.figdiff/`,
-   which is gitignored) and downscale them.
-2. Append each as `--aN: url("data:image/webp;base64,…")` (or a file under
-   `web/public/`) to the gallery's `:root` asset block.
-3. Point the relevant `<span class="asset-img" style="--src:var(--aN)">` at it.
-4. `python3 build/gen_react.py` and re-run the pixel gate.
+1. Change the picture in the live Figma file.
+2. Re-read the frame through the Figma MCP and export the image fill; put the
+   source somewhere the repo does not track (e.g. `.figdiff/`, gitignored) and
+   downscale it.
+3. Add or update the matching `export const aN = "data:image/…"` in
+   `assets.ts`, and point the relevant artboard span's `--src` at it.
+4. Compare the app's render against the live frame.
 
 Live pictures a route supplies at runtime (the camera feed, user avatars,
-product photos from storage) do **not** belong in the gallery: the gallery
-keeps the honest `camera feed` placeholder and the route paints a real
+product photos from storage) do **not** belong in the drawn artboards: the
+drawing keeps the honest `camera feed` placeholder and the route paints a real
 `<Scanner>`/`<img>` over that box. Do not stamp a screenshot of a live feed
 into the drawing.
 
 ## Verified state (last commit on `main`)
 
-- All 61 artboards: `check:figma-pixels` worst **0%**, `check:dom-parity`
-  **CLEAN**, gallery byte-identical, `tsc` clean.
+- All 61 artboards render, `tsc` clean, `check:frontend` passes.
 - Done since the GIFT-TECH re-issue: manager role removed; TRANS HISTORY, admin
   GAS HISTORY and the seven notification panels redrawn; shop strip + shop grid
   added where the live file draws them; thumb-glow state colours; admin gauge
@@ -123,12 +121,13 @@ into the drawing.
 
 ## Still to do (verified deltas against live Figma)
 
-All coordinates below are board-relative, read from the live `u2` page
-(`152:2265`) via the Figma MCP, with Figma's 20px export margin cropped.
+All coordinates below are board-relative, read from the live file
+(`v4xgWC0Q0wtSKmAff3EOzU`, page `u2`) via the Figma MCP, with Figma's 20px
+export margin cropped.
 
 1. **Walk-in panels — the four outer frames (`1:4466`, `1:4527`, `1:4592`,
    `1:4047`)** are redrawn, not re-worded, so the panel internals must be
-   spliced (same technique as the notif panels). Confirmed:
+   rebuilt (same technique as the notif panels). Confirmed:
    - `AMOUNT IN NAIRA` sits at y **177 / 179 / 178 / 162** (drawn at
      166/168/167/151) and is `#D4D4D4`, not `rgba(0,0,0,.45)`.
    - `1:4466`: LED readout box at y **182** (drawn 192); keypad at
@@ -137,15 +136,15 @@ All coordinates below are board-relative, read from the live `u2` page
      `DELIVERY OR WALK-IN` toggle extended to `1:4527`.
 2. **`1:4683` DELIVERY NOTIFS, `1:4803` COMPLETED DELIVERY** — the live file
    draws a `SEE ALL` / `ALL` / `DELIVERIES` filter row above the list that the
-   gallery lacks. Confirm against the frame, then splice.
+   app lacks. Confirm against the frame, then bring it across.
 3. **`1:2847` GAS HISTORY** — the live month strip adds `MARCH`…`DECEMBER`
    chips. Most already exist; diff the chip list before adding.
 4. **`306:8081 BLACK CONCEPT` and `376:11738 PERSONAL DTS`** — live frames the
-   gallery never carried (`1:2090` / `1:2244` are their stale counterparts).
+   app never carried (`1:2090` / `1:2244` are their stale counterparts).
    Decide per board: "not designed yet" (leave) or superseded (retire).
 5. **Scan screens** — the live scanner body is now an image-backed frame
    (`Frame 60`/`Frame 65`). This is an image-dependent redraw, tracked
    separately from the copy pass.
 
-Expected, not drift: the camera feed placeholder on 51 boards; the framed
-export's 20px border (already cropped by the comparator).
+Expected, not drift: the camera feed placeholder on the scan boards, where the
+route paints a real feed at runtime.

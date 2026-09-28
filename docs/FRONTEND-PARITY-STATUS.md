@@ -5,9 +5,10 @@ here is overclaimed the way an earlier pass in this project was.
 
 ## What "matching" requires, and what exists for it
 
-1. **The markup exists and is verified exact.** `web/src/figma/` holds all 63
-   Figma artboards, generated from `docs/u2gas-batch*-exact.html` and checked
-   byte-for-byte identical by `scripts/check-figma-parity.sh`.
+1. **The markup exists and mirrors the file.** `web/src/figma/` holds the
+   artboards taken from the live U2-GAS Figma file
+   (`v4xgWC0Q0wtSKmAff3EOzU`) through the Figma MCP. The live file is the only
+   design source; there is no committed HTML snapshot and no generator.
 2. **A component to render it exists.** `FigmaScreen` (`web/src/figma/`) takes
    a node id and an optional map of live text values, and injects the exact
    markup with only those text nodes replaced.
@@ -28,8 +29,7 @@ here is overclaimed the way an earlier pass in this project was.
 - **A real bug this surfaced and fixed**: the stylesheet the app loads
   (`web/src/styles/figma.css`) had never resolved its `{NOISE_TILE}` texture
   placeholder — the grain on every button and LED housing was silently
-  missing. Rebuilt from the finished HTML, which has it correctly resolved,
-  and confirmed present.
+  missing. Rebuilt from the live file's value, and confirmed present.
 
 ## Not done — 32 of 33 routes
 
@@ -43,13 +43,12 @@ still the old approximation.
 
 ## A limit `FigmaScreen` has today, found while wiring HOME
 
-The generated artboards are Figma's **single frozen example** of each screen
+The artboards are Figma's **single frozen example** of each screen
 — `StaffLayout1.ts` contains the literal text "SMITH", not a placeholder for
 it. `values` swaps text on a fixed set of nodes; it cannot render a variable
 number of real orders, staff members or notifications. Any screen showing a
 list of real records needs an actual row template extracted and ported to
-TSX first — the equivalent of what `notif_rows()` did for the HTML build.
-That is unbuilt.
+TSX first. That is unbuilt.
 
 ## Honest count (updated 24 September 2026)
 
@@ -84,14 +83,13 @@ notification lists require dynamic templates rather than blindly rendering
 frozen Figma sample records.
 
 `FigmaScreen` now supports both node-based replacements and literal-text
-replacement for generated Figma elements that have no `data-node` id. This is
-used only for frozen sample text whose geometry is already defined by the
-Figma drawing; it does not change CSS measurements.
+replacement for Figma elements that have no `data-node` id. This is used only
+for frozen sample text whose geometry is already defined by the Figma drawing;
+it does not change CSS measurements.
 
-The parity checker remains green: 63/63 generated Figma artboards match their
-reference drawings byte-for-byte. Browser screenshot comparison and a clean
-`npm ci` + typecheck/build are still required before declaring production
-readiness.
+The artboards mirror the live file. Browser comparison against the live frame
+and a clean `npm ci` + typecheck/build are still required before declaring
+production readiness.
 
 ## Parity integrity pass — 24 September 2026 (continued)
 

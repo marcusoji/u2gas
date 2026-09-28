@@ -910,8 +910,8 @@ img.is-unavailable { filter: blur(1.5px); }
    plate centred on it: cropped equally on both sides when the viewport is
    narrower than 440, with room around it on a desktop.
 
-   These rules belong in the shell, not in figma.css, which is the screens'
-   own stylesheet carried over byte for byte and must not gain app rules.
+   These rules belong in the shell, not in figma.css, which is the artboards'
+   own stylesheet carried over from the file and must not gain app rules.
    figma-route.css has scoped copies for the .figma-route-frame wrapper.
    --------------------------------------------------------------------------- */
 

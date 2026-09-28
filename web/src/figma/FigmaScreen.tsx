@@ -3,11 +3,11 @@ import { artboards, type FigmaArtboard } from "./artboards";
 import "../styles/figma.css";
 
 /**
- * Renders a Figma artboard exactly as the HTML screens render it.
+ * Renders a Figma artboard exactly as the live file draws it.
  *
- * The markup is generated from docs/u2gas-batch*-exact.html, so the product and
- * the reference are the same drawing: correct one and both change. See
- * README.md in this folder, and scripts/check-figma-parity.sh.
+ * The markup is taken from the live U2-GAS Figma file
+ * (v4xgWC0Q0wtSKmAff3EOzU) via the Figma MCP, so the product and the design are
+ * the same drawing. See README.md in this folder.
  *
  * Live data is substituted by value, never by restyling — `values` replaces the
  * text of the element carrying that Figma node id and leaves every measurement,
@@ -73,10 +73,10 @@ export function FigmaScreen({
       const re = new RegExp(`(data-node="${id}"[^>]*--src:url\\(')([^']*)('\\))`);
       out = out.replace(re, (_match, open, _old, close) => `${open}${escapeAttribute(src)}${close}`);
     }
-    // Some generated Figma text nodes intentionally have no data-node id.
+    // Some Figma text nodes intentionally have no data-node id.
     // Replace only their literal text, never attributes or styles.
     //
-    // The artboards are the gallery's markup, so a middle dot in a route's key
+    // The artboards mirror the file's markup, so a middle dot in a route's key
     // is `&middot;` in the file. Routes write the readable character, so the
     // file's named punctuation entities are decoded before searching. Without
     // this a key like "12 Awolowo Road, Ikoyi · 10KG" never matched, the file's
@@ -161,7 +161,7 @@ function escapeWithBreaks(s: string): string {
 }
 
 /**
- * Decode the named/numeric punctuation entities the gallery's markup uses, so a
+ * Decode the named/numeric punctuation entities the file's markup uses, so a
  * route can key a replacement on the character a reader sees (`·`) rather than
  * the file's `&middot;`. Deliberately excludes `&lt;`, `&gt;` and `&amp;`: they
  * are structural, and decoding them would let a replacement value introduce a

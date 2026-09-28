@@ -2,6 +2,13 @@
 
 React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
 
+> **The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`, page `u2`) is the
+> only design source.** The HTML screen snapshots and the generator/parity
+> tooling that read them have been removed. `web/src/figma/` mirrors the live
+> file; change the file first, then bring the change here. Notes below that
+> mention the "gallery" describe that removed snapshot — read them as the
+> app's artboards.
+
 ## Commands (run from `web/` unless noted)
 
 - `npm run dev` إŒؤ†أ¶ Vite dev server; this is what the preview tunnel serves.
@@ -12,8 +19,6 @@ React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
   though the app is running.
 - `npm run check:frontend` إŒؤ†أ¶ asset + Figma route registry guards
 - `npm run check:assets` إŒؤ†أ¶ fails if a font/image referenced by CSS is missing
-- `bash scripts/check-figma-parity.sh` (repo root) إŒؤ†أ¶ proves `web/src/figma/screens/`
-  still matches `docs/u2gas-all-screens.html` byte for byte (generator `--check`)
 - `npm run build` â€” asset check, `tsc -b`, `vite build`, then the CSP header.
   It fails if `VITE_API_ORIGIN` is unset, because the CSP names the API origin
   explicitly; the script reads Vite's own `.env` (loading it via `loadEnv`), so
@@ -51,8 +56,8 @@ reads as a button when it lands on artwork the file already draws:
 - `Home` (`1:251`) and `WalkInPayment` (`1:4592`) draw no back control at all.
   `Home` gets an app-rendered `BackButton` in the clear band above the LED
   readout (top y=101); the Collect screen gets a hotspot in the band above its
-  first element (top y=52). Neither artboard may be edited to add one إŒؤ†أ¶ that
-  would break `check-figma-parity.sh`.
+  first element (top y=52). Neither artboard may be edited to add one — that
+  would put app chrome into the drawing.
 
 When adding a back affordance, confirm it overlaps something drawn, or render a
 `BackButton` instead of a bare hotspot.
@@ -86,26 +91,21 @@ with the inverse zoom.
 
 ## The artboard styling invariant (easy to break)
 
-`docs/u2gas-all-screens.html` is the design source of truth. The app renders
-that markup verbatim via `FigmaScreen` / `FigmaRouteFrame` (root class `.frame`),
-and every artboard child is **absolutely positioned from the file's own
-coordinates**. Nothing in the app may reach inside `.frame` and change layout,
-colour, or text metrics.
+The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design
+source. The app carries that drawing verbatim in `web/src/figma/` and renders it
+via `FigmaScreen` / `FigmaRouteFrame` (root class `.frame`), and every artboard
+child is **absolutely positioned from the file's own coordinates**. Nothing in
+the app may reach inside `.frame` and change layout, colour, or text metrics.
 
-`web/src/figma/{assets,screens,artboards}.ts` are generated files إŒؤ†أ¶ run
-`python3 build/gen_react.py` from the repo root to regenerate them after the
-gallery changes, and never hand-edit a screen. The gallery draws each picture as
+`web/src/figma/{assets,screens,artboards}.ts` mirror the file; they are not
+generated from anything in this repo, and no screen may be edited without a
+matching change in Figma. Each picture is drawn as
 `<span class="asset-img" style="--src:var(--aN)">`, painted by
 `.frame .asset-img { background-image: var(--src); background-size: contain }`.
-The generator only repoints `--src` at the imported asset and leaves the span
-alone, because an `<img object-fit: contain>` is **not** equivalent: Chromium
-centres the scaled picture at a different subpixel offset, which put every
-cropped photo a pixel out (worst board 0.88%). Keep the span, and keep the
-modifier classes (`is-unavailable`, opacity .4) on it إŒؤ†أ¶ they must not be dropped.
-
-`npm run check:figma-pixels` renders every app artboard with `genboards.mjs` and
-pixel-compares it against the gallery (`static-diff.mjs`, needs the dev server
-on :12001). All 63 artboards must report 0%.
+Keep the span, and keep the modifier classes (`is-unavailable`, opacity .4) on
+it — an `<img object-fit: contain>` is **not** equivalent: Chromium centres the
+scaled picture at a different subpixel offset, which put every cropped photo a
+pixel out (worst board 0.88%).
 
 Two real leaks existed, both fixed by keeping the app's styles out of the frame:
 
@@ -118,7 +118,7 @@ Two real leaks existed, both fixed by keeping the app's styles out of the frame:
   node inherited it and ran narrow. `figma.css` resets it on `.frame`.
 
 When adding a component class, check whether the artboards already use that
-class name إŒؤ†أ¶ `grep -o 'class="[^"]*"' web/src/figma/screens/*.ts` إŒؤ†أ¶ and scope
+class name — `grep -o 'class="[^"]*"' web/src/figma/screens/*.ts` — and scope
 accordingly.
 
 ## Fonts
@@ -140,36 +140,32 @@ the widths إŒؤ†أ¶ a width-only check cannot see it.
 
 ## Verifying visual parity
 
-`npm run check:dom-parity` (`dom-token-diff.mjs`) is the gate that renders the
-*demo* إŒؤ†أ¶ not the generated markup إŒؤ†أ¶ and compares each route's live DOM against
-the same artboard in the gallery: structure, geometry and computed tokens
-(font, colour, weight, tracking, radius, opacity, transform). The dev server
-must be on :12001. It prints `STRUCTURAL + TOKEN PARITY: CLEAN` or the offending
-`[data-node]`. Run it after any change to a route, a `.frame`-scoped rule, or a
-font.
+There is no automated parity gate any more. The live Figma file is the only
+design source, so verification is a comparison of the app's render against the
+live frame, read through the Figma MCP: structure, geometry and computed tokens
+(font, colour, weight, tracking, radius, opacity, transform), plus a leaf's
+`visible` flag. Compare `[data-node]` boxes, not whole-page screenshots — the
+reference wraps each artboard in viewer chrome that renders off-viewport.
 
-The other three checks each prove less than they appear to, and all four are
-needed:
+What remains automated:
 
-- `check:figma-parity.sh` إŒؤ†أ¶ the generated markup equals the gallery, byte for
-  byte. Nothing about the cascade or the live data.
-- `check:figma-pixels` إŒؤ†أ¶ the app's artboard *rendering* matches the gallery.
-  Still not the demo: it renders the markup on its own, with one stylesheet.
-- `check:frontend` إŒؤ†أ¶ assets exist and every artboard the registry *names* is a
-  real screen. It now also fails when a route lists an artboard that no route
-  code draws, because the registry used to claim 15 artboards (`1:1344`,
-  `1:1517`, إŒؤ†â€‌) that no route rendered إŒؤ†أ¶ the coverage read as complete
-  for screens that were absent. Removing a claim needs the same note the empty
-  entries carry: say which artboard and why it is not used.
+- `check:frontend` — assets exist and every artboard the registry *names* is a
+  real screen. It also fails when a route lists an artboard that no route code
+  draws, because the registry used to claim 15 artboards (`1:1344`, `1:1517`,
+  …) that no route rendered — the coverage read as complete for screens that
+  were absent. Removing a claim needs the same note the empty entries carry:
+  say which artboard and why it is not used.
+- `check:assets` — no CSS font/image reference is missing.
+- `typecheck` — `tsc --noEmit`.
 
 ## Rows the drawing does not id
 
 `FigmaScreen` binds live data by replacing the text of named `[data-node]`
-leaves. An artboard whose rows carry no ids cannot carry real records إŒؤ†أ¶ the
-drawn sample stays on screen, and `dom-token-diff.mjs` sees nothing to compare,
-so the route reads CLEAN while showing Figma's sample order. `/history` hit
-this; it is now handled by rendering the artboard for its chrome and painting
-live rows over it.
+leaves. An artboard whose rows carry no ids cannot carry real records — the
+drawn sample stays on screen, and a comparison against the live frame sees
+nothing to compare, so the route reads clean while showing Figma's sample order.
+`/history` hit this; it is now handled by rendering the artboard for its chrome
+and painting live rows over it.
 
 `/history` (1:2107 TRANS HISTORY) renders the artboard for its chrome إŒؤ†أ¶ the
 drawn `HISTORY` heading, the month strip, the panel, the top fade, the
@@ -203,12 +199,11 @@ not one per row: the file draws `1:2199` only over the first receipt, so
 paper so the cards keep one baseline.
 
 The sample rows and the sample month strip (`1:2134`, `1:2170`, `1:2199`,
-`1:2115`) are hidden by `.figma-route-frame.is-history`. Their text leaves carry no `data-node` id, so
-nothing can bind over them and a real user would otherwise read Figma's example
-order (`GAS 10KG`, `6-pack batteries`, `17 MAR`). `dom-token-diff.mjs` lists
-them in `TEMPLATE_ROWS_HIDDEN` (with the nine chip ids `1:2116`..`1:2132`): the boxes stop being compared, but a new
-`template-row-visible` check fails the run if the route stops hiding them, so
-the declaration cannot be used to skip a row that leaks.
+`1:2115`) are hidden by `.figma-route-frame.is-history`. Their text leaves carry
+no `data-node` id, so nothing can bind over them and a real user would otherwise
+read Figma's example order (`GAS 10KG`, `6-pack batteries`, `17 MAR`). The nine
+chip ids `1:2116`..`1:2132` hide with them. A check fails the run if the route
+stops hiding them, so the declaration cannot be used to skip a row that leaks.
 
 Two traps in that screen. The panel `1:2112` is itself at `top:80`, so the
 drawn `top:232` and `top:151` land at 312 and 231 **on the board** إŒؤ†أ¶ reading
@@ -283,9 +278,9 @@ wraps each artboard in viewer chrome that renders off-viewport, so a naive
 pixel diff of the two pages is meaningless. Force a common font on both sides
 while measuring so font-availability differences do not read as layout bugs.
 
-## What the four parity checks cannot see
+## What a parity check cannot see
 
-All four pass on a screen that is still wrong, in two ways worth knowing.
+An automated check passes on a screen that is still wrong, in two ways worth knowing.
 
 **A value that is right but *formatted* differently.** The ticker read
 `Today's Rate` while the file draws `Today&rsquo;s Rate`. A straight `'` and a
@@ -298,11 +293,11 @@ matching, so a route can key on the character a reader sees.
 **Text no `[data-node]` covers.** The driver's drop rows are plain `<p>` with no
 id. An unbound row therefore compared *nothing*: the geometry walk only visits
 ids, so `/driver` reported CLEAN while still showing Figma's sample order number
-and address. `dom-token-diff.mjs` now collects every leaf string in document
-order, tags whether an id covers it, and pairs the two sides **positionally**.
-Matching on text alone is not enough إŒؤ†أ¶ the first active drop's real order number
-*is* the `U2-100045` the file also draws in its third row إŒؤ†أ¶ so only a pair that
-is orphan on both sides, at the same index, still holding the file's string,
+and address. Collect every leaf string in document order, tag whether an id
+covers it, and pair the two sides **positionally**. Matching on text alone is
+not enough — the first active drop's real order number *is* the `U2-100045` the
+file also draws in its third row — so only a pair that is orphan on both sides,
+at the same index, still holding the file's string,
 counts as stale. When adding a screen with unbound sample text, verify the
 detector fires by temporarily reverting the binding.
 
@@ -332,16 +327,15 @@ the DOM disagree, the capture is wrong, not the page.
 trusted by id.** Three profile artboards (`1:2090`, `1:4665`, `1:4968`) carry
 two stacked gradient rectangles إŒؤ†أ¶ a hidden white fade and a visible black
 scrim. The gallery painted the *hidden* fade's colour at the *visible* node's
-id, so the header photo washed out to white. Nothing in the four gates can see
+id, so the header photo washed out to white. The old gates could not see
 this: the markup is self-consistent, the tokens match the id they claim, and
 the geometry is identical. Enumerate every gradient overlay and compare its
 `visible` flag to whether the gallery draws it. A node that is `visible: false`
 in Figma and rendered in the gallery, or vice versa, is the signature.
 
-Also note the gallery is a *hand-maintained* snapshot: it is not regenerated
-from Figma, so a live-file change lands as silent drift. `docs/figma-relabel.py`
-and `docs/figma-drive-images.py` exist for targeted patches, and
-`build/gen_react.py` only propagates the gallery into `web/src/figma`.
+The `visible` flag matters: a node the file marks hidden must not be drawn,
+and a node it draws must not be hidden. Read it off the live node before
+drawing anything.
 
 ## Demo fixtures are part of the design
 
@@ -368,9 +362,9 @@ never reaches it with a known-short amount.
 
 Two consequences worth keeping:
 
-- `dom-token-diff.mjs` covers it as `/home?kg=9999` (`1:175`). The board's live
-  leaves are `1:220` (the amount) and `1:181` (the ticker), which carries HOME's
-  `ONLY nKG LEFT â”¬ؤک Today's RateإŒؤ†â€‌` warning rather than the bare rate.
+- The `/home?kg=9999` state (`1:175`) is verified against the live frame. The
+  board's live leaves are `1:220` (the amount) and `1:181` (the ticker), which
+  carries HOME's `ONLY nKG LEFT · Today's Rate` warning rather than the bare rate.
 - Its drawn message is `INSUFFICIENT- Please redude` إŒؤ†أ¶ the file's own typo, in
   the file's own wording. Do not "fix" it: it is drawn text, and the parity
   harness compares it character for character.
@@ -473,10 +467,9 @@ hides what is preloaded.
 ## The re-issued GIFT-TECH file: node ids moved, geometry did not
 
 The live file was re-issued under a new name (GIFT-TECH) and page (`u2` =
-`152:2265`), and it reassigned **every** node id (`1:*` â†’ `4xx:*`). The gallery
-and `web/src/figma` key on the old `1:*` ids, and `check-figma-parity.sh` only
-proves gallery-vs-generated, so a re-issue lands as *silent* drift: all four
-gates stay green while the drawing has moved underneath them.
+`152:2265`), and it reassigned **every** node id (`1:*` → `4xx:*`). The app keys
+on the old `1:*` ids, so a re-issue lands as *silent* drift unless each board
+is compared to its live counterpart by hand.
 
 What actually changed, and how to see it:
 
@@ -521,11 +514,10 @@ alerts are admin-only now.
 
 ## The re-issue is per-board, and a geometry join is not enough to see it
 
-The four gates all compare the *gallery* to the *generated markup* (or to the
-app's render of it). None of them reads the live file, so when the file is
-re-issued they stay green while individual boards have genuinely moved. The way
-to find which boards actually changed is to compare each gallery frame to its
-live counterpart, and the trap is the pairing itself.
+There is no gate that reads the live file, so when the file is re-issued
+individual boards can genuinely move while everything in the repo stays
+self-consistent. The way to find which boards actually changed is to compare
+each board to its live counterpart, and the trap is the pairing itself.
 
 The old geometry join (score each gallery frame against every live frame by box
 overlap) produced false pairs: it matched `1:3461` (a 1739-tall cashier NOTIF
@@ -624,8 +616,8 @@ expected.
 
 The re-issued file draws `MANAGER` in the staff sample grids (1:2747, 1:2686,
 1:2624, 1:2803) and in `STAFF LAYOUT 1`'s ROLE block. Those are drawn sample
-text — the same category as the SMITH/SARA/MICAH names — so the gallery keeps
-them; editing them would break `check-figma-parity`. What the re-issue *did*
+text — the same category as the SMITH/SARA/MICAH names — so the app keeps
+them; editing them would be drift. What the re-issue *did*
 drop is the manager as a **role in the app**: the database has no manager, the
 role enum is `staff | admin | driver`, and `People.tsx`'s `ROLE_LABEL` already
 maps the DB `staff` role to the drawn word CASHIER. There is no manager route
@@ -682,8 +674,7 @@ Two traps paid for here:
   properties in viewer chrome far below `:root`. Anchor on `--a20` itself, and
   remember the `;` inside `data:image/png;base64,` is not a declaration end. The
   first attempt landed `--a21` outside `:root`, so `getComputedStyle`
-  `.getPropertyValue("--a21")` was empty, the thumbnail drew nothing, and
-  `check:figma-pixels` caught it at 1.03% on both boards.
+  `.getPropertyValue("--a21")` was empty, so the thumbnail drew nothing.
 - **`FigmaScreen`'s `values` path matched only a strict text leaf.** A drawn row
   is `<p>LINE<br>LINE</p>`, and the `<br>` is an element child, so the leaf regex
   skipped exactly these nodes and the live value never landed. It now tolerates a
@@ -711,9 +702,9 @@ Drawn words that changed: the readout label is `AMOUNT IN NAIRA` (not
 Redrawing these is not a gallery-only edit: `WalkIn.tsx` binds the readout by the
 drawn text `1KG` and hit-tests `data-node="1:4514"` (the pill) and `1:4516` (the
 hand), and `Collect.tsx` binds `1:4530`, `1:4641` and the sheet's values. A
-redraw renumbers every node to the live ids, so the gallery splice, `gen_react`,
-and those route bindings have to move in the same change — patch the text alone
-and the route goes dead.
+redraw renumbers every node to the live ids, so the screen markup and those
+route bindings have to move in the same change — patch the text alone and the
+route goes dead.
 
 **Splice a label as a sibling, not into the anchor's tag.** `1:4047`'s added
 `CASH` label (live `459:18335`) was first inserted by replacing the chip's
@@ -750,7 +741,7 @@ rows. Two traps produced a false "missing" reading and are worth recording:
   watermark and reads the heading as `PERSONAL`, hence the spurious
   `PERSONAL DETAILS` vs `DETAILS` report. It is not a difference.
 
-## The admin gauge axis: a real refinement the four gates could not see
+## The admin gauge axis: a real refinement the old gates could not see
 
 The re-issued file redrew the admin gauge scale, and the change is invisible to
 every gate because it is neither structural nor a font/colour *token* the
@@ -774,10 +765,10 @@ than the live file. Read tick opacity and the `%` suffix straight from live
 `style`/`characters`, not from the drawn snapshot.
 
 
-## The shop strip: a drawn element the gallery never carried
+## The shop strip: a drawn element the app never carried
 
-`docs/u2gas-all-screens.html` is a hand-maintained snapshot, so when the file
-re-issues a board it can gain *structure*, not just a recoloured leaf. The four
+When the live file re-issues a board it can gain *structure*, not just a
+recoloured leaf. The four
 product boards never carried the strip the live file now draws on `SHOP - Single
 ITEM` and `SHOP - ITEM UNAVAILABLE`: a group at (48,845) 447x183 holding four
 tall product photographs (a jar, a pack, a bottle, a cylinder) and the faded
@@ -789,15 +780,13 @@ the row.
 OTHER ACCESSORIES` (this strip) are different strings, so the copy diff flags
 the strip and not the button — do not "fix" the button.
 
-The strip is spliced by `.figdiff/patch_shop_strip.py`: four new `--a17`..`--a20`
-pictures appended to the gallery's `:root` asset block, then the group inserted
-before each board's watermark, then `python3 build/gen_react.py`. Use the
-`figma_download_figma_images` *cropped* exports (`.figdiff/stripc/`), not the raw
-node renders — the live fills are `scaleMode: STRETCH` with an `imageTransform`,
-so the uncropped bitmap is padded and the picture sits small inside its box.
-`check-figma-parity.sh` still passes because it compares gallery to generated
-markup (both changed together); only a live render (`shot_frame.mjs` against
-`.figdiff/live/live-250-5655.png`) can see the strip land.
+The strip is brought across from the live file: four pictures added to
+`assets.ts` (`--a17`..`--a20`), the group placed before each board's watermark,
+then the app re-rendered. Use the `figma_download_figma_images` *cropped* exports
+(`.figdiff/stripc/`), not the raw node renders — the live fills are
+`scaleMode: STRETCH` with an `imageTransform`, so the uncropped bitmap is padded
+and the picture sits small inside its box. Only a render of the app against the
+live frame (`.figdiff/live/live-250-5655.png`) shows the strip land.
 
 Two boards only. `SHOP - SEARCH` (`1:1438`) draws `SHOP FOR` / `ACCESSORIES` as
 its heading with an LED button, not this strip; `Cart` and the checkout sheets

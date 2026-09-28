@@ -2,13 +2,14 @@
 
 ## Source of truth
 
-`web/src/figma/` contains the generated Figma artboard markup. It is the visual
-source of truth. Route components must not recreate that artwork with a second
-CSS implementation.
+The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the design source.
+`web/src/figma/` mirrors its artboards as the exact markup the routes render, so
+route components must not recreate that artwork with a second CSS
+implementation.
 
 ## Current implementation rule
 
-- `FigmaScreen` renders the exact generated artboard markup.
+- `FigmaScreen` renders the exact artboard markup.
 - `FigmaRouteFrame` provides the standard shell for combining that exact visual
   layer with real React interaction/data.
 - `routeRegistry.ts` maps every application route to the Figma artboards/states

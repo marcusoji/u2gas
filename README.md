@@ -141,6 +141,13 @@ them from the Figma file into `web/public/fonts/` and `web/public/img/`. Paths
 are already wired and the fallback stack is metric-matched, so nothing reflows
 when they land. See `docs/DEPLOYMENT.md` §5.
 
+## Design source
+
+The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design
+source.** There is no committed HTML snapshot of the screens. `web/src/figma/`
+mirrors the live file's artboards and renders them through `FigmaScreen`; change
+the file first, then bring the change into the app.
+
 ## Documentation
 
 | File | What it is |
