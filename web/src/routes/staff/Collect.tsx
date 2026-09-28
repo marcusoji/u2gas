@@ -139,16 +139,16 @@ export default function Collect() {
     "1:4595": "C0PYRIGHT 2026 U2 OIL AND GAS LTD.",
   };
   const led = paid ? "PAID" : tendered ? `${tendered}NGN` : `${(order.total_kobo / 100).toLocaleString("en-NG")}NGN`;
-  // The board's LED is captioned `AMOUNT IN KG`, which is a lie once the order
-  // is settled — there is no amount left to key. The caption is the file's own
-  // text with no data-node id, so it is rebound by value like the LED.
+  // The board's LED is captioned `AMOUNT IN NAIRA`, which is a lie once the
+  // order is settled — there is no amount left to key. The caption is the
+  // file's own text with no data-node id, so it is rebound by value like the LED.
   //
   // The drawn LED sample is `1KG` and the live value is painted by the overlay
   // above it, so the sample has to go: left in place it stayed legible *under*
   // the live figure, and the till read `14,000NGN` over a stray `1KG`. It is
   // bound by value for the same reason as the caption.
   const textReplacements: Record<string, string> = { "1KG": "" };
-  if (paid) textReplacements["AMOUNT IN KG"] = "ALREADY PAID";
+  if (paid) textReplacements["AMOUNT IN NAIRA"] = "ALREADY PAID";
 
   function handleArtworkClick(e: React.MouseEvent<HTMLDivElement>) {
     const target = e.target as HTMLElement;

@@ -672,11 +672,19 @@ and the route goes dead.
 
 ## PERSONAL DTS 2 (`1:2244`)
 
-Live `381:11909` draws the heading as two lines `PERSONAL / DETAILS` at (24,170)
-and carries a field set the gallery never had: `FIRST NAME` (173,588),
-`YOUR BEAUTIFUL NAME` (44,614), `LAST NAME` (178,669),
-`YOUR BEAUTIFUL NAME` (44,695), `Phone Number` (164,782),
-`+234 80 3936 8868` (62,809), `[ Caleb ]` (140,472) and
-`Delivery Address` (101,1060). The gallery's `1:2244` has the header band and
-little else, which is why it stays near the top of the outlier list.
+The gallery already carries the full field set — `FIRST NAME`, `LAST NAME`,
+`YOUR BEAUTIFUL NAME` x2, `Phone Number`, `+234 80 3936 8868`, `[ Caleb ]`,
+`Delivery Address` — and the live frame agrees, so this board is *not* missing
+rows. Two traps produced a false "missing" reading and are worth recording:
+
+- The rows live inside the `381:11914` details panel, whose own `top` is 90, so
+  their gallery `top` (e.g. `Delivery Address` at 21) is **panel-relative** and
+  must be added to the ancestor's offset before comparing to a live absolute y.
+  A leaf-by-leaf diff that reads `top` straight off the tag sees every panel
+  child ~90–1039px out of place.
+- `PERSONAL / DETAILS` is one `data-node="1:2250"` heading with an inner
+  `<span style="display:block">DETAILS</span>`; the live file draws it as two
+  lines too. A leaf walker that ignores element children sees only `U` of the
+  watermark and reads the heading as `PERSONAL`, hence the spurious
+  `PERSONAL DETAILS` vs `DETAILS` report. It is not a difference.
 

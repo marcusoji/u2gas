@@ -57,10 +57,10 @@ export default function WalkIn() {
     }
     if (el.closest(".key.is-pay")) { if (kg > 0) setSheet(true); return; }
     // The drawing puts two controls in this row and the file labels them
-    // differently: the blue pill says ENTER and opens the customer details,
+    // differently: the blue pill says SCAN and opens the customer details,
     // and the white circle is drawn as "enter the code by hand" (1:4516). They
     // used to be wired to the same handler, so the counter had two buttons for
-    // one act. The drawn labels are now honoured — ENTER confirms, the hand
+    // one act. The drawn labels are now honoured — SCAN confirms, the hand
     // types the amount directly for a bulk figure the keypad is slow to tap.
     if (el.closest('[data-node="1:4514"]')) { if (kg > 0) setSheet(true); return; }
     if (el.closest('[data-node="1:4516"]')) { setTyped(""); setTypeOpen(true); }
