@@ -599,3 +599,49 @@ The re-issued file also stacks two IMAGE fills on a thumbnail and marks the
 **first** `visible: false`. Pick the last image fill in paint order, not the
 first visible one, or the crop hides behind the one that never draws.
 
+## The re-issue's camera feed is a real picture
+
+The biggest single drift between the gallery and the live `u2` page is not
+geometry: it is that **51 of the 59 boards carry a 340x400 IMAGE fill**
+(`392d0ec272…`, the live camera viewfinder) and the gallery paints none of them.
+Every scan / collect / notifs board draws a `.asset` placeholder — the literal
+text `camera feed` on a diagonal hatch — at exactly that box instead. The pixel
+harness reads the placeholder as a flat light block and the live feed as a dark
+one, so the scan boards sit at 8–11% off with no structural signature, and the
+notifs boards barely move because the feed is dimmed under `filter: blur` and a
+white scrim.
+
+`web/src/routes/driver/DriverScan.tsx` (and `staff/Collect.tsx`,
+`staff/Lookup.tsx`, `admin/StaffHistory.tsx`) already paint the route's own
+`<Scanner>` over that box at runtime, so a user sees a real feed on those routes;
+only the *gallery* still has the placeholder. Do not "fix" this by stamping the
+stock photo into the drawing — a camera feed is a live thing the route supplies,
+and a screenshot of one frame is the same mistake as a hardcoded order on an
+unbound row. Keeping the placeholder is the honest drawn state; the diff row is
+expected.
+
+## The MANAGER word, and which tree to change
+
+The re-issued file draws `MANAGER` in the staff sample grids (1:2747, 1:2686,
+1:2624, 1:2803) and in `STAFF LAYOUT 1`'s ROLE block. Those are drawn sample
+text — the same category as the SMITH/SARA/MICAH names — so the gallery keeps
+them; editing them would break `check-figma-parity`. What the re-issue *did*
+drop is the manager as a **role in the app**: the database has no manager, the
+role enum is `staff | admin | driver`, and `People.tsx`'s `ROLE_LABEL` already
+maps the DB `staff` role to the drawn word CASHIER. There is no manager route
+and no manager role to remove; the remaining `MANAGER` literal in the app is
+`People.tsx:101`, the *key* the bound role text substitutes over (the drawn word
+is the slot key). Leave it.
+
+## A live frame with no gallery counterpart is usually a nested child
+
+`frame_map.json` pairs gallery nodes to live frames, but a handful of live
+frames never became a board of their own — they are the *inner* groups the route
+renders underneath (`BLACK CONCEPT`, `PERSONAL DTS`, the four `DIVIDER`
+rotated-logo frames, two `STAFF HISTORY - DRIVER` sheets). A board whose visible
+difference is "the live side has a frame the gallery does not" is usually one of
+these, not drift. The pixel diff for `1:2244` and `1:2107` also reads high purely
+because the MCP export of a framed board comes back **480px wide** (a 440px
+board plus a 20px drop-shadow margin each side); `live_diff.mjs` detects and
+crops that symmetric border before comparing, or the margin alone reads as drift.
+
