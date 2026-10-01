@@ -126,7 +126,7 @@ const router = createBrowserRouter([
       { path: "/cart", element: <Cart /> },
       { path: "/checkout", element: <Checkout /> },
       { path: "/orders/:id", element: <OrderStatus /> },
-      // Paystack returns here. The page verifies server-side before believing it.
+      // The gateway returns here. The page verifies server-side before believing it.
       { path: "/orders/verify", element: <OrderStatus verifying /> },
       { path: "/auth/login", element: <Login /> },
       { path: "/auth/sent", element: <VerifySent /> },

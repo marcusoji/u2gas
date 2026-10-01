@@ -77,7 +77,7 @@ export default function Orders() {
     setError(null);
     try {
       const res = await api.admin.processRefund(r.refund_id);
-      if (res.already) setError("PAYSTACK HAD ALREADY REFUNDED THIS ONE");
+      if (res.already) setError("MONNIFY HAD ALREADY REFUNDED THIS ONE");
       load();
     } catch (e) {
       // The refund goes back to pending on failure, so it stays in the queue.
@@ -143,7 +143,7 @@ export default function Orders() {
             <section style={{ marginBottom: "var(--s-8)" }}>
               <SectionHead
                 title="REFUNDS"
-                hint="THE CUSTOMER IS TOLD ONLY AFTER PAYSTACK CONFIRMS"
+                hint="THE CUSTOMER IS TOLD ONLY AFTER MONNIFY CONFIRMS"
                 count={refunds.filter((r) => r.status !== "refunded" && r.status !== "manual").length}
                 tone="urgent"
               />
@@ -171,7 +171,7 @@ export default function Orders() {
                       onClick={() => processRefund(r)}
                       disabled={working === r.refund_id || r.status === "processing"}
                     >
-                      {working === r.refund_id ? "ASKING PAYSTACK"
+                      {working === r.refund_id ? "ASKING MONNIFY"
                        : r.status === "processing" ? "IN PROGRESS"
                        : "PROCESS REFUND"}
                     </Pill>

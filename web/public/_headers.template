@@ -16,10 +16,10 @@
   # inline styles for things computed at runtime (tank fill height, sheet
   # transforms). No inline SCRIPT is allowed, which is the one that matters.
   #
-  # Paystack is not listed because checkout is a full-page redirect to their
-  # domain, not an embedded iframe or script. If you ever switch to Paystack's
-  # inline popup, add https://js.paystack.co to script-src and
-  # https://api.paystack.co to connect-src — and nothing else.
+  # Monnify is not listed because checkout is a full-page redirect to their
+  # domain, not an embedded iframe or script. If you ever switch to Monnify's
+  # inline SDK, add https://sdk.monnify.com to script-src and
+  # https://api.monnify.com to connect-src — and nothing else.
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.supabase.co; font-src 'self'; connect-src 'self' https://*.supabase.co __API_ORIGIN__; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff

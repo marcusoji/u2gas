@@ -74,13 +74,13 @@ Covers the hardening pass across all 56 parts of the brief.
 
 1. **Exact amount enforced in the database**, not only the Worker. Overpayment previously confirmed the order silently. (`0014`)
 2. **Currency validated** at both layers.
-3. **Webhook marked processed only after successful processing** — failures leave `processed_at` null and return 500 so Paystack retries.
-4. **Verification requires `order_id` as well as `reference`**, and cross-checks Paystack's own metadata, so a valid reference cannot be applied to someone else's order.
+3. **Webhook marked processed only after successful processing** — failures leave `processed_at` null and return 500 so Monnify retries.
+4. **Verification requires `order_id` as well as `reference`**, and cross-checks Monnify's own metadata, so a valid reference cannot be applied to someone else's order.
 5. **Orphaned payments recorded, not discarded** — the previous code inserted the record then raised, rolling it back.
 6. **Paid-order cancellation moves to refund-pending** rather than claiming a refund happened.
 7. **Idempotency keys** on order creation and staff payment recording.
 8. **POST requests are never auto-retried** by the client.
-9. **Non-Paystack methods** carry unique references and cannot be double-recorded.
+9. **In-person methods** carry unique references and cannot be double-recorded.
 
 ---
 
@@ -177,9 +177,11 @@ at all. It does not substitute for running the code.
 - ~~Halftone scanner glyphs~~ **Done.** Supplied from Figma and installed. The
   exports were JPEG, which cannot carry alpha, so the transparency was
   reconstructed by corner flood-fill before encoding to lossless WebP.
-- **Paystack refunds are not automated.** Cancelling a paid order moves it to
+- **Gateway refunds need activation.** Monnify's Refund service is off by
+  default; until `integration-support@monnify.com` enables it, cancelling a
+  paid order moves it to
   refund-pending and tells the customer a refund is being processed, which is
-  true. A manager completes it in the Paystack dashboard. The wording
+  true. A manager completes it in the Monnify dashboard. The wording
   deliberately does not claim the money has already moved.
 - **`YOUR-DOMAIN` and `YOUR-KV-ID`** remain in `wrangler.toml` by design. The
   Worker refuses to serve in production if `MAIL_FROM` still contains the

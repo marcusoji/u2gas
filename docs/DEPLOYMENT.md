@@ -192,16 +192,17 @@ pointed somewhere else.
 
 ---
 
-## 3. Paystack
+## 3. Monnify
 
-From the dashboard, take the secret and public keys. Set the webhook URL to:
+From **Developers → API Keys & Contracts**, take the API key, the secret
+key and the contract code. Set the webhook URL to:
 
 ```
-https://api.<your-domain>/api/payments/webhook/paystack
+https://api.<your-domain>/api/payments/webhook/monnify
 ```
 
-Test with a real transaction in test mode, then replay the same webhook twice
-from the Paystack dashboard. The second delivery must return
+Test against `https://sandbox.monnify.com` first (`MONNIFY_BASE_URL`), then
+replay the same webhook twice from the Monnify dashboard. The second delivery must return
 `{"ok":true,"duplicate":true}` and must not create a second payment row.
 
 ---
@@ -216,8 +217,9 @@ wrangler secret put SUPABASE_URL
 wrangler secret put SUPABASE_ANON_KEY
 wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 wrangler secret put SUPABASE_JWT_SECRET
-wrangler secret put PAYSTACK_SECRET_KEY
-wrangler secret put PAYSTACK_PUBLIC_KEY
+wrangler secret put MONNIFY_API_KEY
+wrangler secret put MONNIFY_SECRET_KEY
+wrangler secret put MONNIFY_CONTRACT_CODE
 wrangler secret put RESEND_API_KEY
 wrangler secret put QR_SIGNING_KEY     # openssl rand -hex 32
 
@@ -303,7 +305,7 @@ Work down this list in order. Each step depends on the one above it.
 - [ ] `/auth/callback` logs you in; an expired link shows the expired screen
 - [ ] A customer visiting `/admin` sees NOT YOUR DOOR, not a blank page
 - [ ] Ordering gas reserves stock — check `gas_stock.reserved_kg` moved
-- [ ] Paying through Paystack flips the order to `confirmed`
+- [ ] Paying through Monnify flips the order to `confirmed`
 - [ ] Replaying that webhook creates no second payment
 - [ ] The QR scans once at `/staff` and is refused the second time
 - [ ] An unpaid order expires within a minute of its hold and stock returns

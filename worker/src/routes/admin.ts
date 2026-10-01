@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv, Ctx, KVKey } from "../types";
 import { rpc, select } from "../lib/db";
+import { monnifyBase, monnifyToken, monnifyOk } from "../lib/monnify";
 import { appError } from "../lib/errors";
 import { requireRole } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
@@ -428,15 +429,15 @@ admin.get("/refunds", async (c) => {
 });
 
 /**
- * Process a refund through Paystack.
+ * Process a refund through Monnify.
  *
  * The sequence matters. claim_refund flips the row from pending to processing
  * and returns it only to the caller that won, so two admins pressing the
- * button at the same moment cannot both reach Paystack. Only after Paystack
+ * button at the same moment cannot both reach Monnify. Only after Monnify
  * answers does settle_refund mark it refunded — which is the only thing that
  * tells the customer their money is on its way.
  *
- * If Paystack fails, the row returns to pending with the error recorded, so it
+ * If Monnify fails, the row returns to pending with the error recorded, so it
  * reappears in the queue rather than vanishing.
  */
 admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) => {
@@ -453,7 +454,7 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
   });
 
   if (!claim.provider_reference) {
-    // An in-person payment has no Paystack transaction to reverse.
+    // An in-person payment has no gateway transaction to reverse.
     await rpc(db, "settle_refund", {
       p_refund_id: id, p_status: "pending",
       p_error: "No provider reference — refund this one in person",
@@ -463,33 +464,39 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
 
   let res: Response;
   try {
-    res = await fetch("https://api.paystack.co/refund", {
+    const token = await monnifyToken(c.env, c.env.CACHE);
+    res = await fetch(`${monnifyBase(c.env)}/api/v1/merchant/refunds/initiate-refund`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${c.env.PAYSTACK_SECRET_KEY}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        transaction: claim.provider_reference,
-        amount: claim.amount_kobo,
-        currency: claim.currency ?? "NGN",
-        merchant_note: `U2GAS refund ${id}`,
+        transactionReference: claim.provider_reference,
+        // Monnify's refund amount is naira, like every other amount it takes.
+        refundAmount: Number(claim.amount_kobo) / 100,
+        refundReason: `U2GAS refund ${id}`,
+        // Our own id for the refund, so a retry is recognisable as the same
+        // refund rather than a second one.
+        refundReference: `u2gas-${id}`,
+        customerNote: "Refund processed within 3 business days",
       }),
     });
   } catch {
     await rpc(db, "settle_refund", {
-      p_refund_id: id, p_status: "pending", p_error: "Could not reach Paystack",
+      p_refund_id: id, p_status: "pending", p_error: "Could not reach Monnify",
     });
-    throw appError("PAYSTACK_REFUND_FAILED");
+    throw appError("MONNIFY_REFUND_FAILED");
   }
 
   const json = await res.json() as any;
+  const body = json?.responseBody;
 
-  if (!res.ok || !json.status) {
-    const message = typeof json?.message === "string"
-      ? json.message.slice(0, 200) : "Paystack declined the refund";
+  if (!monnifyOk(res, json)) {
+    const message = typeof json?.responseMessage === "string"
+      ? json.responseMessage.slice(0, 200) : "Monnify declined the refund";
 
-    // Paystack having already refunded this transaction is success from our
+    // Monnify having already refunded this transaction is success from our
     // side, not failure — settle it rather than retrying forever.
     const already = /already.*refund/i.test(message);
 
@@ -501,14 +508,14 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
     });
 
     if (already) return c.json({ ok: true, status: "refunded", already: true });
-    throw appError("PAYSTACK_REFUND_FAILED", { reason: message });
+    throw appError("MONNIFY_REFUND_FAILED", { reason: message });
   }
 
   const settled = await rpc<any>(db, "settle_refund", {
     p_refund_id: id,
     p_status: "refunded",
-    p_provider_refund_id: String(json.data?.id ?? ""),
-    p_payload: json.data ?? null,
+    p_provider_refund_id: String(body?.refundReference ?? body?.id ?? ""),
+    p_payload: body ?? null,
   });
 
   return c.json({ ok: true, ...settled });

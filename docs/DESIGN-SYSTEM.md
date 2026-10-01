@@ -671,7 +671,7 @@ Routes declared: 35. Every one has a way in:
 - the four app roots are reached by role after sign-in (`HOME[role]` in
   `auth.ts`, used by the auth callback)
 - admin, staff and driver sub-pages are linked from each app's own nav
-- `/orders/verify` is the Paystack return URL (`PAYSTACK_CALLBACK_PATH` in
+- `/orders/verify` is the gateway return URL (`MONNIFY_CALLBACK_PATH` in
   `wrangler.toml`), so customers land on it after paying
 - `/shop/bundle/:id` resolves through `/shop/:kind/:id`
 

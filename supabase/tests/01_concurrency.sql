@@ -186,11 +186,11 @@ begin
   returning order_id into v_order;
 
   insert into payment (order_id, provider, provider_reference, amount_kobo, method, status, paid_at)
-  values (v_order, 'paystack', 'ref_dup_test', 140000, 'paystack', 'paid', now());
+  values (v_order, 'monnify', 'ref_dup_test', 140000, 'monnify', 'paid', now());
 
   begin
     insert into payment (order_id, provider, provider_reference, amount_kobo, method, status, paid_at)
-    values (v_order, 'paystack', 'ref_dup_test', 140000, 'paystack', 'paid', now());
+    values (v_order, 'monnify', 'ref_dup_test', 140000, 'monnify', 'paid', now());
   exception when unique_violation then
     v_ok := true;
   end;
@@ -213,8 +213,8 @@ begin
 
   perform reserve_gas(v_order, '00000000-0000-0000-0000-00000000d001', 2, now() + interval '30 min');
 
-  a := confirm_payment(v_order, 'paystack', 'ref_idem_test', 280000, 'paystack');
-  b := confirm_payment(v_order, 'paystack', 'ref_idem_test', 280000, 'paystack');
+  a := confirm_payment(v_order, 'monnify', 'ref_idem_test', 280000, 'monnify');
+  b := confirm_payment(v_order, 'monnify', 'ref_idem_test', 280000, 'monnify');
 
   perform t_assert('first webhook processes',    (a->>'already_processed')::boolean = false);
   perform t_assert('repeat webhook is a no-op',  (b->>'already_processed')::boolean = true);
@@ -570,7 +570,7 @@ begin
                       now() - interval '1 minute');
 
   -- Pay it. confirm_payment clears hold_expires_at.
-  perform confirm_payment(v_o, 'paystack', 'sweep_race_ref', 280000, 'paystack');
+  perform confirm_payment(v_o, 'monnify', 'sweep_race_ref', 280000, 'monnify');
 
   select * into r from expire_order_holds(100);
 
@@ -737,22 +737,22 @@ end $$;
 do $$
 declare a jsonb; b jsonb; c jsonb; d jsonb;
 begin
-  a := claim_webhook_event('paystack','evt.lease.1','charge.success','{}'::jsonb, 60);
+  a := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
   perform t_assert('first delivery claims the event', a->>'state' = 'claimed', a::text);
 
-  b := claim_webhook_event('paystack','evt.lease.1','charge.success','{}'::jsonb, 60);
-  -- The old code returned 200 here, so Paystack stopped retrying even if the
+  b := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
+  -- The old code returned 200 here, so the gateway stopped retrying even if the
   -- holder went on to fail.
   perform t_assert('concurrent delivery is told in_flight, not processed',
     b->>'state' = 'in_flight', b::text);
 
   -- Holder fails: the lease is released but the event stays unprocessed.
-  perform finish_webhook_event('paystack','evt.lease.1','boom');
-  c := claim_webhook_event('paystack','evt.lease.1','charge.success','{}'::jsonb, 60);
+  perform finish_webhook_event('monnify','evt.lease.1','boom');
+  c := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
   perform t_assert('a failed event can be reclaimed', c->>'state' = 'claimed', c::text);
 
-  perform finish_webhook_event('paystack','evt.lease.1', null);
-  d := claim_webhook_event('paystack','evt.lease.1','charge.success','{}'::jsonb, 60);
+  perform finish_webhook_event('monnify','evt.lease.1', null);
+  d := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
   perform t_assert('a processed event is not reprocessed',
     d->>'state' = 'processed', d::text);
 
@@ -894,7 +894,7 @@ begin
           1,140000,140000,140000,'pickup','expired')
   returning order_id into v_o;
 
-  r := confirm_payment(v_o,'paystack','orphan_refund_ref',140000,'paystack');
+  r := confirm_payment(v_o,'monnify','orphan_refund_ref',140000,'monnify');
 
   perform t_assert('the payment is recorded', (r->>'orphaned')::boolean);
   perform t_assert('a refund record actually exists', r->>'refund_id' is not null, r::text);

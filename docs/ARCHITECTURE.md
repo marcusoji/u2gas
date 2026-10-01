@@ -63,17 +63,17 @@ Customer
 Cloudflare Worker ──── initialize (amount read from the ORDER, never the client)
    │
    ▼
-Paystack hosted checkout
+Monnify hosted checkout
    │
    ├──── customer returns ────► Worker /payments/verify
    │                              requires order_id AND reference
-   │                              cross-checks Paystack metadata
+   │                              cross-checks Monnify metadata
    │                                       │
    └──── webhook ─────────────► Worker ────┤
             signature (HMAC-SHA512,        │
             constant-time compare)         │
                                            ▼
-                              ask Paystack directly
+                              ask Monnify directly
                                            │
                               validate: status, reference,
                               currency, EXACT amount, metadata
@@ -91,7 +91,7 @@ Paystack hosted checkout
 ```
 
 Nothing the browser says about a payment is believed. The amount is read from
-the order row, the transaction is confirmed with Paystack directly, and the
+the order row, the transaction is confirmed with Monnify directly, and the
 final check happens inside the database so every path is held to it.
 
 ## Where the rules actually live
@@ -144,7 +144,7 @@ Work top to bottom. Each section depends on the one above it.
 - [ ] `MAIL_FROM` uses the verified domain
 - [ ] A real order-confirmed email arrives within two minutes
 
-## Paystack
+## Monnify
 
 - [ ] Test keys in place, webhook URL configured
 - [ ] ₦1 test order completes end to end

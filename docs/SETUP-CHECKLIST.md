@@ -18,9 +18,9 @@ Work top to bottom. Each section depends on the one above it.
 | 3 | Supabase | Email, org name, project name, DB password, region | Region **EU (Frankfurt)** for Nigeria |
 | 4 | Cloudflare | Email, payment card (free tier still asks) | Site + Pages + Workers + KV + DNS |
 | 5 | Resend | Email, the domain to verify | Free tier is enough to start |
-| 6 | Paystack | Business name, CAC number, business address, business phone, settlement bank account | Test mode works immediately; live needs verification |
+| 6 | Monnify | Business name, CAC number, business address, business phone, settlement bank account | Test mode works immediately; live needs verification. Email integration-support@monnify.com to enable Refunds |
 
-Order matters: domain → Supabase → Resend → Cloudflare → Paystack.
+Order matters: domain → Supabase → Resend → Cloudflare → Monnify.
 
 ---
 
@@ -28,12 +28,12 @@ Order matters: domain → Supabase → Resend → Cloudflare → Paystack.
 
 | Detail | Used by |
 |---|---|
-| The domain name (e.g. `u2gas.ng`) | Everything — Cloudflare, Supabase URLs, Resend, the Paystack webhook, `APP_ORIGIN`, `MAIL_FROM` |
-| Company legal name | Paystack verification, Resend sender, Supabase project |
-| CAC registration number | Paystack business verification |
-| Business address and phone | Paystack verification |
+| The domain name (e.g. `u2gas.ng`) | Everything — Cloudflare, Supabase URLs, Resend, the Monnify webhook, `APP_ORIGIN`, `MAIL_FROM` |
+| Company legal name | Monnify verification, Resend sender, Supabase project |
+| CAC registration number | Monnify business verification |
+| Business address and phone | Monnify verification |
 | Business email, monitored | Account owner for all six services |
-| Settlement bank account (bank + 10-digit number) | Paystack payouts |
+| Settlement bank account (bank + 10-digit number) | Monnify payouts |
 | Region choice | Supabase project |
 | Database password | Supabase — generated at creation, unrecoverable, save it in a password manager |
 | `QR_SIGNING_KEY` | You generate it: 64 hex characters, keys QR codes and guest tokens |
@@ -54,17 +54,25 @@ Two hostnames to confirm: `api.<domain>` for the API, and `<domain>` plus
 | Secret key (`sb_secret_…`) | Worker `SUPABASE_SECRET_KEY` — **secret, never in the browser** |
 | JWT secret | Worker `SUPABASE_JWT_SECRET` — **only** if the project still signs HS256 |
 
-### Paystack → API Keys & Webhooks
+### Monnify → Developers → API Keys & Contracts
 
 | Credential | Goes to |
 |---|---|
-| Test secret key (`sk_test_…`) | Worker `PAYSTACK_SECRET_KEY` (start here) |
-| Test public key (`pk_test_…`) | Worker `PAYSTACK_PUBLIC_KEY` |
-| Live secret and public key (`sk_live_…` / `pk_live_…`) | Same variables, swapped at go-live |
-| Webhook URL to set | `https://api.<domain>/api/payments/webhook/paystack` |
+| API key | Worker `MONNIFY_API_KEY` (start here) |
+| Secret key | Worker `MONNIFY_SECRET_KEY` |
+| Contract code | Worker `MONNIFY_CONTRACT_CODE` |
+| Live equivalents | Same variables, swapped at go-live |
+| Webhook URL to set (Developers → Webhook URLs) | `https://api.<domain>/api/payments/webhook/monnify` |
 
-There is no separate webhook secret. Paystack signs with the secret key and the
-Worker verifies that signature.
+There is no separate webhook secret. Monnify signs the `monnify-signature`
+header with the secret key and the Worker verifies it.
+
+There is **no public key**. Checkout is a full-page redirect to a URL Monnify
+returns, so no gateway credential is ever shipped to the browser.
+
+Two things to ask Monnify support for, because they are off by default:
+**Refunds** (needed before a paid order can be refunded automatically) and
+**Card tokenisation** (only if you ever want saved cards).
 
 ### Resend → API Keys
 
@@ -109,15 +117,16 @@ Replace every placeholder.
 | `APP_ORIGIN` | `https://<domain>` — CORS is pinned to this exactly |
 | `MAIL_FROM` | `U2 Oil and Gas <no-reply@<domain>>` |
 | `DEPOT_ID` | `00000000-0000-0000-0000-00000000d001` (leave as-is) |
-| `PAYSTACK_CALLBACK_PATH` | `/orders/verify` (leave as-is) |
+| `MONNIFY_CALLBACK_PATH` | `/orders/verify` (leave as-is) |
 | `YOUR-KV-ID` (both) | Your Cloudflare KV namespace ID |
 | `YOUR-DOMAIN` (routes) | Your domain |
+| `MONNIFY_BASE_URL` | `https://sandbox.monnify.com` while testing; unset for live |
 
 ### Worker secrets — dashboard → Variables and Secrets
 
 `SUPABASE_URL` · `SUPABASE_PUBLISHABLE_KEY` · `SUPABASE_SECRET_KEY` (SECRET) ·
-`PAYSTACK_SECRET_KEY` (SECRET) · `PAYSTACK_PUBLIC_KEY` · `RESEND_API_KEY`
-(SECRET) · `QR_SIGNING_KEY` (SECRET) · `ENVIRONMENT=production`
+`MONNIFY_API_KEY` · `MONNIFY_SECRET_KEY` (SECRET) · `MONNIFY_CONTRACT_CODE` ·
+`RESEND_API_KEY` (SECRET) · `QR_SIGNING_KEY` (SECRET) · `ENVIRONMENT=production`
 
 ### Cloudflare Pages — frontend
 

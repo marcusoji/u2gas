@@ -158,7 +158,7 @@ A clean `npm ci`, `npm run typecheck`, and `npm run build` remains the required
 next verification in a networked environment.
 
 ## Phase 20 — payment verification / QR lifecycle hardening (24 Sep 2026)
-- Paystack return verification is deduplicated by order/reference/guest-token so React StrictMode or dependency re-runs do not submit the same verification repeatedly.
+- Monnify return verification is deduplicated by order/reference/guest-token so React StrictMode or dependency re-runs do not submit the same verification repeatedly.
 - Collection-code generation now has an effect cleanup guard, preventing late QR-generation promises from updating an unmounted/stale order screen.
 - Cancelled orders clear any cached collection-code token and rendered QR from the current session.
 - No visual mapping count changed in this phase.

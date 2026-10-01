@@ -27,7 +27,7 @@ That is what makes the guarantees hold:
   `FOR UPDATE` row lock.
 - Two staff cannot fulfil one QR — `UPDATE … WHERE status = 'unscanned'` claims
   it atomically; the loser gets zero rows.
-- A repeated Paystack webhook cannot deduct stock twice — three layers, ending
+- A repeated Monnify webhook cannot deduct stock twice — three layers, ending
   in a unique index on the provider reference.
 - The expiry sweep cannot release the same hold twice — it only touches
   reservations still marked `reserved`.

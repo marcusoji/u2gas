@@ -116,7 +116,7 @@ app.use("/api/*", async (c, next) => {
   await next();
 });
 
-// The webhook authenticates by signature, not by JWT, and Paystack does not
+// The webhook authenticates by signature, not by JWT, and Monnify does not
 // send an Origin header — so it is mounted before the auth middleware.
 app.route("/api/payments", payments);
 

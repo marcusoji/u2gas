@@ -55,7 +55,7 @@ Updated as each piece lands. Anything not ticked has not been written yet.
       product and bundle detail with derived availability.
 - [x] `routes/orders.ts` — gas, cart, advisory availability, history, detail,
       QR issuance, cancel.
-- [x] `routes/payments.ts` — Paystack init, verify, idempotent webhook with
+- [x] `routes/payments.ts` — Monnify init, verify, idempotent webhook with
       three layers of replay protection.
 - [x] `routes/staff.ts` — queues, lookup, walk-in, in-person payment, change
       preview, scan, reconciliation.
@@ -95,7 +95,7 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 - [x] `routes/customer/Home.tsx` — terminal, keypad, advisory availability,
       **insufficient stock with TAKE NKG**, payment sheet, delivery zones
 - [x] `routes/customer/OrderStatus.tsx` — **hold countdown**, **expiry**,
-      QR issuance, Paystack return verification, delivery tracking
+      QR issuance, Monnify return verification, delivery tracking
 
 - [x] `lib/cart.ts` — browser-only cart. Adding reserves nothing; stock is
       only held at checkout, per spec 27. Cross-tab sync, malformed storage
@@ -157,7 +157,7 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 ### Docs
 - [x] `README.md` — the one architectural idea and how to run it
 - [x] `docs/DEPLOYMENT.md` — Supabase, the signup trigger, Storage, the cron
-      schedule, Resend SMTP, Paystack, Workers, Pages, Hostinger to Cloudflare
+      schedule, Resend SMTP, Monnify, Workers, Pages, Hostinger to Cloudflare
       DNS, and a verification checklist in dependency order
 - [x] `docs/ENVIRONMENT.md` — every key, where it comes from, what breaks
       without it, and what rotating it costs
@@ -223,7 +223,7 @@ Reviewing by hand rather than running, these were caught and corrected:
 8. **Orphaned payment was thrown away.** `confirm_payment` handled money
    arriving for an already-expired order: it inserted a payment row and an
    audit entry flagging a refund, then raised `ORDER_ALREADY_CLOSED`. The raise
-   aborts the transaction, so both writes were discarded — Paystack had the
+   aborts the transaction, so both writes were discarded — the gateway had the
    customer's money and we had no record of it anywhere, which is precisely
    what that branch existed to prevent. It now returns normally with an
    `orphaned` flag (migration `0009`), the record survives into the admin

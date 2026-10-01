@@ -86,14 +86,18 @@ const MAP: Record<string, Mapping> = {
         ? "THIS HOLD EXPIRED — ORDER AGAIN"
         : "THIS ORDER WAS CANCELLED",
   },
-  PAYSTACK_INIT_FAILED: {
+  MONNIFY_INIT_FAILED: {
     status: 502,
     message: () => "THE PAYMENT PAGE DIDN'T OPEN — TRY AGAIN",
   },
-  PAYSTACK_REFUND_FAILED: {
+  MONNIFY_VERIFY_FAILED: {
+    status: 502,
+    message: () => "WE COULDN'T CONFIRM THAT PAYMENT — TRY AGAIN",
+  },
+  MONNIFY_REFUND_FAILED: {
     status: 502,
     message: (d) => d.reason
-      ? `PAYSTACK REFUSED THE REFUND — ${String(d.reason).toUpperCase()}`
+      ? `MONNIFY REFUSED THE REFUND — ${String(d.reason).toUpperCase()}`
       : "THE REFUND DIDN'T GO THROUGH — IT'S STILL IN THE QUEUE",
   },
   REFUND_NOT_AUTOMATABLE: {
@@ -136,11 +140,6 @@ const MAP: Record<string, Mapping> = {
     message: () => "THAT ISN'T SOMETHING A RESERVATION CAN BE SET TO",
   },
   NOTHING_TO_REFUND: { status: 409, message: () => "NOTHING WAS PAID ON THIS ORDER" },
-  PAYSTACK_VERIFY_FAILED: {
-    status: 502,
-    message: () => "WE COULDN'T CONFIRM THAT PAYMENT YET",
-  },
-
   // --- QR ------------------------------------------------------------------
   QR_INVALID: { status: 404, message: () => "THIS CODE ISN'T OURS" },
   QR_EXPIRED: { status: 410, message: () => "THIS CODE HAS EXPIRED" },

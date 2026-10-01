@@ -413,25 +413,28 @@ revoke insert, update, delete on storage.objects from anon, authenticated;
 
 ---
 
-## Phase 10 — Paystack
+## Phase 10 — Monnify
 
-1. Go to **paystack.com** and create an account.
+1. Go to **monnify.com** and create an account.
 2. Complete business verification. Until you do, you are limited to test mode —
    which is exactly where you want to be for now.
-3. **Settings** → **API Keys & Webhooks**.
-4. Copy the **Test Secret Key** (`sk_test_...`) and **Test Public Key**
-   (`pk_test_...`).
-5. In the same page, set **Test Webhook URL** to:
+3. **Developers** → **API Keys & Contracts**.
+4. Copy the **API Key**, the **Secret Key** and the **Contract Code**.
+5. **Developers** → **Webhook URLs** → set the **Transaction Completion** URL to:
 
 ```
-https://api.YOURDOMAIN.com/api/payments/webhook/paystack
+https://api.YOURDOMAIN.com/api/payments/webhook/monnify
 ```
 
 6. Click **Save**.
 
-Paystack signs webhooks with your secret key — there is no separate webhook
-secret to configure. The Worker verifies that signature on every delivery and
-rejects anything that does not match.
+Monnify signs webhooks with your secret key — there is no separate webhook
+secret to configure. The Worker verifies the `monnify-signature` header on
+every delivery and rejects anything that does not match.
+
+Monnify has no public key. Unlike Paystack's popup, checkout is a full-page
+redirect to a URL Monnify returns, so nothing gateway-side is ever compiled
+into the browser bundle.
 
 You will test payments in Phase 20, once the Worker is live.
 
@@ -538,8 +541,10 @@ that encrypts it and hides it from the dashboard afterwards.
 | `SUPABASE_URL` | Text | Supabase → Settings → API |
 | `SUPABASE_PUBLISHABLE_KEY` | Text | Supabase → API Keys |
 | `SUPABASE_SECRET_KEY` | **SECRET** | Supabase → API Keys → reveal |
-| `PAYSTACK_SECRET_KEY` | **SECRET** | Paystack → API Keys |
-| `PAYSTACK_PUBLIC_KEY` | Text | Paystack → API Keys |
+| `MONNIFY_API_KEY` | Text | Monnify → API Keys & Contracts |
+| `MONNIFY_SECRET_KEY` | **SECRET** | Monnify → API Keys & Contracts |
+| `MONNIFY_CONTRACT_CODE` | Text | Monnify → API Keys & Contracts |
+| `MONNIFY_BASE_URL` | Text | `https://sandbox.monnify.com` (test only) |
 | `RESEND_API_KEY` | **SECRET** | Resend → API Keys |
 | `QR_SIGNING_KEY` | **SECRET** | See below |
 | `APP_ORIGIN` | Text | `https://YOURDOMAIN.com` |
@@ -641,7 +646,7 @@ Work through this as a real user would.
 - [ ] Choose delivery, pick a zone, see the fee added
 - [ ] Check out **as a guest** (signed out) — the order is visible afterwards
 - [ ] Check out signed in
-- [ ] Pay with a Paystack test card
+- [ ] Pay with a Monnify test card
 - [ ] Order shows confirmed, QR appears
 - [ ] Confirmation email arrives within two minutes
 - [ ] Cancel an unpaid order → stock returns
@@ -747,8 +752,9 @@ driver B's delivery URL. → Not found.
 
 ## Phase 20 — Payment tests
 
-Use Paystack test mode. Test card: `4084 0840 8408 4081`, any future expiry,
-CVV `408`, OTP `123456`.
+Use Monnify test mode (`MONNIFY_BASE_URL=https://sandbox.monnify.com`). Use
+the test cards listed at developers.monnify.com/docs/test-cards, and complete
+transfers with the Monnify Bank Simulator.
 
 **Normal payment**
 1. Create a small order.
@@ -759,7 +765,7 @@ CVV `408`, OTP `123456`.
 6. Confirmation email arrives.
 
 **Duplicate webhook**
-1. Paystack → **Transactions** → open the one you just made → **Resend
+1. Monnify → **Transactions** → open the one you just made → **Resend
    Webhook**.
 2. Check the `payment` table → **still one row**.
 3. Check `gas_stock` → `deducted_kg` unchanged.
@@ -785,20 +791,20 @@ CVV `408`, OTP `123456`.
 After a successful test payment, go to **Admin → Orders → Flagged** and cancel
 the order. A refund appears with **Process refund**. Press it.
 
-Expected: the refund shows as refunded, the Paystack dashboard shows a matching
+Expected: the refund shows as refunded, the Monnify dashboard shows a matching
 refund, and the customer gets an email. Press the button twice in quick
 succession — the second press must report that it is already in progress, not
 send a second refund.
 
-For a cash order there is no Paystack transaction to reverse, so the button
+For a cash order there is no gateway transaction to reverse, so the button
 says to refund it in person and the manual option closes it with a note.
 
 ---
 
 ### One more payment test
 
-Paystack's dashboard lets you resend a webhook. Edit the amount in the payload
-before resending — change `amount` to something larger than the order total.
+Monnify's dashboard lets you resend a webhook. Edit the amount in the payload
+before resending — change `amountPaid` to something larger than the order total.
 
 Expected: the order stays unpaid, and a `payment.amount_mismatch` row appears
 under **Admin → Log**. An overpayment is refused exactly like an underpayment,
@@ -810,13 +816,13 @@ because either one means the amount came from somewhere other than the order.
 
 Only when every test above passes.
 
-1. Paystack → complete business verification if you have not.
-2. Paystack → **API Keys & Webhooks** → switch to **Live**. Copy the live keys.
+1. Monnify → complete business verification if you have not.
+2. Monnify → **API Keys & Contracts** → switch to **Live**. Copy the live keys.
 3. Set the **Live Webhook URL** to the same
-   `https://api.YOURDOMAIN.com/api/payments/webhook/paystack`.
+   `https://api.YOURDOMAIN.com/api/payments/webhook/monnify`.
 4. Cloudflare Worker → **Variables and Secrets** → update
-   `PAYSTACK_SECRET_KEY` and `PAYSTACK_PUBLIC_KEY` to the live values →
-   **Deploy**.
+   `MONNIFY_API_KEY`, `MONNIFY_SECRET_KEY` and `MONNIFY_CONTRACT_CODE` to the
+   live values → **Deploy**.
 5. Supabase → **Settings** → **Database** → confirm **Point in Time Recovery**
    or daily backups are on. On the free plan you get daily backups for 7 days;
    consider upgrading before taking real money.
@@ -824,7 +830,9 @@ Only when every test above passes.
    sell.
 7. Verify: the order is confirmed, the payment row is correct, the email
    arrived, the QR scans at the depot, and the stock moved.
-8. Refund yourself through the Paystack dashboard to confirm that path works.
+8. Refund yourself through the Monnify dashboard to confirm that path works.
+   (Monnify's Refund service is off by default — email
+   integration-support@monnify.com to have it enabled before this step.)
 
 ---
 
@@ -839,8 +847,9 @@ Only when every test above passes.
 | `SUPABASE_URL` | Worker | Public | Supabase | Database connection |
 | `SUPABASE_PUBLISHABLE_KEY` | Worker | Public | Supabase | Reads under RLS |
 | `SUPABASE_SECRET_KEY` | Worker | **SECRET** | Supabase | All writes |
-| `PAYSTACK_SECRET_KEY` | Worker | **SECRET** | Paystack | Charging and webhook signatures |
-| `PAYSTACK_PUBLIC_KEY` | Worker | Public | Paystack | Checkout |
+| `MONNIFY_API_KEY` | Worker | Public | Monnify | Mints the access token |
+| `MONNIFY_SECRET_KEY` | Worker | **SECRET** | Monnify | Basic auth and webhook signatures |
+| `MONNIFY_CONTRACT_CODE` | Worker | Public | Monnify | Names the merchant contract |
 | `RESEND_API_KEY` | Worker + Edge | **SECRET** | Resend | Email |
 | `QR_SIGNING_KEY` | Worker | **SECRET** | You generate | QR and guest tokens |
 | `APP_ORIGIN` | Worker | Public | You | CORS |
@@ -876,7 +885,7 @@ Every response carries an `X-Request-Id`; search for it.
 
 **Email.** Resend → **Emails** shows every send with its status.
 
-**Payments.** Paystack → **Transactions**, and the **Webhooks** tab of an
+**Payments.** Monnify → **Transactions**, and the **Webhooks** tab of an
 individual transaction shows delivery attempts and our responses.
 
 Nothing in these logs contains a key, a token or a password. That is

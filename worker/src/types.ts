@@ -18,9 +18,16 @@ export interface Env {
   // Legacy HS256 projects only. Modern projects verify through JWKS and need
   // no shared secret at all.
   SUPABASE_JWT_SECRET?: string;
-  PAYSTACK_SECRET_KEY: string;
+
+  // Monnify. API_KEY and SECRET_KEY are the Basic-auth pair that mints the
+  // Bearer token; CONTRACT_CODE names the merchant contract on every call.
+  // There is no public key — the frontend redirects to a URL Monnify returns,
+  // so nothing gateway-side is ever compiled into the browser bundle.
+  MONNIFY_API_KEY: string;
+  MONNIFY_SECRET_KEY: string;
+  MONNIFY_CONTRACT_CODE: string;
+  MONNIFY_BASE_URL?: string;            // defaults to the live host
   MAIL_FROM: string;
-  PAYSTACK_PUBLIC_KEY: string;
   RESEND_API_KEY: string;
   QR_SIGNING_KEY: string;
 
@@ -28,7 +35,7 @@ export interface Env {
   ENVIRONMENT: "development" | "production";
   APP_ORIGIN: string;
   DEPOT_ID: string;
-  PAYSTACK_CALLBACK_PATH: string;
+  MONNIFY_CALLBACK_PATH: string;
 
   // Bindings
   RATE_LIMITER: DurableObjectNamespace;

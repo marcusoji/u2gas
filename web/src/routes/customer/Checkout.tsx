@@ -102,7 +102,7 @@ export default function Checkout() {
         window.location.href = init.authorization_url;
       } catch {
         // The order is already real and its stock hold is active. Never leave
-        // the customer stranded on an emptied cart just because Paystack
+        // the customer stranded on an emptied cart just because the gateway
         // initialization failed. Send them to the order receipt, where the
         // server-backed PAY NOW action can retry the same payment attempt.
         nav(`/orders/${order.order_id}${suffix ? `${suffix}&payment=retry` : "?payment=retry"}`);

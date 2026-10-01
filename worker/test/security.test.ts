@@ -17,9 +17,10 @@ import { AppError, fromDbError, appError, errorBody } from "../src/lib/errors";
 // Webhook signature
 // ---------------------------------------------------------------------------
 
-describe("paystack webhook signature", () => {
+describe("monnify webhook signature", () => {
   const secret = "sk_test_pretend_secret";
-  const body = JSON.stringify({ event: "charge.success", data: { reference: "R1" } });
+  const body = JSON.stringify({ eventType: "SUCCESSFUL_TRANSACTION",
+    eventData: { paymentReference: "R1" } });
 
   it("accepts a signature computed with the real secret", async () => {
     const sig = await hmacSha512Hex(secret, body);
@@ -35,7 +36,8 @@ describe("paystack webhook signature", () => {
   it("rejects a signature for a tampered body", async () => {
     const real = await hmacSha512Hex(secret, body);
     const tampered = JSON.stringify({
-      event: "charge.success", data: { reference: "R1", amount: 1 },
+      eventType: "SUCCESSFUL_TRANSACTION",
+      eventData: { paymentReference: "R1", amountPaid: 1 },
     });
     expect(timingSafeEqual(real, await hmacSha512Hex(secret, tampered))).toBe(false);
   });
@@ -119,7 +121,7 @@ describe("staff lookup input", () => {
 // ---------------------------------------------------------------------------
 
 /**
- * The rule from routes/payments.ts: a Paystack reference is only accepted for
+ * The rule from routes/payments.ts: a gateway reference is only accepted for
  * the order its own metadata names, and only for the caller who owns it.
  */
 function mayVerify(opts: {

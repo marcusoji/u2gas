@@ -217,7 +217,7 @@ begin
   -- Part 8: business RPCs must not be callable from a browser session.
   perform t_assert('customer cannot call confirm_payment',
     denied(format(
-      'select confirm_payment(%L, ''paystack'', ''forged'', 1, ''paystack'')', v_order)));
+      'select confirm_payment(%L, ''monnify'', ''forged'', 1, ''monnify'')', v_order)));
   perform t_assert('customer cannot call adjust_product_stock',
     denied('select adjust_product_stock((select product_id from product limit 1), 100)'));
   perform t_assert('customer cannot call redeem_qr',
@@ -317,7 +317,7 @@ begin
     perform become('authenticated', r.auth_uid);
     perform t_assert(r.label || ' cannot write webhook_event',
       denied('insert into webhook_event (provider, provider_event_id, signature_valid, payload)
-              values (''paystack'', ''forged'', true, ''{}''::jsonb)'));
+              values (''monnify'', ''forged'', true, ''{}''::jsonb)'));
     perform t_assert(r.label || ' cannot write inventory_reservation',
       denied('update inventory_reservation set status = ''released'' where true'));
     perform unbecome();

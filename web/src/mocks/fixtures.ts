@@ -405,7 +405,7 @@ export const refunds: Refund[] = [
   {
     refund_id: "r-1", amount_kobo: 840_000, currency: "NGN", status: "pending",
     reason: "Order cancelled after payment", attempts: 1,
-    provider_refund_id: null, last_error: "Paystack timeout",
+    provider_refund_id: null, last_error: "Monnify timeout",
     created_at: iso(-1 * DAY), settled_at: null,
     order: { order_id: "o-expired", order_number: "U2-100031", guest_phone: "+2348030000009", profile: null },
   },
@@ -413,7 +413,7 @@ export const refunds: Refund[] = [
 
 export const auditEntries: AuditEntry[] = [
   { audit_id: 1, action: "bundle.publish_override", entity_type: "bundle", entity_id: "bu-starter", before: null, after: { name: "Starter Set" }, note: "Admin override — supplier spec changed", created_at: iso(-2 * DAY), request_id: "req-9f2c11", actor: { display_name: "Uche Obi", role: "admin" } },
-  { audit_id: 2, action: "payment.amount_mismatch", entity_type: "order", entity_id: "o-delivery", before: null, after: { expected: 990_000 }, note: "Paystack reported a larger amount", created_at: iso(-7 * HOUR), request_id: "req-3a1b70", actor: { display_name: null, role: "system" } },
+  { audit_id: 2, action: "payment.amount_mismatch", entity_type: "order", entity_id: "o-delivery", before: null, after: { expected: 990_000 }, note: "Monnify reported a larger amount", created_at: iso(-7 * HOUR), request_id: "req-3a1b70", actor: { display_name: null, role: "system" } },
   { audit_id: 3, action: "gas_stock.addition", entity_type: "gas_stock", entity_id: "e-1", before: null, after: { amount_kg: 3000 }, note: "Truck 24 delivery", created_at: iso(-3 * DAY), request_id: "req-77aa02", actor: { display_name: "Uche Obi", role: "admin" } },
   { audit_id: 4, action: "product.price_change", entity_type: "product", entity_id: "pr-hose", before: { price_kobo: 220_000 }, after: { price_kobo: 250_000 }, note: null, created_at: iso(-4 * DAY), request_id: null, actor: { display_name: "Uche Obi", role: "admin" } },
 ];

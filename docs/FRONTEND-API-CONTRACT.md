@@ -80,9 +80,9 @@ type OrderStatus      = "pending" | "confirmed" | "processing"
                       | "fulfilled" | "cancelled" | "expired";
 type PaymentStatus    = "pending" | "paid" | "failed"
                       | "refunded" | "partially_refunded";
-// The first value is the *stored* gateway tag. It is being switched from
-// Paystack to Monify — see §6.1. Nothing in the UI sends this value.
-type PaymentMethod    = "paystack" | "cash" | "card_terminal"
+// The first value is the *stored* gateway tag, set server-side. Nothing in the
+// UI sends it — see §6.1.
+type PaymentMethod    = "monnify" | "cash" | "card_terminal"
                       | "bank_transfer" | "opay";
 type ReservationStatus = "reserved" | "fulfilled" | "released" | "expired";
 type QrStatus          = "unscanned" | "scanned" | "expired" | "void";
@@ -694,49 +694,62 @@ The other three methods (`card`, `bank_transfer`, `opay`) go through the payment
 gateway: `POST /payments/initialize` returns an `authorization_url` to redirect
 to, and the webhook (not the browser) is what marks the order paid.
 
-### 6.1 Gateway migration: Paystack → Monify
+### 6.1 The gateway is Monnify
 
-The project is moving its online payment gateway from **Paystack** to
-**Monify**. This does **not** change the contract above, with one exception
-noted at the end. What stays the same:
+The online gateway is **Monnify** (a Moniepoint product), migrated from Paystack
+in migration `0025_monnify.sql`. The contract above did not move; what follows is
+what changed underneath it.
 
-- `/payments/initialize` still returns `authorization_url` and `reference`. The
+What is unchanged, and is what the frontend actually depends on:
+
+- `/payments/initialize` returns `authorization_url` and `reference`. The
   frontend redirects to `authorization_url` exactly as before.
-- `/payments/verify` still takes `{ reference, order_id }`.
-- The order is still marked paid by the **webhook**, never by the browser.
-- `card`, `bank_transfer` and `opay` are still the customer-facing methods.
-- The payment-method enum values the **frontend** uses are unchanged.
+- `/payments/verify` takes `{ reference, order_id }`.
+- The order is marked paid by the **webhook**, never by the browser.
+- `card`, `bank_transfer` and `opay` are the customer-facing methods.
+- The `cash | card_terminal | bank_transfer | opay` enum the staff endpoint
+  accepts is unchanged.
 
-**The one exception — the webhook path.** It is `/payments/webhook/paystack`
-today and becomes `/payments/webhook/monify`. That is a server-side route, so no
-screen calls it; it only matters for the gateway dashboard configuration and any
-deploy documentation.
+What changed, all server-side:
 
-Two values that carry the gateway's name and will change:
-
-| Where | Today | After |
+| Where | Before | Now |
 |---|---|---|
-| `payment_method` enum, gateway value | `'paystack'` | gateway tag for Monify |
-| `refund.provider` default | `'paystack'` | same tag |
+| Webhook path | `/payments/webhook/paystack` | `/payments/webhook/monnify` |
+| Webhook signature header | `x-paystack-signature` | `monnify-signature` |
+| Signature scheme | HMAC-SHA512 of the raw body, keyed by the secret | **same** |
+| Webhook event type | `charge.success` | `SUCCESSFUL_TRANSACTION` |
+| Webhook payload shape | `{ event, data }` | `{ eventType, eventData }`, and `eventData` is flat |
+| Merchant reference field | `data.reference` | `eventData.paymentReference` |
+| Metadata field | `metadata` | `metaData` (capital D), string values only |
+| Stored `payment_method` | `'paystack'` | `'monnify'` |
+| `refund.provider` default | `'paystack'` | `'monnify'` |
+| Error codes | `PAYSTACK_*` | `MONNIFY_*` |
+| Auth | static secret key as Bearer | Basic (API key + secret) mints a 1-hour Bearer token, cached in KV |
+| Public key | `PAYSTACK_PUBLIC_KEY` | **none** — see below |
 
-⚠️ **Neither of these is sent by the UI.** `payment_method` is chosen
-server-side by the payments route; the staff endpoint's own enum is only
-`cash | card_terminal | bank_transfer | opay`, which does not change. A screen
-reading a stored method should therefore **switch on the four
+⚠️ **`public_key` is now always `null`.** Paystack's inline popup needed a public
+key in the browser; Monnify's checkout is a full-page redirect to a URL the
+server is given, so no gateway credential is ever shipped to the client. The
+field is kept in the response so the client contract does not change, but no
+screen should read it.
+
+⚠️ **Amounts invert.** Paystack took **kobo as an integer**; Monnify takes
+**naira as a decimal**. `500000` kobo is `5000.00` to Monnify. The Worker
+converts at the boundary (`koboToNaira` / `nairaToKobo` in
+`worker/src/lib/monnify.ts`) and nowhere else. If you ever add a call to the
+gateway directly, convert — passing kobo through charges one hundred times the
+order total.
+
+⚠️ **Neither stored tag is sent by the UI.** `payment_method` is chosen
+server-side; a screen reading a stored method should **switch on the four
 customer-facing/in-person values and treat anything else as "paid online"**
-rather than hardcoding `"paystack"`. That way the migration is invisible to the
-frontend.
+rather than hardcoding `"monnify"`. That keeps the next provider change
+invisible to the frontend too.
 
-Also changing, server-side only: the API base (`https://api.paystack.co`), the
-env vars (`PAYSTACK_SECRET_KEY` / `PAYSTACK_PUBLIC_KEY` /
-`PAYSTACK_CALLBACK_PATH`), the signature scheme used to verify the webhook, and
-the three error codes in §8 prefixed `PAYSTACK_`. The `authorization_url`
-redirect flow, and therefore the screen logic, is unaffected.
+**Out of scope for the frontend, confirmed:** it does not call the gateway's
+API, does not verify signatures, and does not name the gateway except in a route
+label in `routeRegistry.ts`. Monnify is a Worker and migration concern.
 
-**Confirmed out of scope for the frontend:** the frontend does not touch the
-gateway's API, does not verify signatures, and does not name the gateway
-anywhere except in a route label in `routeRegistry.ts`. Treat this as a Worker
-and migration change.
 
 
 ---
@@ -806,9 +819,9 @@ alone.
 | `UNDERPAID` | 409 | |
 | `INSUFFICIENT_TENDER` | 400 | Cash tendered below the total |
 | `DUPLICATE_PAYMENT` | 409 | |
-| `GATEWAY_INIT_FAILED` | 502 | *Currently `PAYSTACK_INIT_FAILED`; renamed with the Monify migration (§6.1)* |
-| `GATEWAY_VERIFY_FAILED` | 502 | *Currently `PAYSTACK_VERIFY_FAILED`* |
-| `GATEWAY_REFUND_FAILED` | 502 | *Currently `PAYSTACK_REFUND_FAILED`* |
+| `MONNIFY_INIT_FAILED` | 502 | The checkout page could not be created |
+| `MONNIFY_VERIFY_FAILED` | 502 | Could not confirm the payment with the gateway |
+| `MONNIFY_REFUND_FAILED` | 502 | The gateway refused the refund; it stays queued |
 | `REFUND_NOT_AUTOMATABLE` | 409 | Cash — refund in person |
 | `REFUND_NOT_CLAIMABLE` | 409 | |
 | `REFUND_NOT_FOUND` | 404 | |
@@ -951,6 +964,6 @@ Bindings by node id (`values={{ "1:2096": … }}`, `data-node` hit-tests, the
   `Idempotency-Key`.
 - **`message` is display copy.** Render it verbatim; never compose your own.
 - **Guests carry a token.** Losing it loses the order.
-- **The gateway is not the frontend's business.** Do not hardcode `"paystack"`
+- **The gateway is not the frontend's business.** Do not hardcode `"monnify"`
   as a stored method value — see §6.1. The redirect flow is what the UI relies
   on, and it does not change when the gateway does.

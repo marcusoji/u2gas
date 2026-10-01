@@ -465,7 +465,7 @@ async function route(
     if (order.payment_status === "paid") return { authorization_url: "", reference: "", already_paid: true };
     const reference = `mock-ref-${nextId()}`;
     state.paymentRefs.set(reference, order.order_id);
-    // Send the browser to our own verify page, standing in for the Paystack
+    // Send the browser to our own verify page, standing in for the Monnify
     // redirect, so the full pay → verify → receipt path is visible offline.
     const url = `${window.location.origin}/orders/verify?order=${order.order_id}` +
       `&reference=${reference}`;

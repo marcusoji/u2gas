@@ -58,7 +58,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
       : params.get("receipt") === "alt" ? "alt"
       : params.get("receipt") === "success" ? "success"
       : params.get("receipt") === "receipt" ? "receipt"
-      // Arriving straight from Paystack, the first board the file draws is the
+      // Arriving straight from the gateway, the first board the file draws is the
       // success one; a revisit goes straight to the receipt.
       : verifying ? "success" : "receipt");
 
@@ -76,7 +76,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
     }
   }, [orderId, guestToken]);
 
-  // Returning from Paystack. Never trust the redirect saying it worked —
+  // Returning from the gateway. Never trust the redirect saying it worked —
   // verify server-side first. (Spec 12)
   useEffect(() => {
     if (!verifying || !paymentReference) { void load(); return; }
@@ -193,7 +193,7 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
       try { sessionStorage.removeItem(`u2gas.qr.${order.order_id}`); } catch { /* private mode */ }
       setQrDataUrl(null);
       // Careful wording: the money has not moved yet, and saying otherwise
-      // would be a promise we cannot keep until Paystack confirms.
+      // would be a promise we cannot keep until Monnify confirms.
       if (res.refund) {
         setRefundNote("REFUND REQUESTED — WE'LL EMAIL YOU WHEN IT'S SENT");
       }

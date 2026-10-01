@@ -115,7 +115,7 @@ ORDER=$(q "
 q "select reserve_gas('$ORDER','$DEPOT',2,now() - interval '1 minute');"
 
 psql "$DB" -qtAX -c "select * from expire_order_holds(100);" >/tmp/gt_e.out 2>&1 &
-psql "$DB" -qtAX -c "select confirm_payment('$ORDER','paystack','race_ref',280000,'paystack');" >/tmp/gt_p.out 2>&1 &
+psql "$DB" -qtAX -c "select confirm_payment('$ORDER','monnify','race_ref',280000,'monnify');" >/tmp/gt_p.out 2>&1 &
 wait
 
 status=$(q "select status || '/' || payment_status from \"order\" where order_id='$ORDER';")

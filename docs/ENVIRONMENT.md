@@ -13,8 +13,10 @@ Set with `wrangler secret put <NAME>`. Never in `wrangler.toml`, never in git.
 | `SUPABASE_PUBLISHABLE_KEY` | same | RLS-scoped reads. `SUPABASE_ANON_KEY` is the legacy name, still accepted as a fallback |
 | `SUPABASE_SECRET_KEY` | same | All writes. **Never send to a browser.** `SUPABASE_SERVICE_ROLE_KEY` is the legacy name, still accepted as a fallback |
 | `SUPABASE_JWT_SECRET` | same | Only needed on legacy projects still signing HS256 |
-| `PAYSTACK_SECRET_KEY` | Paystack dashboard | Payments and webhook signatures |
-| `PAYSTACK_PUBLIC_KEY` | same | Checkout initialisation |
+| `MONNIFY_API_KEY` | Monnify → API Keys & Contracts | Mints the access token |
+| `MONNIFY_SECRET_KEY` | same | Basic auth and webhook signatures |
+| `MONNIFY_CONTRACT_CODE` | same | Names the merchant contract on every call |
+| `MONNIFY_BASE_URL` | optional | `https://sandbox.monnify.com` while testing |
 | `RESEND_API_KEY` | Resend dashboard | Transactional mail |
 | `QR_SIGNING_KEY` | `openssl rand -hex 32` | QR validation |
 
@@ -27,7 +29,7 @@ In `wrangler.toml` under `[vars]`.
 | `ENVIRONMENT` | `production` | |
 | `APP_ORIGIN` | `https://u2gas.ng` | CORS is pinned to this exactly |
 | `DEPOT_ID` | `00000000-…-d001` | From `0007_seed.sql` |
-| `PAYSTACK_CALLBACK_PATH` | `/orders/verify` | Where checkout returns |
+| `MONNIFY_CALLBACK_PATH` | `/orders/verify` | Where checkout returns |
 
 ## Cloudflare Pages
 
@@ -52,7 +54,7 @@ All public. Anything secret here is a leak.
 
 - **Service role** — rotate in Supabase, `wrangler secret put`, redeploy. Brief
   write outage between the two.
-- **Paystack secret** — rotate, update the secret, then confirm a fresh webhook
+- **Monnify secret** — rotate, update the secret, then confirm a fresh webhook
   verifies. In-flight webhooks signed with the old key will be rejected.
 - **QR signing key** — invalidates every outstanding QR code. Customers holding
   an unused code cannot collect until they reopen their order and get a new
