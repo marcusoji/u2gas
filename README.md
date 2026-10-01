@@ -155,6 +155,7 @@ the file first, then bring the change into the app.
 | `docs/ARCHITECTURE.md` | How the pieces fit, and where each rule is enforced |
 | `docs/HANDOVER.md` | Getting the dev server running with no API, adding a page, the asset workflow, and what is left to match Figma |
 | `docs/SETUP-CHECKLIST.md` | Accounts, credentials and details needed to set the system up, in order |
+| `docs/FRONTEND-API-CONTRACT.md` | Every backend model, endpoint, enum and error code the frontend binds to |
 | `docs/DEPLOY-NO-CLI.md` | Step-by-step deployment using only web dashboards |
 | `docs/PRODUCTION-READINESS.md` | What was fixed, what remains, the verdict |
 | `docs/ENVIRONMENT.md` | Every variable, where it comes from, what rotating costs |
