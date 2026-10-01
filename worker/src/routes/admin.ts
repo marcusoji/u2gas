@@ -3,7 +3,8 @@ import { z } from "zod";
 import type { AppEnv, Ctx, KVKey } from "../types";
 import { rpc, select } from "../lib/db";
 import {
-  monnifyBase, monnifyToken, monnifyOk, monnifyTransactionReference, koboToNaira,
+  monnifyBase, monnifyToken, monnifyOk, monnifyTransactionReference,
+  monnifyRefundable, koboToNaira,
 } from "../lib/monnify";
 import { appError } from "../lib/errors";
 import { requireRole } from "../middleware/auth";
@@ -473,6 +474,20 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
   const { data: payment } = await db.from("payment")
     .select("raw_payload").eq("provider_reference", claim.provider_reference)
     .eq("provider", "monnify").limit(1).maybeSingle();
+
+  // Monnify refunds bank transfers only — a card payment is refused with R2
+  // however healthy the wallet is. Saying so here, in our own words, is more
+  // use to the admin than a 502 carrying the gateway's code, and it leaves
+  // the refund in the queue where the manual route can close it.
+  if (!monnifyRefundable(payment?.raw_payload?.paymentMethod)) {
+    await rpc(db, "settle_refund", {
+      p_refund_id: id, p_status: "pending",
+      p_error: "Card payment — Monnify refunds bank transfers only. Refund manually.",
+    });
+    throw appError("REFUND_METHOD_NOT_ELIGIBLE", {
+      method: String(payment?.raw_payload?.paymentMethod ?? ""),
+    });
+  }
 
   const transactionReference =
     monnifyTransactionReference(payment?.raw_payload) ?? claim.provider_reference;

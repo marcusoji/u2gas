@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   koboToNaira, nairaToKobo, monnifyMeta, monnifyTransactionReference,
+  monnifyRefundable,
 } from "../src/lib/monnify";
 
 /**
@@ -81,5 +82,35 @@ describe("transaction reference", () => {
     expect(monnifyTransactionReference({ paymentReference: "u2gas-abc" })).toBeNull();
     expect(monnifyTransactionReference(undefined)).toBeNull();
     expect(monnifyTransactionReference({ transactionReference: "" })).toBeNull();
+  });
+});
+
+describe("refund eligibility", () => {
+  it("allows a bank transfer, the only method Monnify refunds", () => {
+    expect(monnifyRefundable("ACCOUNT_TRANSFER")).toBe(true);
+    expect(monnifyRefundable("account_transfer")).toBe(true);
+  });
+
+  it("refuses a card, which Monnify answers with R2", () => {
+    // "Refund not permitted for specified transaction — Refund is currently
+    // only possible for payments via Account_Transfer." No wallet balance
+    // makes this work, so it must be refused before the gateway is called.
+    expect(monnifyRefundable("CARD")).toBe(false);
+    expect(monnifyRefundable("card")).toBe(false);
+  });
+
+  it("refuses the other collection channels too", () => {
+    expect(monnifyRefundable("USSD")).toBe(false);
+    expect(monnifyRefundable("PHONE_NUMBER")).toBe(false);
+    expect(monnifyRefundable("DIRECT_DEBIT")).toBe(false);
+  });
+
+  it("allows an unknown method, leaving the gateway as the authority", () => {
+    // A payload that does not say how the customer paid must not block a
+    // refund that would have gone through.
+    expect(monnifyRefundable(null)).toBe(true);
+    expect(monnifyRefundable(undefined)).toBe(true);
+    expect(monnifyRefundable("")).toBe(true);
+    expect(monnifyRefundable(42)).toBe(true);
   });
 });

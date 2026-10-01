@@ -77,7 +77,9 @@ Two things to ask Monnify support for, because they are off by default:
 Email integration-support@monnify.com from the account's own address, quoting
 your **business code** (shown at the top of the dashboard menu), and say where
 you want refunds enabled — dashboard, API, or both. Activation is usually
-within 24 hours.
+within 24 hours. **`docs/MONNIFY-REFUND-ACTIVATION.md` has the ready-to-send
+request, the three prerequisites, and how to confirm it worked** — use it
+rather than composing the email from scratch.
 
 Three refund facts to plan around before you take real money:
 

@@ -104,6 +104,10 @@ const MAP: Record<string, Mapping> = {
     status: 409,
     message: () => "THIS ONE WASN'T PAID ONLINE — REFUND IT IN PERSON",
   },
+  REFUND_METHOD_NOT_ELIGIBLE: {
+    status: 409,
+    message: () => "CARD PAYMENTS CAN'T BE REFUNDED AUTOMATICALLY — SEND THE MONEY BACK AND MARK IT REFUNDED",
+  },
   REFUND_NOT_CLAIMABLE: {
     status: 409,
     message: (d) => `THIS REFUND IS ALREADY ${String(d.status ?? "").toUpperCase()}`,

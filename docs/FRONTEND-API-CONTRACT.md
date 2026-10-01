@@ -748,7 +748,12 @@ order total.
 ⚠️ **Refunds have hard constraints, all of them Monnify's.** The Refund service
 is **not enabled by default** (request activation from
 integration-support@monnify.com, quoting the business code). Refunds are
-**bank-transfer only — card payments are not eligible**. And refunds are paid
+**bank-transfer only — card payments are not eligible**, and this is enforced
+before the gateway is called: the Worker reads `paymentMethod` from the stored
+payment payload and refuses anything but `ACCOUNT_TRANSFER` with
+`REFUND_METHOD_NOT_ELIGIBLE`, leaving the row `pending` for the manual route.
+A card payment is therefore not refundable through the gateway at all — send
+the money back and close the refund with `POST /refunds/:id/manual`. And refunds are paid
 **out of the Monnify wallet**, not the settlement bank account, so the wallet
 must hold enough or the refund fails. A refund that Monnify refuses returns to
 `pending` with its reason recorded, and the admin's manual route closes it.
@@ -845,6 +850,7 @@ alone.
 | `MONNIFY_VERIFY_FAILED` | 502 | Could not confirm the payment with the gateway |
 | `MONNIFY_REFUND_FAILED` | 502 | The gateway refused the refund; it stays queued |
 | `REFUND_NOT_AUTOMATABLE` | 409 | Cash — refund in person |
+| `REFUND_METHOD_NOT_ELIGIBLE` | 409 | Card — Monnify refunds bank transfers only; send the money back and mark it manual |
 | `REFUND_NOT_CLAIMABLE` | 409 | |
 | `REFUND_NOT_FOUND` | 404 | |
 | `INVALID_REFUND_STATUS` | 409 | |

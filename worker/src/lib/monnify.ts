@@ -94,6 +94,27 @@ export function monnifyTransactionReference(data: any): string | null {
   return null;
 }
 
+/**
+ * Whether Monnify will refund a payment, given how it was made.
+ *
+ * Monnify refunds bank transfers only. Its error table is explicit: R2,
+ * "Refund not permitted for specified transaction — Refund is currently only
+ * possible for payments via Account_Transfer." A card payment is therefore
+ * refused outright, however healthy the wallet is, so there is no point
+ * spending a gateway call to be told so.
+ *
+ * The rule lives here rather than inline in the route so the route and its
+ * test cannot drift apart.
+ *
+ * An unknown method answers `true`. A payload that does not say how the
+ * customer paid must not block a refund that would have gone through — the
+ * gateway stays the authority when we do not know.
+ */
+export function monnifyRefundable(paymentMethod: unknown): boolean {
+  if (typeof paymentMethod !== "string" || !paymentMethod) return true;
+  return paymentMethod.toUpperCase() === "ACCOUNT_TRANSFER";
+}
+
 /** `metaData` arrives as an object of strings, or as a JSON string. Accept both. */
 export function monnifyMeta(data: any): any {
   const raw = data?.metaData;
