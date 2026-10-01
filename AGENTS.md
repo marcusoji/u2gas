@@ -11,19 +11,21 @@ React + Vite frontend (`web/`) over a Cloudflare Worker API (`worker/`).
 
 ## Commands (run from `web/` unless noted)
 
-- `npm run dev` إŒؤ†أ¶ Vite dev server; this is what the preview tunnel serves.
-  Vite binds loopback unless told otherwise, so a bare `npm run dev` leaves the
-  `work-*` tunnel answering **502 Bad Gateway** while `curl 127.0.0.1:12001`
-  is a clean 200. Start it as the root `npm run dev` does إŒؤ†أ¶ `vite --host
-  0.0.0.0 --port 12001 --strictPort` إŒؤ†أ¶ or the preview URL is unreachable even
-  though the app is running.
-- `npm run check:frontend` إŒؤ†أ¶ asset + Figma route registry guards
-- `npm run check:assets` إŒؤ†أ¶ fails if a font/image referenced by CSS is missing
-- `npm run build` â€” asset check, `tsc -b`, `vite build`, then the CSP header.
+- `npm run dev` — Vite dev server; this is what the preview tunnel serves.
+  Vite binds loopback unless told otherwise, so a bare `npm run dev` leaves a
+  remote tunnel answering **502 Bad Gateway** while `curl 127.0.0.1:5173` is a
+  clean 200. The repo's Vite port is **5173** (`web/vite.config.ts`), and the
+  root `npm run dev` forwards `--host 0.0.0.0` so a tunnel can reach it. To
+  serve on another port, pass it explicitly — `npm run dev -- --port 12001
+  --strictPort` — because `--host 0.0.0.0` alone does not change the port and
+  the tunnel will still be pointing at the wrong one.
+- `npm run check:frontend` — asset + Figma route registry guards
+- `npm run check:assets` — fails if a font/image referenced by CSS is missing
+- `npm run build` — asset check, `tsc -b`, `vite build`, then the CSP header.
   It fails if `VITE_API_ORIGIN` is unset, because the CSP names the API origin
   explicitly; the script reads Vite's own `.env` (loading it via `loadEnv`), so
   the value does not have to be exported a second time. A
-  `VITE_EMBEDDED_API=true` build contacts no API and may omit the origin â€”
+  `VITE_EMBEDDED_API=true` build contacts no API and may omit the origin —
   and the flag takes precedence: when it is set, `VITE_API_ORIGIN` is ignored
   for the header even if `.env` still names a local Worker, so `connect-src`
   is 'self' and a mock build never ships a `127.0.0.1` directive.
