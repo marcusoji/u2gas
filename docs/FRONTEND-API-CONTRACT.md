@@ -96,6 +96,10 @@ type ImageOwner        = "product" | "profile" | "bundle" | "stock_entry";
 type CompatMatch       = "equal" | "in_set" | "numeric_range";
 type RefundStatus      = "pending" | "processing" | "refunded"
                        | "declined" | "manual";
+// `processing` means handed to Monnify, awaiting its answer. Monnify refunds
+// are asynchronous: the acceptance response is not the refund. `refunded` is
+// set only by the SUCCESSFUL_REFUND webhook (or a terminal status on the
+// acceptance response), so the customer is never told "refunded" early.
 ```
 
 ⚠️ **`"depot"` is not a payment method.** "Pay in the depot" is a UI branch that
@@ -570,6 +574,7 @@ pay. This endpoint does.
 | GET | `/admin/orders?status=` · POST `/admin/orders/:id/cancel` · POST `/admin/orders/:id/assign` |
 | GET | `/admin/flagged` |
 | GET | `/admin/refunds` · POST `/admin/refunds/:id/process` · POST `/admin/refunds/:id/manual` |
+| | `/process` → `{ ok, status, pending_webhook?, already? }`. `status: "processing"` means Monnify accepted it and the refund webhook will settle it; `"refunded"` means it is already terminal. Both are success. |
 | GET | `/admin/zones` · POST `/admin/zones` · PATCH `/admin/zones/:id` |
 | GET | `/admin/staff` · POST `/admin/staff` · DELETE `/admin/staff/:id` |
 | GET | `/admin/drivers` |
@@ -739,6 +744,23 @@ converts at the boundary (`koboToNaira` / `nairaToKobo` in
 `worker/src/lib/monnify.ts`) and nowhere else. If you ever add a call to the
 gateway directly, convert — passing kobo through charges one hundred times the
 order total.
+
+⚠️ **Refunds have hard constraints, all of them Monnify's.** The Refund service
+is **not enabled by default** (request activation from
+integration-support@monnify.com, quoting the business code). Refunds are
+**bank-transfer only — card payments are not eligible**. And refunds are paid
+**out of the Monnify wallet**, not the settlement bank account, so the wallet
+must hold enough or the refund fails. A refund that Monnify refuses returns to
+`pending` with its reason recorded, and the admin's manual route closes it.
+
+⚠️ **Refunds are asynchronous.** Monnify accepts a refund and answers later,
+over a `SUCCESSFUL_REFUND` / `FAILED_REFUND` webhook. The row therefore goes
+`pending → processing` on acceptance and only becomes `refunded` when the
+gateway confirms. A refund is requested with Monnify's own
+`transactionReference`, **not** the merchant `paymentReference` — the merchant
+reference is not accepted there — so the id is read from the stored payment
+payload. Refunds are also disabled by default on a Monnify account; see the
+setup checklist.
 
 ⚠️ **Neither stored tag is sent by the UI.** `payment_method` is chosen
 server-side; a screen reading a stored method should **switch on the four

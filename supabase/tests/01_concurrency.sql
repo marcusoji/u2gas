@@ -737,10 +737,10 @@ end $$;
 do $$
 declare a jsonb; b jsonb; c jsonb; d jsonb;
 begin
-  a := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
+  a := claim_webhook_event('monnify','evt.lease.1','SUCCESSFUL_TRANSACTION','{}'::jsonb, 60);
   perform t_assert('first delivery claims the event', a->>'state' = 'claimed', a::text);
 
-  b := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
+  b := claim_webhook_event('monnify','evt.lease.1','SUCCESSFUL_TRANSACTION','{}'::jsonb, 60);
   -- The old code returned 200 here, so the gateway stopped retrying even if the
   -- holder went on to fail.
   perform t_assert('concurrent delivery is told in_flight, not processed',
@@ -748,11 +748,11 @@ begin
 
   -- Holder fails: the lease is released but the event stays unprocessed.
   perform finish_webhook_event('monnify','evt.lease.1','boom');
-  c := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
+  c := claim_webhook_event('monnify','evt.lease.1','SUCCESSFUL_TRANSACTION','{}'::jsonb, 60);
   perform t_assert('a failed event can be reclaimed', c->>'state' = 'claimed', c::text);
 
   perform finish_webhook_event('monnify','evt.lease.1', null);
-  d := claim_webhook_event('monnify','evt.lease.1','charge.success','{}'::jsonb, 60);
+  d := claim_webhook_event('monnify','evt.lease.1','SUCCESSFUL_TRANSACTION','{}'::jsonb, 60);
   perform t_assert('a processed event is not reprocessed',
     d->>'state' = 'processed', d::text);
 

@@ -2,7 +2,9 @@ import { Hono } from "hono";
 import { z } from "zod";
 import type { AppEnv, Ctx, KVKey } from "../types";
 import { rpc, select } from "../lib/db";
-import { monnifyBase, monnifyToken, monnifyOk } from "../lib/monnify";
+import {
+  monnifyBase, monnifyToken, monnifyOk, monnifyTransactionReference, koboToNaira,
+} from "../lib/monnify";
 import { appError } from "../lib/errors";
 import { requireRole } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
@@ -462,24 +464,42 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
     throw appError("REFUND_NOT_AUTOMATABLE");
   }
 
+  // A refund is requested with Monnify's own transaction id, not with the
+  // merchant reference we created — `paymentReference` is not accepted there.
+  // The verify payload carries it, and that payload is stored on the payment
+  // row, so it is recovered from there. A payment recorded from a webhook
+  // alone has no `transactionReference` in its eventData, so this is also
+  // where the two paths are reconciled.
+  const { data: payment } = await db.from("payment")
+    .select("raw_payload").eq("provider_reference", claim.provider_reference)
+    .eq("provider", "monnify").limit(1).maybeSingle();
+
+  const transactionReference =
+    monnifyTransactionReference(payment?.raw_payload) ?? claim.provider_reference;
+
   let res: Response;
   try {
     const token = await monnifyToken(c.env, c.env.CACHE);
-    res = await fetch(`${monnifyBase(c.env)}/api/v1/merchant/refunds/initiate-refund`, {
+    res = await fetch(`${monnifyBase(c.env)}/api/v1/refunds/initiate-refund`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        transactionReference: claim.provider_reference,
+        transactionReference,
         // Monnify's refund amount is naira, like every other amount it takes.
-        refundAmount: Number(claim.amount_kobo) / 100,
+        refundAmount: koboToNaira(Number(claim.amount_kobo)),
         refundReason: `U2GAS refund ${id}`,
         // Our own id for the refund, so a retry is recognisable as the same
-        // refund rather than a second one.
+        // refund rather than a second one. Monnify echoes it back as
+        // `refundReference`, and the refund webhook is matched on it.
         refundReference: `u2gas-${id}`,
-        customerNote: "Refund processed within 3 business days",
+        // Monnify caps this at 16 characters — a longer note is rejected with
+        // "Customer Note must be between 1 and 16 characters", which would
+        // fail every refund. The longer explanation belongs in the customer's
+        // notification, not here.
+        customerNote: "U2GAS refund",
       }),
     });
   } catch {
@@ -511,14 +531,39 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
     throw appError("MONNIFY_REFUND_FAILED", { reason: message });
   }
 
-  const settled = await rpc<any>(db, "settle_refund", {
-    p_refund_id: id,
-    p_status: "refunded",
-    p_provider_refund_id: String(body?.refundReference ?? body?.id ?? ""),
-    p_payload: body ?? null,
-  });
+  // Monnify answers an accepted refund with a status, and the refund moves
+  // through PENDING to COMPLETED or FAILED. Only a terminal status is
+  // settled here. Anything else leaves the row in `processing` — which
+  // claim_refund already set — and the refund webhook closes it. Marking it
+  // refunded on acceptance would promise the customer their money is on its
+  // way before Monnify had agreed to move it, and would leave the row
+  // looking settled if the refund later failed.
+  const refundStatus = String(body?.refundStatus ?? body?.status ?? "").toUpperCase();
 
-  return c.json({ ok: true, ...settled });
+  if (refundStatus === "COMPLETED" || refundStatus === "SUCCESS") {
+    await rpc(db, "settle_refund", {
+      p_refund_id: id,
+      p_status: "refunded",
+      p_provider_refund_id: String(body?.refundReference ?? ""),
+      p_payload: body ?? null,
+    });
+    return c.json({ ok: true, status: "refunded" });
+  }
+
+  if (refundStatus === "FAILED" || refundStatus === "REJECTED") {
+    const message = String(body?.refundMessage ?? "Monnify could not complete the refund").slice(0, 200);
+    await rpc(db, "settle_refund", {
+      p_refund_id: id, p_status: "pending", p_payload: body ?? null, p_error: message,
+    });
+    throw appError("MONNIFY_REFUND_FAILED", { reason: message });
+  }
+
+  // Accepted and still in flight. No write is needed: claim_refund already
+  // put the row in `processing`, and settle_refund deliberately refuses that
+  // state (it is entered by claiming, not by settling). The SUCCESSFUL_REFUND
+  // webhook is what closes it, and the admin queue already shows it as in
+  // progress.
+  return c.json({ ok: true, status: "processing", pending_webhook: true });
 });
 
 /** Close a refund settled outside the system — cash handed back at the depot. */

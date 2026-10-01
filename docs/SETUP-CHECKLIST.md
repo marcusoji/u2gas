@@ -74,6 +74,21 @@ Two things to ask Monnify support for, because they are off by default:
 **Refunds** (needed before a paid order can be refunded automatically) and
 **Card tokenisation** (only if you ever want saved cards).
 
+Email integration-support@monnify.com from the account's own address, quoting
+your **business code** (shown at the top of the dashboard menu), and say where
+you want refunds enabled — dashboard, API, or both. Activation is usually
+within 24 hours.
+
+Three refund facts to plan around before you take real money:
+
+1. **Refunds are bank-transfer only.** Card transactions are not eligible, so a
+   card payment can only be reversed in person or by transfer. If most of your
+   volume is cards, decide now how you will handle that.
+2. **Refunds come out of the Monnify wallet, not your bank account.** Keep the
+   wallet funded or refunds fail with a balance error.
+3. **The Refund service is off by default** and must be switched on per
+   account.
+
 ### Resend → API Keys
 
 | Credential | Goes to |

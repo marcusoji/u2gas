@@ -28,7 +28,12 @@ export default function OrderStatus({ verifying }: { verifying?: boolean }) {
 
   const orderId = id ?? params.get("order") ?? "";
   const paymentRetry = params.get("payment") === "retry";
-  const paymentReference = params.get("reference") ?? params.get("trxref");
+  // Monnify returns the reference as `paymentReference`; `reference`/`trxref`
+  // are Paystack's names. Reading only those left this undefined on a Monnify
+  // return, so the verification never ran and a paid order sat on screen
+  // looking unpaid until the webhook caught up.
+  const paymentReference =
+    params.get("paymentReference") ?? params.get("reference") ?? params.get("trxref");
 
   // The token arrives in the link, or from this device if they are coming
   // back to an order they placed earlier.

@@ -74,6 +74,26 @@ export function monnifyOk(res: Response, json: any): boolean {
   return res.ok && json?.requestSuccessful !== false;
 }
 
+/**
+ * Monnify's own id for a transaction.
+ *
+ * A refund is requested with `transactionReference` (Monnify's id), not with
+ * the `paymentReference` we created — the merchant reference is not accepted
+ * there. The verify payload carries `transactionReference`; the webhook's
+ * eventData does not, so for a webhook-sourced payment the id is recovered
+ * from the stored raw payload.
+ */
+export function monnifyTransactionReference(data: any): string | null {
+  const direct = data?.transactionReference;
+  if (typeof direct === "string" && direct) return direct;
+
+  const product = data?.product;
+  if (product && typeof product.reference === "string" && product.reference) {
+    return product.reference;
+  }
+  return null;
+}
+
 /** `metaData` arrives as an object of strings, or as a JSON string. Accept both. */
 export function monnifyMeta(data: any): any {
   const raw = data?.metaData;

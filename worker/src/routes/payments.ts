@@ -250,7 +250,17 @@ payments.post("/webhook/monnify", async (c) => {
   // Monnify's merchant reference is `paymentReference`; `transactionReference`
   // is Monnify's own id for the same transaction. We key on ours, because that
   // is what the payment row was written with.
-  const reference = data?.paymentReference;
+  //
+  // A refund event is the exception: it carries `refundReference` (the value
+  // we supplied at request time) and no `paymentReference` at all. Reading
+  // only `paymentReference` here would drop every refund webhook as
+  // "unrecognised", leaving the refund stuck in `processing` forever.
+  const isRefundEvent = eventType === "SUCCESSFUL_REFUND" || eventType === "FAILED_REFUND";
+
+  const reference = isRefundEvent
+    ? (data?.refundReference ?? data?.paymentReference)
+    : data?.paymentReference;
+
   if (!reference) return c.json({ ok: true, ignored: true });
 
   const eventId = `${eventType}:${reference}`;
@@ -282,6 +292,8 @@ payments.post("/webhook/monnify", async (c) => {
       const orderId = monnifyMeta(data)?.order_id;
       if (!orderId) throw new Error("no order_id in metadata");
       await verifyAndRecord(c.env, admin, reference, orderId, data);
+    } else if (eventType === "SUCCESSFUL_REFUND" || eventType === "FAILED_REFUND") {
+      await settleRefundFromWebhook(admin, reference, eventType, data);
     } else if (eventType === "FAILED_TRANSACTION" || eventType === "REJECTED_PAYMENT") {
       await admin.from("payment")
         .update({ status: "failed", raw_payload: data })
@@ -338,8 +350,15 @@ async function verifyAndRecord(
   // checkout has only the reference, so ask. Either way the checks below run.
   if (!data || data.paymentStatus !== "PAID") {
     const token = await monnifyToken(env, env.CACHE);
+    // The lookup is by *paymentReference* (our merchant reference) through the
+    // query endpoint. `/api/v2/transactions/<reference>` looks like the
+    // obvious path and is what the docs lead with, but against the sandbox it
+    // answers 404 for a reference this account created — it wants Monnify's
+    // own transactionReference, which a webhook does not carry. The query
+    // endpoint takes the merchant reference and is what actually resolves.
     const res = await fetch(
-      `${monnifyBase(env)}/api/v2/transactions/${encodeURIComponent(reference)}`,
+      `${monnifyBase(env)}/api/v2/merchant/transactions/query`
+        + `?paymentReference=${encodeURIComponent(reference)}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
     const json = await res.json() as any;
@@ -368,7 +387,11 @@ async function verifyAndRecord(
     throw appError("MONNIFY_VERIFY_FAILED");
   }
 
-  if (data.currencyCode && data.currencyCode !== "NGN") {
+  // The field is `currency`. It was read as `currencyCode` — the name the
+  // *request* uses — which is never present in the response, so this check
+  // silently validated nothing.
+  const currency = data.currency ?? data.currencyCode;
+  if (currency && currency !== "NGN") {
     throw appError("MONNIFY_VERIFY_FAILED");
   }
 
@@ -377,9 +400,14 @@ async function verifyAndRecord(
   );
   if (!order) throw appError("ORDER_NOT_FOUND");
 
-  // The amount Monnify reports is naira; ours is kobo. Convert before
-  // comparing, or every order would look underpaid by a factor of 100.
-  const receivedKobo = nairaToKobo(data.amountPaid ?? data.amount);
+  // The amount Monnify reports is naira *as a string* ("0.00"), and ours is
+  // kobo. Convert before comparing, or every order would look underpaid by a
+  // factor of 100. `nairaToKobo` coerces, so the string form is fine.
+  //
+  // `amountPaid` is the figure actually collected; `totalPayable` is the
+  // gross before fees and is the fallback if a payload omits the former.
+  // `data.amount` — the request-side name — is never present in a response.
+  const receivedKobo = nairaToKobo(data.amountPaid ?? data.totalPayable ?? 0);
 
   // Part 11: exact match, not "at least". An overpayment is as much an anomaly
   // as an underpayment and must not silently confirm the order.
@@ -419,6 +447,63 @@ async function verifyAndRecord(
     orphaned: Boolean(result.orphaned),
     refund_required: Boolean(result.refund_required),
   };
+}
+
+/**
+ * Settle a refund from Monnify's own refund webhook.
+ *
+ * A refund is asynchronous: Monnify accepts it and answers later. Marking it
+ * refunded on the acceptance response would tell the customer their money was
+ * on its way before Monnify had agreed to move it — and would leave the row
+ * looking settled if the refund subsequently failed. So the acceptance puts
+ * the row in `processing`, and this is what closes it.
+ *
+ * The refund is found by the reference *we* supplied at request time, which
+ * Monnify echoes back as `refundReference`. The `refund.provider_refund_id`
+ * column holds Monnify's own refund id, but that is not known until it
+ * answers, so it is not what we key on here.
+ */
+async function settleRefundFromWebhook(
+  admin: any, reference: string, eventType: string, data: any,
+) {
+  const refundReference = data?.refundReference
+    ?? (typeof reference === "string" && reference.startsWith("u2gas-") ? reference : null);
+
+  if (!refundReference || !refundReference.startsWith("u2gas-")) {
+    console.warn("refund webhook has no u2gas refund reference");
+    return;
+  }
+
+  const refundId = refundReference.slice("u2gas-".length);
+
+  // An unknown refund id is a bug or a forged event, not something to throw
+  // on: throwing would make Monnify retry forever. The signature has already
+  // been checked by the time this runs.
+  const { data: rows } = await admin.from("refund")
+    .select("refund_id, status").eq("refund_id", refundId);
+  if (!rows?.length) {
+    console.warn("refund webhook names an unknown refund", { refundId });
+    return;
+  }
+
+  if (eventType === "SUCCESSFUL_REFUND") {
+    await rpc(admin, "settle_refund", {
+      p_refund_id: refundId,
+      p_status: "refunded",
+      p_provider_refund_id: String(data?.refundReference ?? ""),
+      p_payload: data ?? null,
+    });
+  } else {
+    // Monnify refused it. Back to pending so it reappears in the admin queue
+    // rather than being quietly lost.
+    await rpc(admin, "settle_refund", {
+      p_refund_id: refundId,
+      p_status: "pending",
+      p_payload: data ?? null,
+      p_error: typeof data?.refundMessage === "string"
+        ? data.refundMessage.slice(0, 200) : "Monnify could not complete the refund",
+    });
+  }
 }
 
 export default payments;
