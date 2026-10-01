@@ -505,8 +505,8 @@ no cached copy.
 | Method | Path | Notes |
 |---|---|---|
 | POST | `/payments/initialize?t=` | `{ order_id }` → `{ authorization_url, reference, already_paid? }` |
-| POST | `/payments/verify?t=` | `{ reference, order_id }` → `{ paid, order_id?, refund_required? }` |
-| POST | `/payments/webhook/monify` | Monify only. Signature-verified (see §6.1) |
+| POST | `/payments/verify?t=` | `{ reference, order_id }` → `{ paid, order_id, payment_id, already_processed, orphaned, refund_required }` |
+| POST | `/payments/webhook/monnify` | Monnify only. Signature-verified (see §6.1) |
 
 `order_id` is required on verify — a reference alone used to be enough to act on
 somebody else's order.
