@@ -143,7 +143,7 @@ Legend: ✅ designed · ⚠️ designed but incomplete · ❌ missing
 
 ## Cross-cutting states missing everywhere
 
-The prototype has almost no non-happy-path states. Spec §42 requires all of these on
+The live file has almost no non-happy-path states. Spec §42 requires all of these on
 every screen, and they don't exist yet:
 
 - **Loading** — build it as the LED ticker showing a scanning bar `▮▮▮▯▯▯`. Do not use a spinner

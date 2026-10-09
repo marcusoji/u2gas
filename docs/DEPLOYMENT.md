@@ -258,7 +258,7 @@ The app is a Next.js static export (`output: "export"`), so the build writes
 `web/out/`. On Pages: framework preset **Next.js (Static HTML Export)**, root
 directory `web`, build command `npm run build`, output directory `out`.
 
-The build also writes `web/out/_headers` (`scripts/build-headers.mjs`): the CSP,
+The build also writes `web/out/_headers` (`web/scripts/build-headers.mjs`): the CSP,
 HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, immutable caching for
 `/_next/static` and `/fonts`, and `no-store` on `/orders/*`. The CSP names the
 API and Supabase origins from the same `NEXT_PUBLIC_*` values the app was built

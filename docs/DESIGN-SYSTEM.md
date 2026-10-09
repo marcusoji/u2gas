@@ -303,10 +303,9 @@ Positions corrected by the same scan: keypad `59,180` (was 58,179), caption
 the X drawn as pixel blocks so it sits on jgs7's grid. It sits to the left of
 `0` and clears the last digit.
 
-It was in the markup all along but rendering at zero size: the combiner that
-merges the batches into one file rewrote `<img>` to `<span>` and dropped the
-`class` attribute, so the key lost its box. Classes and explicit dimensions
-now carry across.
+It was in the markup all along but rendering at zero size: a rule reset its
+background and dropped its box. Classes and explicit dimensions now carry
+across.
 
 ## Whole-file scan
 
@@ -336,7 +335,7 @@ assemblies.
 ### The cancel key
 
 Drawn inline as markup rather than pulled from the asset store. As an `<img>`
-it depended on the combiner preserving its class and on no later rule
+it depended on a stylesheet preserving its class and on no later rule
 resetting the background, and it lost that race twice — first to a dropped
 class, then to `background:none` in its own inline style. A key with the
 glyph inside it cannot be switched off by a stylesheet it does not know
@@ -462,9 +461,6 @@ its centre matches (43 — mostly text in a substitute font), a change that was
 asked for (21), or the missing Barlow font / receipt text Figma has as
 outlines (12). None is unexplained.
 
-The combined file renders identically to the batch files (1,060 elements, 0
-differing by more than 0.5px), so the numbers describe what is actually opened.
-
 ### Content that had been invented, now replaced with the file's
 
 - **Staff screens.** ADD STAFF is a grid of circular avatars with an empty
@@ -564,8 +560,8 @@ card.
 
 ### Frames added since the first survey
 
-`83:246` Admin stock notification expanded and `88:55` notifs are now built
-(batch 12). 83:246 is set in **Inter**, not jgs7 — a newer design than the
+`83:246` Admin stock notification expanded and `88:55` notifs are now built.
+83:246 is set in **Inter**, not jgs7 — a newer design than the
 rest of the file. 88:55 holds a filled bell union, a different drawing from
 the outlined bell (1:756) every screen uses; the screens keep theirs.
 
@@ -841,15 +837,11 @@ them sharp offline.
 
 ## The app renders the screens
 
-The app and the screens were two drawings of the same design kept in step by
-hand, and they drifted: the corrections made while matching the file landed in
-the screens and not in the product. Only 7 CSS selectors were even shared —
-the screens place elements from the file's own measurements, the app re-drew
-them from 163 hand-written rules.
-
-The live file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source; there is no
-committed HTML snapshot and no generator. Each screen is built from these
-tokens, so data and layout live in the components and never restyle the design.
+The live file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source; there is
+no committed HTML snapshot of the screens and no generator. Each screen is a
+React component built from these tokens, so data and layout live in the
+components and never restyle the design.
 
 Behaviour is unchanged: routes still own state, data and interaction, and
-interactive controls stay React components over the artboard.
+interactive controls (keypads, sheets, buttons) are real React components
+placed on the design's own measurements.
