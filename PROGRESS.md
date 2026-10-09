@@ -502,6 +502,37 @@ Every item was checked at runtime, not read off the diff.
   (`connect-src 'self'`); a non-embedded build still refuses a placeholder
   origin on purpose.
 
+## Phase 27 — Live Figma is the only design source; frontend wired to the Worker (9 Oct 2026)
+
+The direction settled: **the live Figma file is the only design source**, and
+there is no committed HTML snapshot or generator. The file is `U2-GAS`
+(`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`), verified reachable
+through the Figma MCP (`lastModified` 2026-10-06). `web/` stays a carbon copy of
+the uploaded frontend (`U2gas_frontend-main.zip`); the design is checked against
+the live file, never a saved gallery.
+
+- **Every doc that still said "Figma is no longer a source" now names the live
+  file as the only source** — `AGENTS.md`, `README.md`, `SANDBOX-CHECK.md`,
+  `docs/SCREEN-GAP-ANALYSIS.md`, `docs/FRONTEND-PARITY-IMPLEMENTATION-PLAN.md`,
+  `docs/FRONTEND-API-CONTRACT.md`, `docs/DESIGN-SYSTEM.md`. No `.html` file
+  exists anywhere in the tree, and the retired page ids (`256:*`, `369:*`,
+  `720:*`, `675:*`) are not a source.
+- **The frontend is wired to the Worker/Supabase backend.** New, dependency-free
+  modules: `web/lib/env.ts` (public config), `web/lib/api.ts` (fetch transport,
+  the `ApiError` envelope, silent 401 refresh), `web/lib/endpoints.ts` (one typed
+  wrapper per contract endpoint), `web/lib/supabase.ts` (GoTrue session, so
+  `web/package.json` gains no dependency and stays a true carbon copy),
+  `web/hooks/useApiData.ts`, `web/components/auth/{AuthProvider,RoleGuard}.tsx`.
+  `stores/authStore.ts` is backed by the real session and `/me` role.
+- **Backend running locally.** Supabase on `54321` with all 25 migrations,
+  Worker on `8787`; `GET /api/catalog/home` returns the live rate
+  (`rate_kobo_per_kg` 140000). `worker/.dev.vars` uses the local stack's legacy
+  anon/service JWTs, because the newer `sb_publishable_…`/`sb_secret_…` keys are
+  not accepted by the pinned `supabase-js`.
+
+The `worker/` and `supabase/` backend is untouched and still the system's
+authority; the app only consumes it.
+
 ## Phase 26 — Uploaded frontend is the carbon copy; Figma is no longer a source (9 Oct 2026)
 
 The direction changed: the operator uploaded a frontend
@@ -530,5 +561,69 @@ the Figma/HTML-snapshot framing from the docs.
 
 The `worker/` and `supabase/` backend is untouched and still the system's
 backend; the frontend simply does not call it yet.
+
+## Phase 27 — Monnify return route, and the RLS bug it exposed (9 Oct 2026)
+
+The gateway returns the browser to `MONNIFY_CALLBACK_PATH`, which `wrangler.toml`
+sets to `/orders/verify` — a route the carbon copy does not have. Two pieces:
+
+- **`/orders/verify`** (`app/(public)/orders/verify/page.tsx`). The webhook is
+  what settles an order; the page only hides a slow webhook from the customer, so
+  it never reports failure on its own. It calls `verifyPayment` first (the
+  gateway can settle before the webhook) and otherwise polls `getOrder` for 30s,
+  then says "still confirming". `useSearchParams` is behind `Suspense` so the
+  route still prerenders.
+- **`lib/paymentSession.ts`.** The callback carries only `?order=`, so the
+  reference and guest token cannot ride in the query. `PaymentModal` now stores
+  them in session storage at initialize and the return page reads them back.
+  `initializePayment` had to start returning `reference` for this.
+
+### The bug: `profile_self_read` recursed into itself
+
+Chasing the return page turned up a real backend fault. `GET /api/orders/:id`
+with a signed-in caller answered **500 INTERNAL**, and a browser session could
+not read its own profile: `42P17 infinite recursion detected in policy for
+relation "profile"`.
+
+0009 had replaced the read policy with a "non-recursive" lookup that selects from
+`profile` inside its own `USING` clause. A policy on `profile` is evaluated for
+every row that subquery reads, so it re-enters the policy. The 0009 comment
+reasoned that a `SECURITY DEFINER` helper would be exempt once `FORCE` was off —
+true for the helper, but the *subquery* runs as the querying role, so it looped
+regardless. `is_staff()` is the definer path and does not loop.
+
+Migration `0026_profile_policy_recursion.sql` restores the 0006 form
+(`auth_user_id = auth.uid() or is_staff()`). Verified in the live database:
+customer sees 1 row, admin sees 4, no recursion; `GET /api/orders/:id` returns
+200 with its embedded `profile`, and the return page resolves to PAYMENT
+CONFIRMED.
+
+The blast radius is worth noting: the order detail query embeds
+`profile:user_id (…)`, so *every* signed-in order read was failing, not just the
+new page. The frontend polls that endpoint, so it would have looked like the
+payment never settled.
+
+## Phase 28 — Monnify credentials: what is missing and how to prove it (9 Oct 2026)
+
+The payment path is wired but the gateway still refuses every call, because no
+real Monnify credential exists anywhere in the repo — `worker/.dev.vars` holds
+the placeholders `MK_TEST` / `sk_test` / contract `1234567890`, and a search for
+a real `MK_*` / `sk_*` pair finds nothing. Posting the placeholder pair to
+sandbox answers `401 … check that the right credentials are being used for the
+right environment`, which is the same shape a wrong-environment key gives, so
+the message alone does not tell the two apart.
+
+`scripts/check-monnify.sh` now mints a token exactly as `monnifyToken()` does and
+reports PASS or the gateway's own rejection, without ever echoing the secret
+(only the API key's first 8 characters, which are not sensitive). It also warns
+on the two mismatches that read like a bad key: a sandbox URL with a non-`MK_TEST`
+key, and a live URL with an `MK_TEST` key.
+
+Two setup facts were missing from the docs and are now in
+`docs/SETUP-CHECKLIST.md`: the **contract code is not the API key**, so the
+placeholder contract fails initialize even with a valid pair; and sandbox/live
+keys are not interchangeable. Refunds additionally need Monnify support to
+switch the service on (`docs/MONNIFY-REFUND-ACTIVATION.md`) — a refund attempt
+before that fails regardless of credentials.
 
 

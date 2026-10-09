@@ -6,7 +6,8 @@ This project is a Next.js 16 frontend (`web/`) over a Cloudflare Worker
 The frontend under `web/` is a **carbon copy of the uploaded
 `U2gas_frontend-main.zip`** and is a self-contained UI demo: it renders the
 `data.ts` fixtures and reads no API, so every screen is reachable with no
-backend. It is the UI source of record; Figma is not a source.
+backend. The live Figma file is the only design source (`U2-GAS`,
+`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`).
 
 ## Frontend
 

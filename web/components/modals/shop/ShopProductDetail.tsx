@@ -10,17 +10,21 @@ export type ShopProductDetailProps = {
   selectedProduct: Product;
   onSelectProduct: (product: Product) => void;
   onAddToCart: () => void;
+  /** Live catalogue for variant and "other products" rails. */
+  products?: Product[];
 };
 
 export function ShopProductDetail({
   selectedProduct,
   onSelectProduct,
   onAddToCart,
+  products: productsProp,
 }: ShopProductDetailProps) {
+  const catalogue = productsProp ?? products;
   // Size variants for the currently selected product family (matched by name or image)
   const variants = useMemo(() => {
     if (!selectedProduct) return [];
-    const matched = products.filter(
+    const matched = catalogue.filter(
       (p) =>
         (selectedProduct.name &&
           p.name?.toLowerCase().trim() ===
@@ -62,7 +66,7 @@ export function ShopProductDetail({
       seenImages.add(selectedProduct.image);
     }
     const result: Product[] = [];
-    for (const p of products) {
+    for (const p of catalogue) {
       if (!seenImages.has(p.image)) {
         seenImages.add(p.image);
         result.push(p);

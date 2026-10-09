@@ -116,11 +116,14 @@ app.use("/api/*", async (c, next) => {
   await next();
 });
 
-// The webhook authenticates by signature, not by JWT, and Monnify does not
-// send an Origin header — so it is mounted before the auth middleware.
-app.route("/api/payments", payments);
-
+// `optionalAuth` never rejects — it only attaches a caller when a valid bearer
+// is present — so it is safe for the Monnify webhook too, and it must run
+// before the payment routes: they prove order ownership from `caller` (or a
+// guest token), and with the middleware mounted after them every signed-in
+// initialize/verify call looked anonymous and answered ORDER_NOT_FOUND.
 app.use("/api/*", optionalAuth);
+
+app.route("/api/payments", payments);
 
 // --- Routes ------------------------------------------------------------------
 

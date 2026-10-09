@@ -70,6 +70,34 @@ header with the secret key and the Worker verifies it.
 There is **no public key**. Checkout is a full-page redirect to a URL Monnify
 returns, so no gateway credential is ever shipped to the browser.
 
+#### Local development
+
+Sandbox credentials go in `worker/.dev.vars` (git-ignored), not `wrangler.toml`:
+
+```
+MONNIFY_API_KEY=MK_TEST_...
+MONNIFY_SECRET_KEY=sk_test_...
+MONNIFY_CONTRACT_CODE=...            # the sandbox contract code, not 1234567890
+MONNIFY_BASE_URL=https://sandbox.monnify.com
+```
+
+Then prove the pair works before debugging anything else:
+
+```
+bash scripts/check-monnify.sh
+```
+
+It mints a token exactly as the Worker does and prints `PASS` or the gateway's
+own rejection message. It never echoes the secret, so the output is safe to
+share.
+
+Two traps this catches. **The contract code is not the API key** — the
+placeholder `1234567890` is not a real contract, so initialize fails even with a
+valid key pair. And **sandbox and live keys are not interchangeable**: a live
+key against `sandbox.monnify.com` is rejected with "check that the right
+credentials are being used for the right environment", which reads like a bad
+key rather than the wrong environment.
+
 Two things to ask Monnify support for, because they are off by default:
 **Refunds** (needed before a paid order can be refunded automatically) and
 **Card tokenisation** (only if you ever want saved cards).

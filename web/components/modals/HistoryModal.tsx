@@ -21,8 +21,8 @@ export function HistoryModal({
   );
 
   const logout = useAuthStore((state) => state.logout);
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     onOpenChange(false);
   };
 

@@ -3,8 +3,10 @@
 ## Source of truth
 
 The uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
-`u2gass.vercel.app`) is the **only** UI source. There is no committed HTML
-snapshot of the screens and no generator, and Figma is no longer a source.
+`u2gass.vercel.app`) is the **only** UI source for what exists. The live Figma
+file is the only design source (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page
+`MAIN SCREENS` `256:14758`), and there is no committed HTML snapshot of the
+screens and no generator.
 
 `web/` is kept a carbon copy of the uploaded app. To match a screen, diff it
 against the reference and mirror the change into `web/` verbatim — same markup,

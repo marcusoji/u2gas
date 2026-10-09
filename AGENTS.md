@@ -3,11 +3,14 @@
 Next.js 16 frontend (`web/`) over a Cloudflare Worker API (`worker/`) and
 Supabase (`supabase/`).
 
-> **The uploaded frontend (`U2gas_frontend-main.zip`) is the only UI source of
-> truth.** `web/` is kept a carbon copy of it: the same components, the same
-> fixtures, the same layout. Do not restyle a screen against a Figma file or a
-> saved HTML gallery — there is none. When the uploaded frontend changes, mirror
-> the change into `web/` verbatim.
+> **The live Figma file is the only design source of truth.**
+> `U2-GAS` — file `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` (`256:14758`) —
+> read through the Figma MCP. There is no committed HTML snapshot and no
+> generator; do not reintroduce one. `web/` is a carbon copy of the uploaded
+> frontend (`U2gas_frontend-main.zip`) and keeps its components, fixtures and
+> layout: when the uploaded frontend changes, mirror the change into `web/`
+> verbatim, and when the design changes, the live file is what it is checked
+> against.
 
 ## Commands
 
@@ -18,6 +21,11 @@ Root scripts (`package.json`) proxy into `web/`:
 - `npm run build` — `next build`.
 - `npm run typecheck` — `cd web && npx tsc --noEmit`.
 - `npm run lint` — `cd web && npm run lint` (ESLint, `eslint-config-next`).
+- `bash scripts/check-monnify.sh` — mints a Monnify token from the credentials in
+  `worker/.dev.vars` and reports PASS or the gateway's rejection. Run it before
+  debugging any payment symptom: a placeholder or wrong-environment key makes
+  initialize, verify and refund fail together, and the app only says
+  `MONNIFY_INIT_FAILED`. It never echoes the secret.
 
 ## Architecture
 
@@ -51,28 +59,54 @@ tracked separately.
 
 ## Auth and roles
 
-The uploaded frontend is a UI demo: it has **no auth and no roles wiring**. The
-login screen and the role apps (`/admin`, `/cashier`, `/driver`) render from the
-`data.ts` fixtures and Zustand stores; there is no Supabase client, no
-`RequireRole`, and no session handling in `web/`.
+The uploaded frontend shipped as a UI demo with no auth wiring: the login screen
+and the role apps (`/admin`, `/cashier`, `/driver`) rendered from the `data.ts`
+fixtures and Zustand stores, with no Supabase client and no session handling.
 
-Supabase (`supabase/`) and the Worker (`worker/`) remain in the repo as the
-backend, but nothing in the copied frontend calls them. Wiring the UI to the
-backend is a deliberate, separate step — do not do it by editing a screen's
-markup, or `web/` stops being a carbon copy of the reference.
+That is still true of most screens. The wiring added so far is confined to the
+payment path and the layers the carbon copy did not have — `lib/supabase.ts`
+(session, `ensureFreshSession`), `lib/api.ts` (bearer token, `ApiError`),
+`lib/endpoints.ts`, `lib/env.ts` and `stores/authStore.ts`. Add the rest of the
+wiring there, not by editing a screen's markup, or `web/` stops being a carbon
+copy of the reference.
 
 ## Environment
 
-The uploaded frontend reads no environment. `web/next.config.ts` is the plain
-Next config, and there is no `lib/env.ts`. Do not add `NEXT_PUBLIC_*` reads or a
-Supabase client into the copied app.
+`web/lib/env.ts` reads the API origin and Supabase keys. `web/next.config.ts`
+stays the plain Next config. Keep new `NEXT_PUBLIC_*` reads in `lib/env.ts` so
+there is one place that names the backend.
 
 ## Data flow
 
-Screens bind the fixtures in `web/data.ts` directly (through the Zustand stores
-and component props). `helpers/functions.ts` holds `koboToNaira`; money is kobo
-(integer), gas is kg. There is no API client, adapter or hook layer in the
-copied frontend — that is the reference's shape, and it is intentional.
+Most screens still bind the fixtures in `web/data.ts` directly (through the
+Zustand stores and component props). `helpers/functions.ts` holds
+`koboToNaira`; money is kobo (integer), gas is kg.
+
+Wiring to the Worker is in progress and lives in the layers the carbon copy did
+not have: `lib/api.ts` (one `ApiError`, bearer token, idempotency key),
+`lib/endpoints.ts` (one function per Worker route) and `lib/supabase.ts`. The
+home payment flow is wired — `PaymentModal` initializes a real Monnify payment
+and polls `getOrder` until `payment_status === "paid"`. The cashier, driver and
+admin history views still read fixtures.
+
+## Payment return, and the RLS policy that must not recurse
+
+`MONNIFY_CALLBACK_PATH` is `/orders/verify`, so that route must exist:
+`app/(public)/orders/verify/page.tsx`. The gateway sends back only `?order=`, so
+the merchant reference and guest token are kept in session storage
+(`lib/paymentSession.ts`) at initialize rather than in the URL. The page asks
+`/payments/verify` first, then polls `getOrder`, and never reports failure on its
+own — the webhook is what settles an order.
+
+A policy on `profile` must not read `profile`. `profile_self_read` once selected
+from `profile` inside its own `USING` clause and every read raised `42P17
+infinite recursion detected in policy for relation "profile"`. A `SECURITY
+DEFINER` helper runs exempt from RLS; a subquery inside the policy runs as the
+*querying* role, so only `is_staff()` breaks the loop. The blast radius is wide
+because the order detail query embeds `profile:user_id (…)`, so the recursion
+surfaced as a 500 on every signed-in `GET /api/orders/:id` — which the payment
+poll reads. `supabase/tests/02_rls.sql` covers it; keep `profile` out of its own
+policy.
 
 ## Fonts
 
@@ -101,12 +135,14 @@ Barlow Semi Condensed is loaded from Google Fonts via `next/font/google`
 - **Money is kobo (integer); gas is kg.** `koboToNaira` lives in
   `helpers/functions.ts`. Never float money.
 
-## The UI source is the uploaded frontend
+## The UI source is the live Figma file
 
-There is no snapshot and no generator: the uploaded frontend
-(`U2gas_frontend-main.zip`, also deployed at `u2gass.vercel.app`) is the only UI
-source. `web/` is a carbon copy of it — when it changes, mirror the change
-verbatim.
+There is no snapshot and no generator: the live Figma file `U2-GAS`
+(`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`), read through the
+Figma MCP, is the only design source. `web/` is a carbon copy of the uploaded
+frontend (`U2gas_frontend-main.zip`, also deployed at `u2gass.vercel.app`) — when
+the upload changes, mirror the change verbatim; when the design changes, the live
+file is what a screen is checked against.
 
 The old Vite/React frontend, its `docs/*.html` galleries (`u2gas-all-screens.html`,
 the `u2gas-batch*-exact.html` files, `design-system-reference.html`), the
@@ -115,7 +151,10 @@ the `u2gas-batch*-exact.html` files, `design-system-reference.html`), the
 removed. Do not reintroduce a committed HTML snapshot or a markup generator. When
 a doc still narrates the removed pipeline (a "combiner" that merges batches, a
 "combined file" that matches the batch files, "the prototype"), that wording is
-stale drift — delete it or point it at the uploaded frontend.
+stale drift — delete it or point it at the live file.
 
-The old page ids (`256:*`, `369:*`, `720:*`, `675:*`) belonged to the removed
-Figma survey and are no longer a source. Do not key anything on them.
+The page's frames carry several id prefixes — `256:*`, `369:*`, `720:*`,
+`675:*` — because frames were added to `MAIN SCREENS` after the first survey.
+They are all members of the current page, so a screen may be keyed on any of
+them; only the *page* id (`256:14758`) is stable. Re-read the page through the
+MCP rather than trusting an id recorded here, since the file is live.

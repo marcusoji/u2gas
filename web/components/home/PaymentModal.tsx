@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GasOrderDraft } from "@/types";
+import { getOrder, initializePayment } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
+import { rememberPaymentAttempt } from "@/lib/paymentSession";
 
 type PaymentModalProps = {
   open: boolean;
@@ -16,6 +19,10 @@ type PaymentModalProps = {
         ratePerKg?: number;
       }
     | null;
+  /** Set once the Worker has held the gas and created the order. */
+  orderId?: string | null;
+  /** Guest capability token, for a checkout that started signed out. */
+  guestToken?: string;
   onPaymentComplete: (outcome: "success" | "failed") => void;
 };
 
@@ -23,26 +30,78 @@ export default function PaymentModal({
   open,
   onOpenChange,
   order,
+  orderId,
+  guestToken,
   onPaymentComplete,
 }: PaymentModalProps) {
   const [mode, setMode] = useState<"walk-in" | "delivery">("walk-in");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [outcome, setOutcome] = useState<"success" | "failed">("success");
+  const [error, setError] = useState<string | null>(null);
 
-  // When processing starts, wait 2.4s and then complete
+  // The gateway's own page is the authority: `initialize` returns its URL, the
+  // tab it opens posts back to /orders/verify, and `verify` records the result.
+  // Polling `/orders/:id` is what settles the sheet, so a closed tab or a
+  // webhook that lands late still resolves rather than spinning forever.
   useEffect(() => {
-    if (isProcessing && open) {
-      const timer = setTimeout(() => {
+    if (!isProcessing || !open) return;
+
+    // PAY IN THE DEPOT leaves the order pending for a cashier to settle, so
+    // there is no gateway to poll and no payment_status to wait for.
+    if (selectedMethod === "DEPOT" || !orderId) {
+      const timer = window.setTimeout(() => {
         setIsProcessing(false);
         setSelectedMethod(null);
         onOpenChange(false);
-        onPaymentComplete(outcome);
-      }, 2400);
-
-      return () => clearTimeout(timer);
+        onPaymentComplete("success");
+      }, 1400);
+      return () => window.clearTimeout(timer);
     }
-  }, [isProcessing, open, outcome, onOpenChange, onPaymentComplete]);
+
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    const tick = async () => {
+      try {
+        const { order: current } = await getOrder(orderId, guestToken);
+        if (cancelled) return;
+        if (current.payment_status === "paid") {
+          setIsProcessing(false);
+          setSelectedMethod(null);
+          onOpenChange(false);
+          onPaymentComplete("success");
+          return;
+        }
+        if (
+          current.payment_status === "failed" ||
+          current.payment_status === "refunded" ||
+          current.status === "cancelled" ||
+          current.status === "expired"
+        ) {
+          setIsProcessing(false);
+          setSelectedMethod(null);
+          onOpenChange(false);
+          onPaymentComplete("failed");
+          return;
+        }
+      } catch {
+        // A transient read failure must not cancel a live payment attempt.
+      }
+      if (!cancelled && Date.now() - startedAt > 180_000) {
+        setIsProcessing(false);
+        setSelectedMethod(null);
+        onOpenChange(false);
+        onPaymentComplete("failed");
+        return;
+      }
+      if (!cancelled) window.setTimeout(tick, 3000);
+    };
+
+    void tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [isProcessing, open, orderId, guestToken, selectedMethod, onOpenChange, onPaymentComplete]);
 
   // Lock background scroll when payment modal is open
   useEffect(() => {
@@ -67,9 +126,37 @@ export default function PaymentModal({
     }
   };
 
-  const handleSelectMethod = (method: string) => {
+  /**
+   * Hand the customer to the gateway. `PAY IN THE DEPOT` is not a Monnify
+   * method — the order simply stays pending for a cashier to settle, so the
+   * sheet closes and the terminal reports success.
+   */
+  const handleSelectMethod = async (method: string) => {
     setSelectedMethod(method);
+    setError(null);
+
+    if (method === "DEPOT" || !orderId) {
+      setIsProcessing(true);
+      return;
+    }
+
     setIsProcessing(true);
+    try {
+      const { authorization_url, reference, already_paid } =
+        await initializePayment(orderId, guestToken);
+      if (already_paid) return; // the poll settles it on the next tick
+      // The return page reads these from session storage: the gateway sends
+      // back only `?order=`, so the reference and the guest token cannot ride
+      // in the query without becoming tamperable.
+      rememberPaymentAttempt({ orderId, reference, guestToken });
+      if (authorization_url) window.open(authorization_url, "_blank", "noopener");
+    } catch (cause) {
+      setIsProcessing(false);
+      setSelectedMethod(null);
+      setError(
+        cause instanceof ApiError ? cause.message : "THE PAYMENT PAGE DIDN'T OPEN",
+      );
+    }
   };
 
   const quantity =
@@ -120,6 +207,12 @@ export default function PaymentModal({
               aria-label="Close"
               className="w-12 h-1 bg-[#8E8E93] rounded-full hover:bg-neutral-600 transition-colors cursor-pointer"
             />
+
+            {error && (
+              <p className="text-[11px] tracking-widest text-[#E41313] uppercase text-center">
+                {error}
+              </p>
+            )}
 
             <AnimatePresence mode="wait">
               {isProcessing ? (

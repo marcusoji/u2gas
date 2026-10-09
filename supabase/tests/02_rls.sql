@@ -184,6 +184,21 @@ begin
   perform t_assert('customer CAN read their own order',
     not denied(format('select 1 from "order" where order_id = %L', v_order)));
 
+  -- Regression: `profile_self_read` once selected from `profile` inside its own
+  -- USING clause, so every read raised 42P17 "infinite recursion detected in
+  -- policy for relation profile". `denied()` counts a raised error as a denial,
+  -- so these two fail on the recursion and pass on the definer helper.
+  perform t_assert('customer CAN read their own profile',
+    not denied(format('select 1 from profile where auth_user_id = %L', v_me)));
+
+  -- The Worker's order detail embeds the profile (`profile:user_id (…)`), which
+  -- is why the recursion surfaced as a 500 on GET /api/orders/:id.
+  perform t_assert('customer CAN read their order with its embedded profile',
+    not denied(format(
+      'select o.order_id,
+              (select p.display_name from profile p where p.profile_id = o.user_id)
+         from "order" o where o.order_id = %L', v_order)));
+
   perform unbecome();
   perform become('authenticated', v_other);
 

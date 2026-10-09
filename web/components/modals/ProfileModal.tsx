@@ -36,8 +36,8 @@ export default function ProfileModal({
   // Derived user profile data (supports prop injection or zustand store fallback)
   const user = userProp || storeUser || dummyUserProfile;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     onOpenChange(false);
   };
 

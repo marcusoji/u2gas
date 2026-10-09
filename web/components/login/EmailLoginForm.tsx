@@ -6,6 +6,9 @@ import { ArrowLeft } from "lucide-react";
 export interface EmailLoginFormProps {
   email: string;
   setEmail: (email: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  error?: string | null;
   onSubmit: (e?: React.FormEvent) => void;
   onBack: () => void;
   isSubmitting: boolean;
@@ -14,11 +17,14 @@ export interface EmailLoginFormProps {
 export function EmailLoginForm({
   email,
   setEmail,
+  password,
+  setPassword,
+  error,
   onSubmit,
   onBack,
   isSubmitting,
 }: EmailLoginFormProps) {
-  const hasText = email.trim().length > 0;
+  const hasText = email.trim().length > 0 && password.length > 0;
 
   return (
     <motion.form
@@ -43,9 +49,28 @@ export function EmailLoginForm({
           onChange={(e) => setEmail(e.target.value.toUpperCase())}
           placeholder="EXAMPLE@GMAIL.COM"
           autoFocus
+          autoComplete="email"
           className="w-full bg-transparent text-[15px] sm:text-[16px] tracking-wider text-center text-[#1317E4] placeholder:text-[#838EF8] focus:outline-hidden uppercase select-text"
         />
       </div>
+
+      {/* Password pill — the second half of the credential pair */}
+      <div className="w-full max-w-[280px] sm:max-w-[290px] h-[52px] rounded-full bg-white border border-dashed border-[#CCD0DC] flex items-center justify-center px-6 mt-3 shadow-xs focus-within:border-[#1317E4] transition-colors">
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="PASSWORD"
+          autoComplete="current-password"
+          className="w-full bg-transparent text-[15px] sm:text-[16px] tracking-wider text-center text-[#1317E4] placeholder:text-[#838EF8] focus:outline-hidden select-text"
+        />
+      </div>
+
+      {error && (
+        <p className="mt-3 text-[10px] tracking-widest text-[#E41313] uppercase text-center select-none">
+          {error}
+        </p>
+      )}
 
       {/* CONTINUE Pill Button - switches to primary color #1317E4 when text is entered */}
       <button

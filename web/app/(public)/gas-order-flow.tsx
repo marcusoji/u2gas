@@ -1,82 +1,89 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import GasTerminal from "./gas-terminal";
 import PaymentModal from "@/components/home/PaymentModal";
 import { ReceiptModal } from "@/components/modals/ReceiptModal";
 import { HistoryModal } from "@/components/modals/HistoryModal";
 import { ProfileModal } from "@/components/modals/ProfileModal";
 import { useAuthStore } from "@/stores/authStore";
+import { ApiError } from "@/lib/api";
+import {
+  createGasOrder,
+  getAvailability,
+} from "@/lib/endpoints";
+import { homeToStock, useHome, useNotifications } from "@/hooks/useApiData";
 import type { GasOrder, Notification, ReceiptItem } from "@/types";
-import { dummyReceiptItems } from "@/data";
 
 export default function GasOrderFlow() {
   const [showPayment, setShowPayment] = useState(false);
   const [order, setOrder] = useState<GasOrder | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
   const [terminalStatus, setTerminalStatus] = useState<
     "idle" | "processing" | "success" | "failed"
   >("idle");
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showReceipt, setShowReceipt] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const [receiptItems, setReceiptItems] = useState<ReceiptItem[]>([]);
+
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const { data: home, reload: reloadHome } = useHome();
+  const { data: notificationData, reload: reloadNotifications } =
+    useNotifications(isLoggedIn);
+
+  const notifications: Notification[] = notificationData?.notifications ?? [];
 
   const handlePaymentComplete = (outcome: "success" | "failed") => {
     setTerminalStatus(outcome);
-
+    reloadHome();
     if (outcome === "success") {
-      // Create confirmed order notification using Notification type
-      const newNotif: Notification = {
-        notification_id: `notif-${Date.now()}`,
-        kind: "order.confirmed",
-        title: "Gas Refill Receipt",
-        body: `${order?.gas_amount_kg || 1}KG Refill Confirmed`,
-        order_id: `ORD-${Math.floor(100000 + Math.random() * 900000)}`,
-        read_at: null,
-        created_at: new Date().toISOString(),
-      };
-
-      setNotifications((prev) => [newNotif, ...prev]);
-
-      // Set receipt items for this purchase
       setReceiptItems([
         {
           id: "gas-refill",
           title: `${order?.gas_amount_kg || 1}kg Cooking Gas Refill`,
           image: "/images/image1.png",
-          priceNaira: order?.total_naira || 1400,
+          priceNaira: order?.total_naira || 0,
         },
       ]);
     }
   };
 
-  const handleDismissStatus = () => {
-    setTerminalStatus("idle");
-  };
-
   const handleNotificationClick = () => {
-    // Mark notifications as read
-    setNotifications((prev) =>
-      prev.map((n) => ({
-        ...n,
-        read_at: n.read_at || new Date().toISOString(),
-      }))
-    );
-
+    reloadNotifications();
     if (isLoggedIn) {
-      // Logged in user -> Open History Modal
       setShowHistoryModal(true);
       setShowReceipt(false);
     } else {
-      // Guest / Not logged in -> Open single Receipt Modal only
-      if (!receiptItems || receiptItems.length === 0) {
-        setReceiptItems(dummyReceiptItems);
-      }
       setShowReceipt(true);
       setShowHistoryModal(false);
+    }
+  };
+
+  /** PAY: confirm the depot can cover the amount, then hold it with a real order. */
+  const handlePay = async (draft: GasOrder) => {
+    setError(null);
+    try {
+      const availability = await getAvailability(draft.gas_amount_kg);
+      if (!availability.sufficient) {
+        // The Worker's own copy is written for the interface; render it verbatim.
+        setTerminalStatus("failed");
+        return;
+      }
+      const { order: created, guest_token } = await createGasOrder({
+        kg: draft.gas_amount_kg,
+        fulfillment: "pickup",
+      });
+      setOrder(draft);
+      setOrderId(created.order_id);
+      setGuestToken(guest_token);
+      setShowPayment(true);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "ORDER FAILED");
+      setTerminalStatus("failed");
     }
   };
 
@@ -85,37 +92,41 @@ export default function GasOrderFlow() {
       <GasTerminal
         initialValue="1KG"
         status={terminalStatus}
+        stock={homeToStock(home)}
         notifications={notifications}
+        notificationCount={home?.unread_notifications ?? 0}
         onNotificationClick={handleNotificationClick}
         onProfileClick={() => setShowProfileModal(true)}
-        onDismissStatus={handleDismissStatus}
-        onPay={(currentOrder) => {
-          setOrder(currentOrder);
-          setShowPayment(true);
-        }}
+        onDismissStatus={() => setTerminalStatus("idle")}
+        onPay={handlePay}
       >
         <PaymentModal
           open={showPayment}
           onOpenChange={setShowPayment}
           order={order}
+          orderId={orderId}
+          guestToken={guestToken}
           onPaymentComplete={handlePaymentComplete}
         />
       </GasTerminal>
 
-      {/* Reusable Receipt Modal for Guests */}
+      {error && (
+        <p className="mt-3 text-[10px] tracking-widest text-[#E41313] uppercase text-center">
+          {error}
+        </p>
+      )}
+
       <ReceiptModal
         open={showReceipt}
         onOpenChange={setShowReceipt}
         items={receiptItems}
       />
 
-      {/* History Modal for Logged-In Users */}
       <HistoryModal
         open={showHistoryModal}
         onOpenChange={setShowHistoryModal}
       />
 
-      {/* User Profile Modal */}
       <ProfileModal
         open={showProfileModal}
         onOpenChange={setShowProfileModal}

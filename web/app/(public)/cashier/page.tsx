@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CashierPageClient from "@/components/cashier/CashierPageClient";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 
 export const metadata: Metadata = {
   title: "Cashier Scanner | U2 Gas",
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function CashierPage() {
-  return <CashierPageClient />;
+  return (
+    <RoleGuard allow={["staff", "admin"]}>
+      <CashierPageClient />
+    </RoleGuard>
+  );
 }

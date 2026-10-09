@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { ShopModal } from "@/components/modals/ShopModal";
-import { products } from "@/data";
+import { useShop } from "@/hooks/useApiData";
 import type { Product } from "@/types";
 import { paths } from "@/utils/paths";
 
@@ -17,6 +17,8 @@ export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { data, error, loading } = useShop();
+  const products = data?.items ?? [];
 
   const filteredItems = products.filter((item) =>
     (item.name || "").toLowerCase().includes(searchQuery.toLowerCase().trim()),
@@ -97,8 +99,12 @@ export default function ShopPage() {
           ))}
 
           {filteredItems.length === 0 && (
-            <div className="col-span-2 py-12 text-center text-sm text-neutral-400 font-mono">
-              NO ACCESSORIES FOUND
+            <div className="col-span-2 py-12 text-center text-sm text-neutral-400 font-mono uppercase">
+              {loading
+                ? "LOADING ACCESSORIES…"
+                : error
+                  ? error.message
+                  : "NO ACCESSORIES FOUND"}
             </div>
           )}
         </div>
@@ -183,6 +189,7 @@ export default function ShopPage() {
           open={isModalOpen}
           onOpenChange={setIsModalOpen}
           initialProduct={selectedProduct}
+          products={products}
         />
       </div>
     </main>

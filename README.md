@@ -127,11 +127,12 @@ comes from Google Fonts at build time. See `docs/DEPLOYMENT.md` §5.
 
 ## UI source
 
-The **uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
-`u2gass.vercel.app`) is the only UI source.** There is no committed HTML
-snapshot of the screens and no generator, and Figma is no longer a source:
-`web/` is kept a carbon copy of the uploaded app. When it changes, mirror the
-change into `web/` verbatim.
+**The live Figma file is the only design source.** `U2-GAS` — file
+`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` (`256:14758`) — read through the
+Figma MCP. There is no committed HTML snapshot of the screens and no generator.
+`web/` is a carbon copy of the uploaded frontend (`U2gas_frontend-main.zip`, also
+deployed at `u2gass.vercel.app`); when the upload changes, mirror the change into
+`web/` verbatim.
 
 ## Documentation
 

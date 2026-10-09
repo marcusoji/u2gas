@@ -4,6 +4,7 @@ import { Barlow_Semi_Condensed } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/footer";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 const jgs7 = localFont({
   src: "../public/fonts/jgs7.woff2",
@@ -37,10 +38,12 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-full flex flex-col bg-white text-foreground font-sans overflow-x-hidden"
       >
-        <div className="flex-1 flex flex-col items-center w-full">
-          {children}
-        </div>
-        <Footer />
+        <AuthProvider>
+          <div className="flex-1 flex flex-col items-center w-full">
+            {children}
+          </div>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

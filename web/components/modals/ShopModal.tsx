@@ -21,6 +21,8 @@ export type ShopModalProps = {
   initialProduct?: Product | null;
   /** Backwards compatibility alias for initialProduct */
   initialItem?: Product | null;
+  /** Live catalogue. Falls back to the bundled fixtures when omitted. */
+  products?: Product[];
   onCheckout?: (cart: CartItem[]) => void;
 };
 
@@ -31,9 +33,11 @@ export function ShopModal({
   onOpenChange,
   initialProduct,
   initialItem,
+  products: productsProp,
   onCheckout,
 }: ShopModalProps) {
   const router = useRouter();
+  const catalogue = productsProp ?? products;
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -63,7 +67,7 @@ export function ShopModal({
     if (open) {
       if (activeInitial) {
         const found =
-          products.find(
+          catalogue.find(
             (p) =>
               p.product_id === activeInitial.product_id ||
               p.image === activeInitial.image ||
@@ -181,10 +185,11 @@ export function ShopModal({
               selectedProduct={selectedProduct}
               onSelectProduct={setSelectedProduct}
               onAddToCart={handleAddToCart}
+              products={catalogue}
             />
           ) : (
             <ShopGridView
-              products={products}
+              products={catalogue}
               onSelectProduct={(item) => {
                 setSelectedProduct(item);
                 setViewMode("detail");
