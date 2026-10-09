@@ -1,7 +1,8 @@
 # U2GAS — Screen gap analysis
 
-60 prototype frames were supplied. Below is what exists, what's missing against the
-functional spec, and how each missing screen should be built from the existing language.
+The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source.
+Below is what exists, what's missing against the functional spec, and how each
+missing screen should be built from the existing language.
 
 Legend: ✅ designed · ⚠️ designed but incomplete · ❌ missing
 

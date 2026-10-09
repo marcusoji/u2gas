@@ -16,7 +16,7 @@
 >
 > Frames are **440 wide**, not 340. Buttons are 344x64 with a 64px radius, not
 > pill-shaped. The keypad is 211 wide with a 32px column gap and 10px row gap;
-> keys are 49x39 and PAY is 66x39. (extracted from the 63 prototype frames)
+> keys are 49x39 and PAY is 66x39. (extracted from the live file's frames)
 
 This documents the live Figma file, which is the only design source. Every new
 or corrected screen must be built from these tokens. Nothing here was invented —
