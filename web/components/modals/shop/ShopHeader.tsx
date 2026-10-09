@@ -1,6 +1,6 @@
 "use client";
 
-import MarqueeSlider from "@abundiko/react-marquee";
+import MarqueeSlider from "@/components/ui/ClientMarquee";
 
 export type ShopHeaderProps = {
   viewMode: "grid" | "detail" | "basket";

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import MarqueeSlider from "@abundiko/react-marquee";
+import MarqueeSlider from "@/components/ui/ClientMarquee";
 
 export interface TerminalScreenBoxProps {
   value: string;

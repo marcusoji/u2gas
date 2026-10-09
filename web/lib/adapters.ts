@@ -247,6 +247,28 @@ export function toStaffCashierRecords(a: StaffActivity): StaffCashierRecord[] {
   });
 }
 
+/**
+ * Keep only the staff-history rows that fall in the chosen period. The staff
+ * screen's TIME FILTER chips (TODAY / THIS MONTH / MAY / JUNE) are the same
+ * buckets the sales screen uses, so the same calendar rules apply; without
+ * this the chip changed colour but the list never moved.
+ */
+export function filterStaffRecordsByPeriod<
+  T extends { date: Date },
+>(records: T[], period: TimeFilter): T[] {
+  const now = new Date();
+  return records.filter((r) => {
+    const d = new Date(r.date);
+    if (period === "TODAY") return d.toDateString() === now.toDateString();
+    if (period === "THIS MONTH")
+      return (
+        d.getUTCFullYear() === now.getUTCFullYear() &&
+        d.getUTCMonth() === now.getUTCMonth()
+      );
+    return d.getUTCFullYear() === now.getUTCFullYear() && monthName(d) === period;
+  });
+}
+
 /* --- Home ------------------------------------------------------------------ */
 
 export interface HomeView {

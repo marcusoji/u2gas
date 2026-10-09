@@ -441,6 +441,13 @@ export interface GasTerminalProps {
   stock?: GasStock;
   notifications?: Notification[];
   notificationCount?: number;
+  /**
+   * The depot's remaining gas, in kg. When the typed amount exceeds it the
+   * terminal shows the INSUFFICIENT board and PAY goes inert, rather than
+   * letting the customer reach the payment sheet for an order the Worker is
+   * going to refuse.
+   */
+  availableKg?: number;
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
   onPay?: (orderDraft: GasOrderDraft) => void | Promise<void>;

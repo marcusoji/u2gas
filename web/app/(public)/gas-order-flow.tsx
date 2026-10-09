@@ -197,6 +197,7 @@ export default function GasOrderFlow() {
         initialValue="1KG"
         status={terminalStatus}
         ratePerKg={homeView?.rateNaira ?? 1400}
+        availableKg={homeView?.availableKg}
         notifications={notifications.data?.notifications}
         notificationCount={unread}
         onNotificationClick={handleNotificationClick}

@@ -2,12 +2,14 @@
 
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import type { TimeFilter } from "@/types/types";
 import { api } from "@/lib/api";
 import { salesHistoryFor } from "@/lib/adapters";
 import { useAsync } from "@/lib/hooks";
+import { paths } from "@/utils/paths";
 
 interface AdminSalesHistoryViewProps {
   onBack: () => void;
@@ -18,6 +20,7 @@ export default function AdminSalesHistoryView({
   onBack,
   totalLiters: customTotalLiters,
 }: AdminSalesHistoryViewProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TimeFilter>("TODAY");
   const { data, loading, error } = useAsync(() => api.admin.orders(), []);
 
@@ -151,6 +154,7 @@ export default function AdminSalesHistoryView({
           <div className="flex items-center justify-center pt-2">
             <button
               type="button"
+              onClick={() => router.push(paths.adminSalesHistory)}
               style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
               className="text-[11px] font-bold tracking-wider uppercase text-[#838EF8] hover:text-[#1317E4] transition-colors cursor-pointer select-none"
             >
