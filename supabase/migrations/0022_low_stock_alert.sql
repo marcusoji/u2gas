@@ -104,8 +104,21 @@ declare
   v_depot uuid := '00000000-0000-0000-0000-00000000d001';
   v_first integer;
   v_second integer;
+  v_admin uuid;
+  v_made boolean := false;
 begin
   delete from notification where kind = 'stock.low';
+
+  -- The crossing only notifies admins, and a clean database has none: the
+  -- seed is real configuration, not demo accounts. Without a recipient the
+  -- guard would assert against zero rows and never exercise the trigger.
+  select profile_id into v_admin from profile where role = 'admin' limit 1;
+  if v_admin is null then
+    insert into profile (auth_user_id, role, display_name)
+    values (gen_random_uuid(), 'admin', 'Low Stock Guard')
+    returning profile_id into v_admin;
+    v_made := true;
+  end if;
 
   -- Well above the threshold to start.
   update gas_stock
@@ -121,6 +134,7 @@ begin
   select count(*) into v_second from notification where kind = 'stock.low';
 
   delete from notification where kind = 'stock.low';
+  if v_made then delete from profile where profile_id = v_admin; end if;
 
   return v_first > 0 and v_second = v_first;
 end $$;

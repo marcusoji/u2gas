@@ -1,0 +1,38 @@
+# U2GAS Worker — local secrets for `wrangler dev`.
+#
+# Copy to `.dev.vars` (git-ignored) and fill in real values:
+#
+#   cp worker/.dev.vars.example worker/.dev.vars
+#
+# `.dev.vars` is the local equivalent of `wrangler secret put`: the same names
+# the Worker reads from `env.*` in production. It must never be committed.
+# The public vars (`ENVIRONMENT`, `APP_ORIGIN`, `DEPOT_ID`,
+# `MONNIFY_CALLBACK_PATH`, `MAIL_FROM`) live in `wrangler.toml`, not here.
+#
+# See docs/ENVIRONMENT.md for where each value comes from and what breaks
+# without it.
+
+# Supabase — Project Settings → API. The Worker needs BOTH:
+#   * the secret key for writes (never send it to a browser), and
+#   * the publishable key for RLS-scoped reads.
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_REPLACE_ME
+SUPABASE_SECRET_KEY=sb_secret_REPLACE_ME
+# Legacy names, still accepted as fallbacks on older projects.
+# SUPABASE_ANON_KEY=sb_publishable_REPLACE_ME
+# SUPABASE_SERVICE_ROLE_KEY=
+# Only needed on legacy projects still signing HS256 JWTs.
+# SUPABASE_JWT_SECRET=
+
+# Monnify — Developers → API Keys & Contracts.
+MONNIFY_API_KEY=MK_REPLACE_ME
+MONNIFY_SECRET_KEY=sk_REPLACE_ME
+MONNIFY_CONTRACT_CODE=REPLACE_ME
+# Optional: https://sandbox.monnify.com while testing. Omit for production.
+# MONNIFY_BASE_URL=https://sandbox.monnify.com
+
+# Resend — transactional mail.
+RESEND_API_KEY=re_REPLACE_ME
+
+# QR signing — 64 random hex chars. Generate with: openssl rand -hex 32
+QR_SIGNING_KEY=REPLACE_WITH_64_HEX_CHARS

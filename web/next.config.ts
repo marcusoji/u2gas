@@ -18,6 +18,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
+  // Next 16 otherwise writes its own AGENTS.md/CLAUDE.md into the project root,
+  // which would shadow the repository's real AGENTS.md — the file this project
+  // treats as its memory. The generated files are noise here.
+  agentRules: false,
   images: {
     // The static exporter cannot run Next's image optimizer, so pictures are
     // served as-is. They are already sized by the Worker's upload pipeline.

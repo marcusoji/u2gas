@@ -397,22 +397,6 @@ export interface StaffActivity {
   deliveries?: StaffDelivery[];
 }
 
-export interface AdminStaff {
-  staff_id: string;
-  status: string;
-  role?: string;
-  bank_name?: string | null;
-  account_number?: string | null;
-  hired_at?: string;
-  profile?: {
-    display_name: string | null;
-    email?: string | null;
-    role?: string;
-    phone?: string | null;
-    avatar_asset?: ImageRef | null;
-  } | null;
-}
-
 export interface AdminProduct {
   product_id: string;
   name: string;

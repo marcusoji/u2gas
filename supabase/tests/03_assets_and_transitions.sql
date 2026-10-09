@@ -40,9 +40,11 @@ declare
   v_purged  integer;
   v_err     text;
 begin
-  insert into profile (display_name, role) values ('Asset Test A', 'customer')
+  insert into profile (auth_user_id, display_name, role)
+    values (gen_random_uuid(), 'Asset Test A', 'customer')
     returning profile_id into v_a;
-  insert into profile (display_name, role) values ('Asset Test B', 'customer')
+  insert into profile (auth_user_id, display_name, role)
+    values (gen_random_uuid(), 'Asset Test B', 'customer')
     returning profile_id into v_b;
 
   -- ---------------------------------------------------------------- 1. dedupe
@@ -189,8 +191,8 @@ declare
   v_order uuid;
   v_err   text;
 begin
-  insert into "order" (channel, status, payment_status, total_kobo)
-  values ('online', 'pending', 'pending', 500000)
+  insert into "order" (depot_id, guest_phone, channel, order_type, fulfillment_type, status, payment_status, items_subtotal_kobo, total_kobo)
+  values ('00000000-0000-0000-0000-00000000d001', '+2348000007777', 'online', 'accessory', 'pickup', 'pending', 'pending', 500000, 500000)
   returning order_id into v_order;
 
   -- legal
@@ -231,8 +233,8 @@ begin
   delete from "order" where order_id = v_order;
 
   -- DELIVERED (fulfilled) -> PENDING
-  insert into "order" (channel, status, payment_status, total_kobo)
-  values ('online', 'pending', 'pending', 500000) returning order_id into v_order;
+  insert into "order" (depot_id, guest_phone, channel, order_type, fulfillment_type, status, payment_status, items_subtotal_kobo, total_kobo)
+  values ('00000000-0000-0000-0000-00000000d001', '+2348000007777', 'online', 'accessory', 'pickup', 'pending', 'pending', 500000, 500000) returning order_id into v_order;
   update "order" set status = 'confirmed' where order_id = v_order;
   update "order" set status = 'fulfilled' where order_id = v_order;
   begin

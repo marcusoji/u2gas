@@ -194,8 +194,8 @@ begin
           1, 140000, 140000, 140000, 'pickup', 'expired')
   returning order_id into v_order;
 
-  v_result := confirm_payment(v_order, 'paystack', 'orphan_test_ref',
-                              140000, 'paystack');
+  v_result := confirm_payment(v_order, 'monnify', 'orphan_test_ref',
+                              140000, 'monnify');
 
   -- The row must still exist after the call returns.
   select count(*) into v_rows from payment where order_id = v_order;

@@ -44,10 +44,11 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \  -f supabase/migrations/0001_schema.sq
   -f supabase/migrations/0021_stock_entry_photo.sql \
   -f supabase/migrations/0022_low_stock_alert.sql \
   -f supabase/migrations/0023_asset_refs_and_transitions.sql \
-  -f supabase/migrations/0024_staff_lifecycle.sql
+  -f supabase/migrations/0024_staff_lifecycle.sql \
+  -f supabase/migrations/0025_monnify.sql
 ```
 
-**Run all twenty-four.** Stopping early does not merely omit features — it leaves
+**Run all twenty-five.** Stopping early does not merely omit features — it leaves
 defects in place. 0019 finishes the notification state machine (without it a
 claimed row can stay claimed forever and its email is never sent), scopes
 idempotency to the caller rather than the key alone, and closes the webhook,

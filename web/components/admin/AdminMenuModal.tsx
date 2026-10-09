@@ -10,6 +10,20 @@ import AdminSalesHistoryView from "./AdminSalesHistoryView";
 import { useAdminStaffStore } from "@/stores/adminStaffStore";
 import { paths } from "@/utils/paths";
 
+/** The admin working desk: every screen the design draws behind the API. */
+const WORKING_DESK: { label: string; href: string }[] = [
+  { label: "GAS RATE", href: paths.adminRate },
+  { label: "ACCESSORIES", href: paths.adminProducts },
+  { label: "BUNDLES", href: paths.adminBundles },
+  { label: "ORDERS", href: paths.adminOrders },
+  { label: "FLAGGED", href: paths.adminFlagged },
+  { label: "DELIVERY ZONES", href: paths.adminZones },
+  { label: "DRIVERS", href: paths.adminDrivers },
+  { label: "REPORTS", href: paths.adminReports },
+  { label: "AUDIT LOG", href: paths.adminAudit },
+  { label: "SETTINGS", href: paths.adminSettings },
+];
+
 interface AdminMenuModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -231,6 +245,28 @@ export default function AdminMenuModal({
                   >
                     UPDATE HISTORY
                   </button>
+                </div>
+
+                {/* SECTION 4: THE WORKING DESK */}
+                <div className="w-full flex flex-col items-center gap-2.5">
+                  <span
+                    style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
+                    className="text-[11px] font-bold tracking-[0.2em] text-[#1317E4] uppercase"
+                  >
+                    MANAGE
+                  </span>
+                  <div className="w-full flex flex-wrap justify-center gap-2">
+                    {WORKING_DESK.map((item) => (
+                      <button
+                        key={item.href}
+                        type="button"
+                        onClick={() => router.push(item.href)}
+                        className="border border-[#838EF8] text-[#1317E4] bg-white font-mono text-[10px] font-bold px-4 py-1.5 rounded-full tracking-wider uppercase hover:bg-neutral-50 active:scale-95 transition-all cursor-pointer shadow-xs"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import GasTerminal from "./gas-terminal";
 import { useAuthStore } from "@/stores/authStore";
 import { api, ApiError, newIdempotencyKey } from "@/lib/api";
+import { saveGuestToken, savePendingReference } from "@/lib/payment-return";
 import { useAsync } from "@/lib/hooks";
 import { toHomeView } from "@/lib/adapters";
 import { toHistoryReceipt } from "@/lib/receipts";
@@ -28,6 +29,13 @@ const HistoryModal = dynamic(
   () => import("@/components/modals/HistoryModal").then((m) => m.HistoryModal),
   { ssr: false },
 );
+const NotificationsModal = dynamic(
+  () =>
+    import("@/components/modals/NotificationsModal").then(
+      (m) => m.NotificationsModal,
+    ),
+  { ssr: false },
+);
 const ProfileModal = dynamic(() => import("@/components/modals/ProfileModal"), {
   ssr: false,
 });
@@ -46,6 +54,7 @@ export default function GasOrderFlow() {
   >("idle");
   const [showReceipt, setShowReceipt] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [receiptItems, setReceiptItems] = useState<ReceiptItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -90,11 +99,8 @@ export default function GasOrderFlow() {
 
         // A guest's capability token is a bearer value, so it lives in session
         // storage and never in a URL the customer might share.
-        if (created.guest_token && typeof sessionStorage !== "undefined") {
-          sessionStorage.setItem(
-            `u2gas:guest:${created.order.order_id}`,
-            created.guest_token,
-          );
+        if (created.guest_token) {
+          saveGuestToken(created.order.order_id, created.guest_token);
         }
 
         // "Pay in the depot" needs no gateway: the order is placed and the gas
@@ -119,6 +125,9 @@ export default function GasOrderFlow() {
 
         const init = await api.payInit(created.order.order_id);
         if (init.authorization_url) {
+          // Monnify returns only the order id, so the reference the verify
+          // step needs is remembered here before we leave the page.
+          savePendingReference(created.order.order_id, init.reference);
           window.location.href = init.authorization_url;
           return;
         }
@@ -143,10 +152,12 @@ export default function GasOrderFlow() {
 
   const handleNotificationClick = () => {
     if (isLoggedIn) {
-      setShowHistoryModal(true);
+      setShowNotifications(true);
       setShowReceipt(false);
+      setShowHistoryModal(false);
     } else {
       setShowReceipt(true);
+      setShowNotifications(false);
       setShowHistoryModal(false);
     }
   };
@@ -200,10 +211,17 @@ export default function GasOrderFlow() {
         receipts={receipts}
       />
 
+      <NotificationsModal
+        open={showNotifications}
+        onOpenChange={setShowNotifications}
+        onRead={notifications.reload}
+      />
+
       <ProfileModal
         open={showProfileModal}
         onOpenChange={setShowProfileModal}
         onSignedOut={() => router.push("/login")}
+        onOpenHistory={() => setShowHistoryModal(true)}
       />
     </>
   );

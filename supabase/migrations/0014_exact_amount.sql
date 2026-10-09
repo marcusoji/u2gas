@@ -186,13 +186,13 @@ begin
   returning order_id into v_order;
 
   begin
-    perform confirm_payment(v_order, 'paystack', 'over_ref', 200000, 'paystack');
+    perform confirm_payment(v_order, 'monnify', 'over_ref', 200000, 'monnify');
   exception when others then
     v_over := sqlerrm = 'AMOUNT_MISMATCH';
   end;
 
   begin
-    perform confirm_payment(v_order, 'paystack', 'under_ref', 100000, 'paystack');
+    perform confirm_payment(v_order, 'monnify', 'under_ref', 100000, 'monnify');
   exception when others then
     v_under := sqlerrm = 'AMOUNT_MISMATCH';
   end;

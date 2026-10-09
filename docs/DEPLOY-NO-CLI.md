@@ -114,6 +114,7 @@ never in the frontend, never in a message to anyone.
 0022_low_stock_alert.sql
 0023_asset_refs_and_transitions.sql
 0024_staff_lifecycle.sql
+0025_monnify.sql
 ```
 
 Order matters. Each file builds on the previous one. If one fails, stop and fix

@@ -1,18 +1,10 @@
 import type {
   Product as ApiProduct,
   ShopItem,
-  OrderSummary,
-  Notification as ApiNotification,
-  GasStock as ApiGasStock,
   StockEntry,
   StaffMember,
-  DriverProfile,
-  DriverDrop,
   AdminOrder,
-  AdminDriver,
   SavedAddress,
-  Refund,
-  ReportSummary,
 } from "./types";
 import { mediaUrl, productFallback } from "./media";
 import { koboToNaira } from "@/helpers/functions";
@@ -78,69 +70,6 @@ export function toViewProduct(p: ApiProduct | ShopItem): ViewProduct {
   };
 }
 
-export type ViewNotification = ApiNotification;
-
-export function toViewReceiptItem(
-  item: {
-    name?: string | null;
-    subtitle?: string | null;
-    image_asset?: { base_path: string } | null;
-    quantity?: number;
-    amountNaira?: number;
-  },
-) {
-  return {
-    id: item.name ?? "item",
-    title: item.name ?? "U2 Accessory",
-    subtitle: item.subtitle ?? undefined,
-    image: mediaUrl(item.image_asset as never) ?? productFallback(item.name),
-    priceNaira: item.amountNaira ?? 0,
-    quantity: item.quantity ?? 1,
-  };
-}
-
-/* --- Orders ---------------------------------------------------------------- */
-
-export interface ViewOrderSummary {
-  id: string;
-  orderNumber: string;
-  title: string;
-  customerName: string;
-  customerPhone: string | null;
-  status: string;
-  paymentStatus: string;
-  fulfillment: string;
-  totalNaira: number;
-  kg: number;
-  date: Date;
-}
-
-function orderOwner(o: {
-  guest_name?: string | null;
-  profile?: { display_name: string | null } | null;
-}): string {
-  return o.profile?.display_name || o.guest_name || "WALK-IN";
-}
-
-export function toViewOrderSummary(
-  o: OrderSummary | AdminOrder,
-): ViewOrderSummary {
-  const kg = o.gas_amount_kg ?? 0;
-  return {
-    id: o.order_id,
-    orderNumber: o.order_number,
-    title: kg > 0 ? `${kg}kg Cooking Gas` : "Accessory Order",
-    customerName: orderOwner(o),
-    customerPhone: o.guest_phone ?? null,
-    status: o.status,
-    paymentStatus: o.payment_status,
-    fulfillment: o.fulfillment_type ?? "pickup",
-    totalNaira: koboToNaira(o.total_kobo ?? 0),
-    kg,
-    date: new Date(o.created_at),
-  };
-}
-
 /* --- Admin ---------------------------------------------------------------- */
 
 export interface ViewAdminStaff {
@@ -159,7 +88,7 @@ export interface ViewAdminStaff {
 }
 
 /** The database's `staff` role is the design's CASHIER. */
-export const ROLE_LABEL: Record<string, string> = {
+const ROLE_LABEL: Record<string, string> = {
   staff: "CASHIER",
   admin: "ADMIN",
   driver: "DRIVER",
@@ -180,58 +109,6 @@ export function toViewAdminStaff(s: StaffMember): ViewAdminStaff {
     accountNumber: s.account_number ?? "",
     avatarUrl: mediaUrl(s.profile?.avatar_asset) ?? "/images/staff-avatar-3.png",
     status: s.status,
-  };
-}
-
-export interface ViewDriver {
-  id: string;
-  name: string;
-  phone: string;
-  status: DriverProfile["status"];
-  vehicle: string;
-  completed: number;
-  avatarUrl: string;
-}
-
-export function toViewDriver(d: AdminDriver | DriverProfile): ViewDriver {
-  const name = d.profile?.display_name ?? "DRIVER";
-  return {
-    id: d.driver_id,
-    name: name.toUpperCase(),
-    phone: d.phone ?? "",
-    status: d.status,
-    vehicle: d.vehicle_info ?? "",
-    completed: d.completed_deliveries ?? 0,
-    avatarUrl:
-      mediaUrl(d.profile?.avatar_asset) ?? "/images/staff-avatar-3.png",
-  };
-}
-
-export interface ViewDelivery {
-  id: string;
-  orderNumber: string;
-  customerName: string;
-  customerPhone: string | null;
-  address: string;
-  status: string;
-  failureReason: string | null;
-  kg: number;
-  etaMinutes: number | null;
-  date: Date;
-}
-
-export function toViewDelivery(d: DriverDrop): ViewDelivery {
-  return {
-    id: d.delivery_id,
-    orderNumber: d.order?.order_number ?? "",
-    customerName: orderOwner(d.order ?? {}),
-    customerPhone: d.order?.guest_phone ?? null,
-    address: d.delivery_address,
-    status: d.status,
-    failureReason: d.failure_reason,
-    kg: d.order?.gas_amount_kg ?? 0,
-    etaMinutes: d.eta_minutes ?? null,
-    date: new Date(d.assigned_at ?? d.order?.created_at ?? Date.now()),
   };
 }
 
@@ -298,7 +175,7 @@ function naira(kobo: number): string {
   return Math.round(kobo / 100).toLocaleString("en-US");
 }
 
-export function toSalesItem(o: AdminOrder): AdminSalesHistoryItem {
+function toSalesItem(o: AdminOrder): AdminSalesHistoryItem {
   const kg = Number(o.gas_amount_kg ?? 0);
   const method = PAYMENT_MEDIUM[o.payment?.[0]?.method ?? ""] ?? "CASH";
   return {
@@ -310,7 +187,7 @@ export function toSalesItem(o: AdminOrder): AdminSalesHistoryItem {
 }
 
 /** The period buckets the sales-history tabs name, resolved against today. */
-export function salesPeriodOrders(
+function salesPeriodOrders(
   orders: AdminOrder[],
   period: TimeFilter,
 ): AdminOrder[] {
@@ -364,30 +241,6 @@ export function toStaffCashierRecords(a: StaffActivity): StaffCashierRecord[] {
   });
 }
 
-export function toViewRefund(r: Refund) {
-  return {
-    id: r.refund_id,
-    amountNaira: koboToNaira(r.amount_kobo),
-    status: r.status,
-    reason: r.reason,
-    orderNumber: r.order?.order_number ?? "",
-    customerName: r.order?.profile?.display_name ?? r.order?.guest_phone ?? "—",
-    lastError: r.last_error,
-    attempts: r.attempts,
-    date: new Date(r.created_at),
-  };
-}
-
-/* --- Reports --------------------------------------------------------------- */
-
-export interface ViewReport extends ReportSummary {
-  revenueNaira: number;
-}
-
-export function toViewReport(r: ReportSummary): ViewReport {
-  return { ...r, revenueNaira: koboToNaira(r.revenue_kobo) };
-}
-
 /* --- Home ------------------------------------------------------------------ */
 
 export interface HomeView {
@@ -413,14 +266,6 @@ export function toHomeView(h: {
     availableKg: h.available_kg,
     unread: h.unread_notifications,
     signedIn: h.signed_in,
-  };
-}
-
-export function toStockView(s: ApiGasStock) {
-  return {
-    ...s,
-    availableTons: Number((s.available_kg / 1000).toFixed(1)),
-    rateNaira: koboToNaira(s.rate_kobo_per_kg),
   };
 }
 

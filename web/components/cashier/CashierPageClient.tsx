@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, ArrowLeft } from "lucide-react";
+
 import Navbar from "@/components/layout/Navbar";
 import CashierTerminal from "@/components/cashier/CashierTerminal";
 import CashierScanner from "@/components/cashier/CashierScanner";
 import CashierHistoryModal from "@/components/cashier/CashierHistoryModal";
+import CashierLookupView from "@/components/cashier/CashierLookupView";
+import CashierReconciliationView from "@/components/cashier/CashierReconciliationView";
 import ProfileModal from "@/components/modals/ProfileModal";
 import ManualEntryModal from "@/components/driver/ManualEntryModal";
 import { ReceiptModal } from "@/components/modals/ReceiptModal";
@@ -17,7 +19,9 @@ import { toCashierTransactions } from "@/lib/receipts";
 
 export default function CashierPageClient() {
   // Default to scanner so the scan box is seen first
-  const [view, setView] = useState<"scanner" | "terminal">("scanner");
+  const [view, setView] = useState<"scanner" | "terminal" | "lookup" | "shift">(
+    "scanner",
+  );
   const [historyOpen, setHistoryOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
@@ -71,7 +75,7 @@ export default function CashierPageClient() {
           id: completedOrder.orderId,
           title: `${completedOrder.kg}kg Cooking Gas`,
           subtitle: `Walk-in • ${completedOrder.method}`,
-          image: "/images/cylinder.png",
+          image: "/images/image1.png",
           priceNaira: completedOrder.totalNaira,
           quantity: 1,
         },
@@ -90,33 +94,37 @@ export default function CashierPageClient() {
           onNotificationClick={() => setHistoryOpen(true)}
         />
 
-        {/* Minimal Walk-In / Scanner Navigation Switch Button at the Top */}
-        <div className="w-full flex items-center justify-end px-2 pt-1 pb-1">
-          {view === "scanner" ? (
+        {/* Mode switch: scan, walk in, look up an order, or close the shift */}
+        <div className="w-full flex items-center justify-center gap-2 px-2 pt-1 pb-1 flex-wrap">
+          {[
+            { id: "scanner", label: "SCANNER" },
+            { id: "terminal", label: "WALK IN" },
+            { id: "lookup", label: "LOOKUP" },
+            { id: "shift", label: "SHIFT" },
+          ].map((m) => (
             <button
+              key={m.id}
               type="button"
-              onClick={() => setView("terminal")}
-              className="px-3 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-black border border-neutral-200 text-[11px] font-mono font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs"
+              onClick={() => setView(m.id as typeof view)}
+              className={`px-3 py-1 rounded-full border text-[11px] font-mono font-semibold uppercase tracking-wider transition-all active:scale-95 cursor-pointer shadow-2xs ${
+                view === m.id
+                  ? "bg-[#1317E4] text-white border-[#1317E4]"
+                  : "bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border-neutral-200"
+              }`}
             >
-              <span>WALK IN</span>
-              <ArrowRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-black" />
+              {m.label}
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setView("scanner")}
-              className="px-3 py-1 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 hover:text-black border border-neutral-200 text-[11px] font-mono font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-2xs"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 text-neutral-500 group-hover:text-black" />
-              <span>SCANNER</span>
-            </button>
-          )}
+          ))}
         </div>
 
         {/* Main View: Scan Box First, or Walk-in Terminal */}
         <div className="w-full flex flex-col items-center mt-1 sm:mt-2">
           {view === "scanner" ? (
             <CashierScanner />
+          ) : view === "lookup" ? (
+            <CashierLookupView />
+          ) : view === "shift" ? (
+            <CashierReconciliationView />
           ) : (
             <CashierTerminal
               initialValue="1KG"

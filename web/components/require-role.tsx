@@ -26,7 +26,7 @@ export function RequireRole({
   children: ReactNode;
   fallback?: string;
 }) {
-  const { profile, loading, role: current } = useAuth();
+  const { profile, loading, role: current, home } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -42,9 +42,11 @@ export function RequireRole({
     }
     const allowed = Array.isArray(role) ? role : [role];
     if (!allowed.includes(current as Role)) {
-      router.replace("/");
+      // A signed-in person on a prefix they do not hold goes to their OWN
+      // root, never a partially rendered screen of a role they lack.
+      router.replace(home);
     }
-  }, [profile, loading, current, role, router, fallback]);
+  }, [profile, loading, current, role, router, fallback, home]);
 
   if (loading) {
     return (

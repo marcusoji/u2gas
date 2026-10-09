@@ -8,6 +8,7 @@ import { useCartStore, type CartItem } from "@/stores/cartStore";
 import FullScreenView from "@/components/ui/FullScreenView";
 import { Loading, ScreenNotice } from "@/components/screen-notice";
 import { api, ApiError, newIdempotencyKey } from "@/lib/api";
+import { saveGuestToken, savePendingReference } from "@/lib/payment-return";
 import { useAsync } from "@/lib/hooks";
 import { toViewProduct } from "@/lib/adapters";
 import { paths } from "@/utils/paths";
@@ -172,11 +173,8 @@ export function ShopModal({
         newIdempotencyKey(),
       );
 
-      if (created.guest_token && typeof sessionStorage !== "undefined") {
-        sessionStorage.setItem(
-          `u2gas:guest:${created.order.order_id}`,
-          created.guest_token,
-        );
+      if (created.guest_token) {
+        saveGuestToken(created.order.order_id, created.guest_token);
       }
 
       // Cash on collection settles at the counter, so there is nothing to
@@ -189,6 +187,9 @@ export function ShopModal({
 
       const init = await api.payInit(created.order.order_id);
       if (init.authorization_url) {
+        // Monnify returns only the order id, so the reference the verify step
+        // needs is remembered here before we leave the page.
+        savePendingReference(created.order.order_id, init.reference);
         window.location.href = init.authorization_url;
         return;
       }

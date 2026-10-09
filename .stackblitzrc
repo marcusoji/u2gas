@@ -1,4 +1,0 @@
-{
-  "installDependencies": false,
-  "startCommand": "cd web && npm install && npm run dev -- -p 3000"
-}

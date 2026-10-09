@@ -13,6 +13,8 @@ export interface ProfileModalProps {
   initialEditMode?: boolean;
   /** Called after sign-out so the caller can send the person to /login. */
   onSignedOut?: () => void;
+  /** Opens the order history sheet. Absent for roles that have none. */
+  onOpenHistory?: () => void;
 }
 
 export default function ProfileModal({
@@ -20,6 +22,7 @@ export default function ProfileModal({
   onOpenChange,
   initialEditMode = false,
   onSignedOut,
+  onOpenHistory,
 }: ProfileModalProps) {
   const storeUser = useAuthStore((state) => state.user);
   const profile = useAuthStore((state) => state.profile);
@@ -131,6 +134,21 @@ export default function ProfileModal({
               className="bg-[#B9BFF8] hover:bg-[#A8AFF6] active:scale-95 text-[#1317E4] text-[11px] font-bold px-4 py-0.5 rounded-full transition-all mt-2 shadow-xs cursor-pointer lowercase"
             >
               manage
+            </button>
+          )}
+
+          {/* Order history is reached from the profile, not the bell: the bell
+              is notifications, and a guest has none of either. */}
+          {onOpenHistory && !isEditing && (
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChange(false);
+                onOpenHistory();
+              }}
+              className="bg-white border border-[#838EF8]/50 hover:border-[#1317E4] active:scale-95 text-[#1317E4] text-[10px] font-mono font-bold px-4 py-1 rounded-full transition-all mt-2 shadow-xs cursor-pointer uppercase tracking-wider"
+            >
+              ORDER HISTORY
             </button>
           )}
         </div>

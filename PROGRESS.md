@@ -28,14 +28,23 @@ Updated as each piece lands. Anything not ticked has not been written yet.
       soft-deleted storage objects, service-role auth only.
 
 ### Tests — `supabase/tests/`
-- [x] `01_concurrency.sql` — 30 inline assertions covering derived
+- [x] `01_concurrency.sql` — 86 inline assertions covering derived
       availability, over-reserve refusal, negative-stock guards, idempotent
       release, fulfilment accounting, duplicate payment references, repeated
       webhooks, double scan, unpaid scan, repeated expiry sweeps, bundle
-      compatibility, four-item bundle rejection.
+      compatibility, four-item bundle rejection, and the orphaned-payment and
+      low-stock regression guards.
+- [x] `02_rls.sql` — 47 assertions proving the RLS fence as `anon` and
+      `authenticated` with forged JWT claims, exactly as PostgREST presents a
+      request.
+- [x] `03_assets_and_transitions.sql` — 20 assertions covering shared image
+      assets, reference-safe cleanup, atomic admin writes and order/payment
+      state transitions.
 - [x] `run_concurrency.sh` — three genuinely concurrent cases that a single
       session cannot prove: two customers for the last 10kg, two staff on one
       QR, and a payment racing the expiry sweep.
+
+All four suites pass against a local PostgreSQL 17 (see "Verification status").
 
 ### Worker API — `worker/`
 - [x] `package.json`, `wrangler.toml`, `tsconfig.json`, `src/types.ts`
@@ -95,13 +104,34 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 - [x] Auth flow — `/login`, magic-link + Google/Apple, `/auth/callback` routes
       each role to its own app
 - [x] Customer — home terminal, shop/product/cart, order summary, payment
-      (delivery and walk-in), receipt/history, profile
+      (delivery and walk-in), receipt/history, profile. The bell opens a
+      notifications list (`NotificationsModal`) with a working "mark all read"
+      (`POST /notifications/read`); order history moved to the profile menu.
 - [x] Cashier — scan, queue, walk-in, collect, lookup, shift
-- [x] Driver — drops, drop, doorstep scan, profile
-- [x] Admin — tank, products, bundles, orders, people, settings, reports
+- [x] Driver — drops, drop detail (start trip / failure), doorstep scan, profile
+- [x] Admin — tank, rate, products, bundles, orders, flagged, zones, drivers,
+      reports, audit, settings, people. Every admin API method has a screen
+      behind it, including the bundle publish action (`/admin/bundles`,
+      `AdminBundlesView`) and its live compatibility check.
 - [x] Removed `web/data.ts`; every screen reads the API (`lib/api.ts` +
       `useAsync`). The admin staff roster/add/edit/remove, staff history, cashier
       history and gas history screens are wired to the Worker/Supabase.
+- [x] Removed dead files: the `jgs-main.zip` font-repo copy, the StackBlitz
+      scaffolding (`.stackblitzrc`, `STACKBLITZ-RUN.md`), the `create-next-app`
+      boilerplate SVGs in `web/public/`, the unused `noise.png`, and eight
+      unreferenced `web/public/images/` assets.
+- [x] Repo hygiene (audit #7): removed the dead shadcn/UI chain that nothing
+      imported — `web/components/ui/{button,dialog,drawer,BottomSheetModal,
+      modal-sheet,index}.ts(x)` and `web/components/modals/AddAddressModal.tsx`
+      — and the duplicated/divergent view-model types and unreferenced exports
+      in `web/lib/adapters.ts`, `web/lib/receipts.ts`, `web/helpers/functions.ts`
+      and `web/types/types.ts` (e.g. `toViewOrderSummary`, `toViewDriver`,
+      `toViewDelivery`, `toViewRefund`, `toViewReport`, `ViewNotification`,
+      `formatNaira`, the unused `toGasHistory`/`toTankHistory`/`toAdminSales`/
+      `toDriverHistoryOrders`/`filterSalesByPeriod`, and the orphan
+      `TankHistoryRecord`/`GasHistoryRecord`/`SalesHistoryItem`/`QrStatus`/
+      `AdminStaffProfile` types). `tsc`, `eslint` and the production build pass;
+      no dangling references remain.
 
 ### Docs
 - [x] `README.md` — the one architectural idea and how to run it
@@ -118,6 +148,17 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 - [ ] Supabase project setup, storage buckets and policies
 - [ ] Resend SMTP wiring through Supabase Auth
 - [ ] Hostinger to Cloudflare DNS instructions
+
+The non-secret half is prepared: `web/.env.production` and `worker/.dev.vars`
+exist (git-ignored, from the `.example` templates) with a freshly generated
+`QR_SIGNING_KEY`. What remains needs an account nobody but the operator has:
+Cloudflare authentication and the two KV namespace ids, the real domain, the
+Supabase project URL and publishable key, and the dashboard secrets. A
+placeholder is now refused rather than shipped — both `wrangler.toml`
+(by `scripts/deploy-cloudflare.sh`) and the app build (by
+`web/scripts/build-headers.mjs`, which would otherwise emit a CSP naming a
+domain that never answers). The ordered steps are in
+`docs/SETUP-CHECKLIST.md` §I.
 
 ---
 
@@ -266,15 +307,43 @@ A second reviewer went through the SQL. Seven of their nine items were real.
 
 ## Cross-file audit
 
-Checked mechanically across the whole tree, not just per file:
+Checked mechanically across the whole tree, not just per file, and re-verified
+against the live database (see "Verification status"):
 
-- All 39 frontend endpoints resolve to a Worker route.
-- All 11 RPC names called from TypeScript exist in a migration.
-- All `.from()` table references exist in the schema; spot-checked columns.
+- Every frontend API path resolves to a Worker route or an explicit Supabase
+  `auth`/PostgREST read, with two known exceptions recorded under "Known
+  omissions".
+- All 26 Worker RPC names resolve to a function in the schema.
+- Every `.from()` table reference in the Worker (21) and the app's direct
+  Supabase reads (`profile`) exists in the schema or is a view (`shop_listing`,
+  defined in 0005).
 - Every named import resolves to a real export, both apps.
 - Every `navigate()` and `<Link to>` target matches a declared route.
-- Every enum literal sent by the frontend exists in the SQL enum.
+- Every enum literal sent by the frontend exists in the SQL enum (`app_role`,
+  `order_status`, `payment_status`, `payment_method`, `delivery_status`,
+  `driver_status`, `staff_status`, `refund_status`, `stock_move` all match).
 - No secrets, TODOs, FIXMEs or `console.log` in the tree.
+
+### Known omissions
+
+The two endpoints recorded here previously now have screens:
+
+- `POST /api/notifications/read` — the bell opens `NotificationsModal`, which
+  lists the person's notifications and clears the unread ones; the endpoint is
+  reachable from the "MARK ALL READ" control.
+- `POST /api/admin/bundles` (`publish_bundle`) — `/admin/bundles`
+  (`AdminBundlesView`) is the three-slot form; it calls the live
+  `/admin/bundles/check` as slots fill and publishes through this endpoint,
+  including the named-reason override path.
+
+One richer surface is still without an app caller, and is not an omission the
+screen depends on: `POST /api/uploads/bundle` (multipart, `publish_bundle` plus
+inline creation of new member products and their images, with compensating
+storage rollback). The admin desk publishes sets of *existing* catalogue items,
+which is the flow the audit named; a screen for the inline-create variant is a
+separate, larger job and is not needed for the existing-item publish to work.
+
+The app and Worker are wired end to end for every flow the screens implement.
 
 ## Fonts
 
@@ -286,9 +355,39 @@ fallback: the real face ships.
 
 ## Verification status
 
-The SQL has not been executed. This sandbox has no Postgres and no network to
-install one, so the migrations were reviewed by hand rather than run. Three
-defects were found and fixed that way:
+The SQL has now been executed against a local PostgreSQL 17 with a minimal
+`auth`-schema bootstrap (`auth.users`, `auth.uid()`, the `anon` /
+`authenticated` / `service_role` roles) standing in for Supabase's managed
+objects. All 25 migrations apply cleanly in order, and every test suite passes:
+
+- `supabase/tests/01_concurrency.sql` — 86/86 assertions.
+- `supabase/tests/02_rls.sql` — 47/47 assertions.
+- `supabase/tests/03_assets_and_transitions.sql` — 20/20 assertions.
+- `supabase/tests/run_concurrency.sh` — all 6 two-session assertions pass
+  (two customers for the last 10kg, two staff on one QR, a payment racing the
+  sweep).
+
+Running them surfaced four latent defects that hand review had missed, all now
+fixed:
+
+- `0009_audit_fixes.sql`'s `test_orphaned_payment_survives()` still called
+  `confirm_payment` with the pre-rename `'paystack'` label, which 0025 renamed
+  to `'monnify'`. The call raised `invalid input value for enum payment_method`,
+  so the orphaned-payment regression guard never ran. `0014_exact_amount.sql`'s
+  amount-mismatch guard had the same stale label.
+- `0022_low_stock_alert.sql`'s `test_low_stock_fires_once()` asserted the alert
+  fires, but the crossing only notifies `role = 'admin'` profiles and the seed
+  (0007) creates none — real configuration, not demo accounts. The guard now
+  creates a temporary admin recipient when the roster has none.
+- `03_assets_and_transitions.sql`'s fixtures predated the `auth_user_id NOT
+  NULL`, `depot_id`, `order_type`, `fulfillment_type` and `order_identifiable` /
+  `order_total_consistent` constraints, so the whole file aborted at its first
+  insert.
+- `run_concurrency.sh` left TEST 1's reservation on the tank, so TEST 2's own
+  `reserve_gas` was refused for lack of stock, and its final cleanup deleted an
+  order still referenced by `refund`/`payment`.
+
+Earlier, hand review had already found and fixed (before the SQL could run):
 
 - `confirm_payment` and `redeem_qr` declared `RETURNS TABLE` with output
   parameters named `payment_id` and `order_id`, which collide with real column
@@ -296,8 +395,9 @@ defects were found and fixed that way:
 - The `order_item` read policy leaned on the `order` policy being applied
   inside its subquery. It is now written out explicitly.
 
-The Worker's dependencies could not be installed either, so `tsc` ran with
-`--noResolve`. That still caught four real defects, all fixed:
+The Worker's dependencies have since been installed, so `tsc --noEmit` runs for
+real (exit 0) and `vitest` runs 58/58. Those first caught four defects, all
+fixed:
 
 - `sha256Hex` passed a `Uint8Array` straight to `crypto.subtle.digest`. Under
   current lib types that can be backed by a `SharedArrayBuffer`, which digest
@@ -306,25 +406,24 @@ The Worker's dependencies could not be installed either, so `tsc` ran with
   extension, not standard, and fails against the plain DOM `Response`.
 - The webhook's catch block did not narrow `unknown` before reading `.message`.
 
-The two errors still reported are `--noResolve` artifacts — an unresolved
-import cannot narrow an `instanceof` — not defects.
-
 Run this before trusting any of it:
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -f supabase/migrations/0001_schema.sql \
-  -f supabase/migrations/0002_indexes.sql \
-  -f supabase/migrations/0003_functions_inventory.sql \
-  -f supabase/migrations/0004_functions_orders.sql \
-  -f supabase/migrations/0005_functions_jobs.sql \
-  -f supabase/migrations/0006_rls.sql \
-  -f supabase/migrations/0007_seed.sql
-
+# 1. Apply every migration in order, then run all three SQL suites and the
+#    two-session script.
+for f in supabase/migrations/*.sql; do
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+done
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/01_concurrency.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/02_rls.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/03_assets_and_transitions.sql
 ./supabase/tests/run_concurrency.sh "$DATABASE_URL"
 
-cd worker && npm install && npm run typecheck
+# 2. Worker
+cd worker && npm install && npm run typecheck && npx vitest run
+
+# 3. Frontend
+cd ../web && npm install && npx tsc --noEmit && npm run build
 ```
 
 ## Phase 23 — Delivery/queue concurrency hardening (24 Sep 2026)

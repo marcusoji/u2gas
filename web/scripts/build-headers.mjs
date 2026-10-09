@@ -73,6 +73,31 @@ if (!embedded && !apiOrigin) {
   process.exit(1);
 }
 
+// A placeholder is worse than an empty value: the build succeeds and ships a
+// CSP naming a domain that will never answer, which reads as a network bug
+// rather than a missing config. Refuse it the same way an absent origin is
+// refused, and name the file to edit.
+if (!embedded) {
+  const placeholder = /\bYOUR-DOMAIN\b|YOUR-PROJECT-REF|REPLACE_ME/;
+  for (const [name, value] of [
+    ["NEXT_PUBLIC_API_ORIGIN", apiOrigin],
+    ["NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL || ""],
+    [
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "",
+    ],
+  ]) {
+    if (placeholder.test(value)) {
+      console.error(
+        `\n[headers] ${name} still holds a placeholder (${value}).\n` +
+          "Fill web/.env.production with the real value before deploying — a\n" +
+          "build with a placeholder origin produces a CSP the browser blocks.\n",
+      );
+      process.exit(1);
+    }
+  }
+}
+
 if (!existsSync(outDir)) {
   console.error(
     "[headers] web/out does not exist. Run this after `next build` " +

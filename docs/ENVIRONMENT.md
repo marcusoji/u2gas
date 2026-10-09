@@ -3,6 +3,21 @@
 Two tiers. The line between them matters: anything in the Pages column is
 compiled into the browser bundle and readable by anyone who opens devtools.
 
+## Example files
+
+Three `.example` files are committed; copy each to its real, git-ignored name
+and fill it in. None of the real files may be committed.
+
+| Copy from | To | Used by |
+|---|---|---|
+| `web/.env.example` | `web/.env` | local `npm run dev` |
+| `web/.env.production.example` | `web/.env.production` | the Pages build via `scripts/deploy-cloudflare.sh` |
+| `worker/.dev.vars.example` | `worker/.dev.vars` | local `wrangler dev` |
+
+`worker/.dev.vars` is the local equivalent of `wrangler secret put`; the public
+Worker vars (`ENVIRONMENT`, `APP_ORIGIN`, …) live in `wrangler.toml`. In
+production the Worker secrets are set in the Cloudflare dashboard, not a file.
+
 ## Cloudflare Workers — secrets
 
 Set with `wrangler secret put <NAME>`. Never in `wrangler.toml`, never in git.

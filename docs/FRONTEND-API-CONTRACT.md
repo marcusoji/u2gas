@@ -777,6 +777,24 @@ invisible to the frontend too.
 API, does not verify signatures, and does not name the gateway except in a
 route label. Monnify is a Worker and migration concern.
 
+### 6.2 Returning from checkout
+
+Monnify redirects the browser to `MONNIFY_CALLBACK_PATH` (`/orders/verify`)
+with `?order=<order_id>`. The page there:
+
+1. reads the order id from the query, the merchant reference from the query
+   (if echoed) or from session storage (it was saved at initialize time), and
+   the guest capability token from session storage;
+2. calls `POST /payments/verify` — which asks the gateway and, on a real
+   success, records the payment idempotently. The webhook is still what marks
+   the order paid; this call only makes a slow webhook invisible to the
+   customer;
+3. if the gateway has not settled yet, re-reads the order a few times and
+   finally shows a "still confirming" state rather than a failure.
+
+Neither the guest token nor the reference is ever placed in a URL by the app,
+so a returned page cannot be driven by a tampered query parameter alone.
+
 
 
 ---

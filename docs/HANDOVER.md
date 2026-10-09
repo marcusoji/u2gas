@@ -75,8 +75,9 @@ The pixel face is Velvetyne's **Jgs** family (SIL OFL): `jgs7` is every
 heading/label/button and the LED readouts. It is self-hosted under
 `web/public/fonts/` and wired through `next/font/local` in `app/layout.tsx`.
 Barlow Semi Condensed is loaded from Google Fonts via `next/font/google` for
-caption strings. The upstream repo also ships at the repo root as
-`jgs-main.zip`, so masters can be refreshed offline.
+caption strings. The faces are refreshed with `scripts/fetch-fonts.sh`, which
+pulls the upstream Jgs webfonts (or subsets a local `JGS_SRC` master) into
+`web/public/fonts/` — there is no bundled copy of the font repository.
 
 ## Asset workflow (pictures the screens show)
 

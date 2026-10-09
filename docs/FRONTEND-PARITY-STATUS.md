@@ -22,6 +22,30 @@ Short answer: **partially.** Here is the exact state, so nothing is overclaimed.
   `lib/receipts.ts` (`toHistoryReceipt`); empty rather than inventing an order.
 - **Auth** — Supabase Auth only; the role is read from the `profile` row, and
   `/auth/callback` routes each role to its own app.
+- **Admin working desk** — every admin API now has a screen behind it:
+  - `/admin/rate` (`AdminRateView`) — naira-per-kg, with a confirm step.
+  - `/admin/products` (`AdminProductsView`) — accessories inventory with the
+    drawn stock strip (`STOCK / RSVD / AVAIL`), create, edit (stock as a
+    delta), picture upload and activate/deactivate.
+  - `/admin/orders` (`AdminOrdersView`) — status tabs, delivery-driver
+    assignment and order cancel-in-place (refund-pending, not "money moved").
+  - `/admin/flagged` (`AdminFlaggedView`) — refunds owed (gateway process +
+    record-manual fallback), failed deliveries and stale unpaid holds.
+  - `/admin/zones` (`AdminZonesView`) — delivery zones and fees.
+  - `/admin/drivers` (`AdminDriversView`) — the roster with live availability
+    dots; read-only by design, because a driver is a staff row.
+  - `/admin/reports` (`AdminReportsView`) — the gauge language, not charts.
+  - `/admin/audit` (`AdminAuditView`) — the audit log, entity-filterable.
+  - `/admin/settings` (`AdminSettingsView`) — the keys the order path reads.
+  These hang off a MANAGE block on the admin menu and all sit behind
+  `RequireRole role="admin"`.
+- **Cashier** — `SHIFT` mode (`CashierReconciliationView`) closes the shift
+  against the till with an idempotency key, and `LOOKUP`
+  (`CashierLookupView`) searches by order number or phone.
+- **Driver** — `MY DROPS` (`DriverDeliveriesView`) gives the full delivery
+  detail plus `START TRIP` and failure reporting (reason × reschedule/return),
+  and `PROFILE` (`DriverProfileView`) carries the `AVAILABLE / BUSY / OFFLINE`
+  toggle the design puts on the driver's own screen.
 
 ## Not done
 
@@ -30,10 +54,15 @@ Short answer: **partially.** Here is the exact state, so nothing is overclaimed.
   Verify each against the Worker + Supabase.
 - Driver and cashier queue/history flows are wired but not yet verified against
   the Worker + Supabase.
-- The admin screens (tank, sales history, staff) are not yet confirmed against
-  their live frames.
-- No full typecheck / lint / static build has been captured for the whole app,
-  and the app has not been deployed.
+- The admin tank/sales/staff frames are wired but not yet pixel-compared to
+  their live Figma frames; the new desk screens are built from the design
+  language rather than a dedicated frame each.
+- The compatibility bundle desk (`/admin/bundles`) now publishes sets of
+  existing catalogue items through `POST /admin/bundles`, with the live
+  `/admin/bundles/check` strip and the named-reason override. The inline-create
+  multipart variant (`POST /uploads/bundle`) has no screen yet.
+- No full typecheck / lint / static build has been captured for the whole app
+  in CI, and the app has not been deployed.
 
 ## How to update this file
 

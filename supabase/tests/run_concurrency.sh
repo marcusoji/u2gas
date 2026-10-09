@@ -69,6 +69,11 @@ echo "------------------------------------------------------"
 
 HASH=$(q "select encode(digest('concurrent-scan-'||now()::text,'sha256'),'hex');")
 
+# TEST 1 leaves its reservation behind; reset the tank or this test's own
+# reserve_gas is refused for lack of stock and the case never runs.
+q "update gas_stock set total_received_kg=100, reserved_kg=0, deducted_kg=0 where depot_id='$DEPOT';"
+q "delete from \"order\" where guest_phone in ('+2348000000101','+2348000000102');"
+
 ORDER=$(q "
   insert into \"order\" (depot_id, guest_phone, order_type, gas_amount_kg,
     rate_at_purchase, gas_subtotal_kobo, total_kobo, fulfillment_type,
@@ -132,6 +137,10 @@ bad=$(q "select count(*) from \"order\" o
 [ "$bad" = "0" ] && pass "no expired-and-paid contradiction" \
                  || fail "order is both expired and paid"
 
+# Refund and payment rows reference the order, so a bare delete is refused and
+# the run aborts after every assertion has already passed.
+q "delete from refund where order_id='$ORDER';"
+q "delete from payment where order_id='$ORDER';"
 q "delete from \"order\" where order_id='$ORDER';"
 
 # ---------------------------------------------------------------------------

@@ -163,12 +163,15 @@ and media fallbacks; set it so a real deployment pins the API origin.
 
 ## F. Bring the system up
 
-1. Apply all **24 migrations** in order, `supabase/migrations/0001_schema.sql`
-   through `0024_staff_lifecycle.sql`. Stopping early leaves real defects, not
+1. Apply all **25 migrations** in order, `supabase/migrations/0001_schema.sql`
+   through `0025_monnify.sql`. Stopping early leaves real defects, not
    just missing features — `0019` and `0020` fix the notification state
-   machine, idempotency scoping and the webhook, QR and delivery races.
-2. Run `supabase/tests/01_concurrency.sql` (87 assertions) and
-   `02_rls.sql` (38). Expect 0 failures.
+   machine, idempotency scoping and the webhook, QR and delivery races, and
+   `0025` renames the payment provider to Monnify (without it a payment write
+   hits an enum value that does not exist).
+2. Run `supabase/tests/01_concurrency.sql` (86 assertions),
+   `02_rls.sql` (47) and `03_assets_and_transitions.sql` (20). Expect 0
+   failures.
 3. Run `./supabase/tests/run_concurrency.sh`. It needs two live sessions and is
    the only thing that proves the row locks hold.
 4. Deploy the three Edge Functions: `expire-order-holds`, `send-notifications`,
@@ -218,7 +221,58 @@ The database ships with no products, no stock and no staff.
 
 ---
 
-## I. Never do these
+## I. Deploy to Cloudflare
+
+The config is all non-secret and can be prepared before the secrets exist.
+`web/.env.production` and `worker/.dev.vars` are git-ignored; copy them from the
+templates and fill every placeholder (`YOUR-DOMAIN`, `YOUR-PROJECT-REF`,
+`REPLACE_ME`):
+
+```bash
+cp web/.env.production.example web/.env.production
+cp worker/.dev.vars.example    worker/.dev.vars   # local `wrangler dev` only
+```
+
+1. Create the two KV namespaces and paste the ids into `worker/wrangler.toml`
+   (`YOUR-KV-ID` and `YOUR-PRODUCTION-KV-ID`):
+   ```bash
+   cd worker
+   npx wrangler kv namespace create CACHE
+   npx wrangler kv namespace create CACHE --env production
+   ```
+2. Fill `worker/wrangler.toml` — replace every `YOUR-DOMAIN` too (the `routes`
+   pattern, `APP_ORIGIN` and `MAIL_FROM`).
+3. Authenticate once: `npx wrangler login`, or export `CLOUDFLARE_API_TOKEN`.
+4. Set the Worker secrets from section E in the dashboard, or with the CLI:
+   ```bash
+   cd worker && npx wrangler secret put SUPABASE_SECRET_KEY --env production
+   # …repeat for each secret in section E
+   ```
+5. Generate the QR signing key and set it as a secret (never reuse the local
+   one): `openssl rand -hex 32` → `QR_SIGNING_KEY`.
+6. Deploy both halves:
+   ```bash
+   bash scripts/deploy-cloudflare.sh
+   ```
+   The script refuses to run while a placeholder remains in
+   `worker/wrangler.toml`, and the app build refuses to write `out/_headers`
+   while `NEXT_PUBLIC_API_ORIGIN`, `NEXT_PUBLIC_SUPABASE_URL` or the publishable
+   key still reads a placeholder. Both guards are intentional: a placeholder
+   origin produces a CSP the browser blocks, which reads as a network fault
+   rather than missing config.
+
+### After it is live
+
+- `https://api.<domain>/api/health` returns `{"ok":true,…}`.
+- A customer order reaches `PAID` through Monnify and returns to
+  `/orders/verify` — not a 404.
+- A cashier scan and a driver doorstep scan both resolve.
+- Then walk Phases 16–21 of `DEPLOY-NO-CLI.md`: the CORS check, the seven
+  security tests, the twenty payment tests, and the switch to live keys.
+
+---
+
+## J. Never do these
 
 - Never commit `.env`, or any file containing `sb_secret_`, `sk_` or `re_`.
 - Never put a secret in a `NEXT_PUBLIC_` variable — it is compiled into the browser

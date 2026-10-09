@@ -202,6 +202,10 @@ export const api = {
   notifications: () =>
     get<{ notifications: import("./types").Notification[] }>("/notifications"),
 
+  /** Mark every unread notification read. Idempotent on the server. */
+  notificationsRead: () =>
+    post<{ ok: true }>("/notifications/read"),
+
   availability: (kg: number) =>
     get<{
       available_kg: number;
@@ -391,6 +395,16 @@ export const api = {
         "/admin/bundles/check",
         { product_ids },
       ),
+
+    /** Publish a bundle of existing catalogue items, two or three of them. */
+    createBundle: (body: {
+      name: string;
+      description?: string;
+      price_kobo: number;
+      items: { product_id: string; quantity: number; slot_index: number }[];
+      override_rule_id?: string;
+      override_reason?: string;
+    }) => post<{ bundle: import("./types").Bundle }>("/admin/bundles", body),
 
     orders: (status?: string) =>
       get<{ orders: import("./types").AdminOrder[] }>(

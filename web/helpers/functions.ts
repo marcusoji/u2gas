@@ -13,14 +13,6 @@ const KNOWN_VARIANT_ALIASES: Record<string, string> = {
   "3kg": "SMALL",
 };
 
-export function formatNaira(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 export function koboToNaira(kobo: number): number {
   return Math.round(kobo / 100);
 }

@@ -28,6 +28,18 @@ const AuthContext = createContext<AuthState>({
   role: null,
 });
 
+/**
+ * How long to wait for the first session read before giving up on it.
+ *
+ * `getSession()` talks to Supabase, and on a flaky network the request can
+ * stall without ever settling. `RequireRole` holds the screen while `loading`
+ * is true, so a read that never resolves would leave a protected screen on
+ * "LOADING…" forever instead of bouncing to sign-in. The guard makes the
+ * failure mode a normal signed-out state — the safe direction, since the
+ * Worker still checks the token on every call.
+ */
+const SESSION_READ_TIMEOUT_MS = 10_000;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     session: null,
@@ -53,7 +65,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    supabase.auth.getSession().then(({ data }) => void load(data.session));
+    // Settle `loading` even if the session read stalls. The guard is cleared as
+    // soon as the read resolves, so a fast path is not delayed by the timer.
+    const guard = setTimeout(() => {
+      if (!active) return;
+      setState((prev) => (prev.loading ? { ...prev, loading: false } : prev));
+    }, SESSION_READ_TIMEOUT_MS);
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => load(data.session))
+      .catch(() => load(null))
+      .finally(() => clearTimeout(guard));
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       void load(session);
@@ -61,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       active = false;
+      clearTimeout(guard);
       sub.subscription.unsubscribe();
     };
   }, []);

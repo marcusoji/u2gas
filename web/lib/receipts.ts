@@ -6,13 +6,6 @@ import type {
   DriverDeliveryStatusTab,
   CashierTransactionItem,
   CashierStatusTab,
-  StaffDriverRecord,
-  StaffCashierRecord,
-  AdminSalesHistoryItem,
-  GasHistoryRecord,
-  TankHistoryRecord,
-  StockEntry,
-  TimeFilter,
 } from "@/types";
 import { mediaUrl } from "./media";
 import { koboToNaira } from "@/helpers/functions";
@@ -133,23 +126,6 @@ export function toHistoryReceipt(o: Order): HistoryReceipt {
 
 /* --- Driver ---------------------------------------------------------------- */
 
-function driverTab(o: Order): DriverDeliveryStatusTab {
-  if (o.status === "cancelled") return "CANCELLED";
-  if (o.status === "fulfilled") return "COMPLETED";
-  return "UNFULFILLED";
-}
-
-export function toDriverHistoryOrders(orders: Order[]): DriverDeliveryOrder[] {
-  return orders.map((o) => ({
-    id: o.order_id,
-    title: `${o.gas_amount_kg || "—"}kg Cylinder`,
-    date: new Date(o.created_at),
-    customerName: o.profile?.display_name ?? o.guest_name ?? "Walk-in",
-    address: o.delivery_address ?? o.delivery?.delivery_address ?? undefined,
-    status: driverTab(o),
-  }));
-}
-
 /** The driver's own deliveries, which carry the order nested. */
 export function dropsToDriverHistory(
   drops: import("./types").DriverDrop[],
@@ -209,100 +185,3 @@ export function toCashierTransactions(
     };
   });
 }
-
-/* --- Admin / staff history ------------------------------------------------- */
-
-export function toAdminSales(orders: Order[]): AdminSalesHistoryItem[] {
-  return orders.map((o) => {
-    const payment = o.payments?.find((p) => p.paid_at) ?? o.payments?.[0];
-    return {
-      id: o.order_id,
-      title: o.gas_amount_kg > 0 ? `${o.gas_amount_kg}KG REFILL` : "ACCESSORY",
-      date: new Date(o.created_at),
-      paymentMethod: (payment
-        ? PAYMENT_MEDIUM[payment.method] ?? "TRANS"
-        : "CASH") as AdminSalesHistoryItem["paymentMethod"],
-    };
-  });
-}
-
-export function toStaffDriverRecords(orders: Order[]): StaffDriverRecord[] {
-  return orders.map((o) => ({
-    id: o.order_id,
-    title: o.order_number,
-    date: new Date(o.created_at),
-  }));
-}
-
-export function toStaffCashierRecords(orders: Order[]): StaffCashierRecord[] {
-  return orders.map((o) => {
-    const payment = o.payments?.find((p) => p.paid_at) ?? o.payments?.[0];
-    return {
-      id: o.order_id,
-      title: o.order_number,
-      date: new Date(o.created_at),
-      paymentMethod: (payment
-        ? PAYMENT_MEDIUM[payment.method] ?? "TRANS"
-        : "CASH") as StaffCashierRecord["paymentMethod"],
-    };
-  });
-}
-
-/** Stock movements become the GAS HISTORY rows. */
-export function toGasHistory(entries: StockEntry[]): GasHistoryRecord[] {
-  return entries.map((e) => {
-    const date = new Date(e.entry_date);
-    return {
-      id: e.entry_id,
-      dayLabel: String(date.getDate()),
-      amountTons: Number((e.amount_kg / 1000).toFixed(2)),
-      actionType: e.move === "removal" ? "REMOVAL" : "ADDITION",
-      operatorName: e.admin?.display_name ?? "—",
-      month: MONTHS_UPPER[date.getMonth()] ?? monthName(date),
-      dateStr: date.toISOString(),
-    };
-  });
-}
-
-/** The tank gauge's own history, drawn on the functional tank screen. */
-export function toTankHistory(entries: StockEntry[]): TankHistoryRecord[] {
-  return entries.map((e) => ({
-    id: e.entry_id,
-    timestamp: new Date(e.entry_date).toLocaleString(),
-    level: e.amount_kg,
-    type:
-      e.move === "removal"
-        ? "DISPENSE"
-        : e.move === "correction"
-          ? "AUDIT"
-          : "REFILL",
-    volumeLiters: e.amount_kg,
-    operator: e.admin?.display_name ?? "—",
-  }));
-}
-
-export const ADMIN_TIME_FILTERS: TimeFilter[] = [
-  "TODAY",
-  "THIS MONTH",
-  "MAY",
-  "JUNE",
-];
-
-export function filterSalesByPeriod(
-  orders: Order[],
-  period: TimeFilter,
-): AdminSalesHistoryItem[] {
-  const now = new Date();
-  const rows = orders.filter((o) => {
-    const d = new Date(o.created_at);
-    if (period === "TODAY") return d.toDateString() === now.toDateString();
-    if (period === "THIS MONTH")
-      return (
-        d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
-      );
-    return MONTHS_UPPER[d.getMonth()] === period;
-  });
-  return toAdminSales(rows);
-}
-
-export { koboToNaira };

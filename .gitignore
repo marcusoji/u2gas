@@ -5,6 +5,9 @@ dist/
 .env
 .env.local
 .env.*.local
+# Local deploy config (public values only, but environment-specific). The
+# deploy script makes it from .env.example; it never belongs in git.
+.env.production
 .wrangler/
 .dev.vars
 *.log
