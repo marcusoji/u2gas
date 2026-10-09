@@ -133,3 +133,17 @@ for caption strings.
 There is no snapshot and no generator: the live Figma file
 (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source. Read the live frame through
 the Figma MCP and change the app to match.
+
+The old Vite/React frontend, its `docs/*.html` galleries (`u2gas-all-screens.html`,
+the `u2gas-batch*-exact.html` files, `design-system-reference.html`), the
+`web/src/figma/*` generated screens and their generator (`build/gen_react.py`,
+`scripts/check-figma-parity.sh`, `web/scripts/check-figma-registry.mjs`) were all
+removed. Do not reintroduce a committed HTML snapshot or a markup generator: the
+only way to certify a screen is to read its live frame. When a doc still narrates
+the removed pipeline (a "combiner" that merges batches, a "combined file" that
+matches the batch files, "the prototype"), that wording is stale drift — fix it to
+describe reading the live file.
+
+The live page is `MAIN SCREENS` (`256:14758`); its node ids are `256:*`, `369:*`
+and `720:*` and `675:*` for the frames added after the first survey. Read the
+frame, not a saved copy, and watch each leaf's `visible` flag.
