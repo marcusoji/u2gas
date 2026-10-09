@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import GasTerminal from "./gas-terminal";
@@ -67,6 +67,37 @@ export default function GasOrderFlow() {
     () => (home.data ? toHomeView(home.data) : null),
     [home.data],
   );
+
+  // The `/home` figure is read once on mount and goes stale as other customers
+  // reserve, so the keypad's early refusal must not trust it alone. The typing
+  // amount is tracked here and re-checked against the depot through
+  // `/orders/availability` (debounced) so `1:175`'s shortfall board appears
+  // before PAY, not only after the server refuses the reservation. The call is
+  // advisory and uncached on the server by design — it reserves nothing — and
+  // falls back to the mount figure until the first response lands.
+  const [typedKg, setTypedKg] = useState(0);
+  const [checked, setChecked] = useState<{
+    kg: number;
+    available_kg: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (typedKg <= 0) return;
+    const timer = setTimeout(() => {
+      api
+        .availability(typedKg)
+        .then((r) => setChecked({ kg: typedKg, available_kg: r.available_kg }))
+        // Advisory only: an unreachable endpoint must not block the terminal,
+        // and the reservation transaction is the authoritative check anyway.
+        .catch(() => {});
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [typedKg]);
+
+  // A result only counts for the amount it was fetched for; a stale figure from
+  // a previous keystroke is dropped rather than shown.
+  const liveAvailableKg =
+    checked && checked.kg === typedKg ? checked.available_kg : null;
 
   // A customer's own past orders, for the history sheet. A guest has none, so
   // the call is skipped entirely without a session.
@@ -166,6 +197,16 @@ export default function GasOrderFlow() {
     setError(null);
   };
 
+  // The terminal reports every readout change; parse the digits back to kg so
+  // the debounced availability check above tracks what is on the screen.
+  const handleAmountChange = useCallback((value: string) => {
+    setTypedKg(parseInt(value.replace(/[^0-9]/g, ""), 10) || 0);
+  }, []);
+
+  // Prefer the freshly checked figure; fall back to the mount reading until the
+  // first response (or if the check fails) so the terminal still warns on load.
+  const effectiveAvailableKg = liveAvailableKg ?? homeView?.availableKg;
+
   const handleNotificationClick = () => {
     if (isLoggedIn) {
       setShowNotifications(true);
@@ -197,12 +238,13 @@ export default function GasOrderFlow() {
         initialValue="1KG"
         status={terminalStatus}
         ratePerKg={homeView?.rateNaira ?? 1400}
-        availableKg={homeView?.availableKg}
+        availableKg={effectiveAvailableKg}
         notifications={notifications.data?.notifications}
         notificationCount={unread}
         onNotificationClick={handleNotificationClick}
         onProfileClick={() => setShowProfileModal(true)}
         onDismissStatus={handleDismissStatus}
+        onChange={handleAmountChange}
         onPay={(currentDraft) => {
           setDraft(currentDraft);
           setShowPayment(true);

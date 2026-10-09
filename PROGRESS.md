@@ -461,3 +461,43 @@ removed the prose that still narrated them and closed the dependency audit.
   `npm run build` (28 static pages), `worker` `tsc --noEmit` + `vitest` 58/58,
   and the live Worker `/api/catalog/home` responds with real data.
 
+
+## Phase 25 — Each reviewer item re-verified against the running stack (9 Oct 2026)
+
+Every item was checked at runtime, not read off the diff.
+
+- **Design source.** No `.html` in the tree; `docs/*` name the live file
+  (`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`) as the only
+  certification. Nothing left that describes the removed snapshot pipeline.
+- **Cart lines (`kind` + id).** `shop_listing` projects `kind` (`product` /
+  `bundle`) and a UUID `id` (a bundle's id, not a product's).
+  `toViewProduct` carries `kind` through, `cartStore` stores it, and
+  `ShopModal` sends `bundle_id` for a bundle and `product_id` otherwise. The
+  Worker's discriminated union enforces it: a bundle sent as `product_id` is
+  refused (`lines.0.bundle_id Required`), and a real cart order placed.
+- **Checkout.** `DeliveryDetailsForm` is wired into `PaymentModal` and
+  `ShopPaymentOverlay`; both order routes forward `zone_id`, `address` and
+  `guest_phone`. A guest delivery order placed end-to-end carried the zone fee
+  (`gas 2kg = ₦2,800 + delivery ₦1,500 = ₦4,300`). The Worker refuses delivery
+  without a zone, and a guest without a phone.
+- **Insufficient stock (1:175).** Fixed: `api.availability` was defined and
+  documented as "the keypad calls this" but **had no caller** — the early
+  guard trusted the mount-time `/home` figure only. `gas-order-flow` now tracks
+  the typed kg (via the terminal's `onChange`) and re-checks the depot through
+  `/orders/availability`, debounced 350ms, preferring that fresher figure and
+  falling back to the mount reading until it (or if it fails). PAY stays inert
+  while the amount exceeds the depot, so the shortfall board appears before the
+  payment sheet.
+- **Backend.** `u2gas-pg` (31 public tables, all 25 migrations) and `u2gas-rest`
+  on `54321`; the Worker dev server on `8787`. All three SQL suites pass:
+  `01_concurrency` 86/0, `02_rls` 47/0, `03_assets_and_transitions` 20/0.
+- **Preview auth.** `RequireRole` returns children before the session check
+  under `EMBEDDED_API`, and `auth-context` seeds `loading:false`, so role
+  screens render with no sign-in (confirmed on `/admin`).
+- **Sweep.** `lint` + `tsc --noEmit` clean. All 25 routes headless-rendered
+  (Chromium CDP) against both the embedded preview (`:3002`) and the real API
+  (`:3000`): every one 200, non-blank, **0** console/page/request errors. The
+  embedded production build writes `web/out/_headers` with an unchanged CSP
+  (`connect-src 'self'`); a non-embedded build still refuses a placeholder
+  origin on purpose.
+
