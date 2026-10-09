@@ -431,3 +431,33 @@ cd ../web && npm install && npx tsc --noEmit && npm run build
 - Staff Queue: prevent stale polling responses from overwriting a newer queue/tab request.
 - Driver Drop detail: delivery fetch is cancellation-safe; refreshes after start/failure await the latest server response.
 - Driver active-delivery Figma hit targets no longer overlap the SCAN action.
+
+## Phase 24 — HTML-snapshot purge finished, audit #4 run (28 Sep 2026)
+
+The snapshot gallery and its markup generator were removed earlier; this pass
+removed the prose that still narrated them and closed the dependency audit.
+
+- **Stale pipeline prose gone.** `docs/DESIGN-SYSTEM.md` described a
+  "combiner" that merged the batch files and a "combined file" that rendered
+  identically to the batches; `docs/SCREEN-GAP-ANALYSIS.md` called the design
+  "the prototype"; `docs/DEPLOYMENT.md` named the CSP script at the wrong path.
+  All three now describe reading the live file (`v4xgWC0Q0wtSKmAff3EOzU`, page
+  `MAIN SCREENS` `256:14758`) through the Figma MCP as the only certification.
+  `AGENTS.md` records what was removed so a later pass does not reintroduce it.
+- The live file was re-read to confirm it is reachable and matches the declared
+  key: `256:14759` PAYMENT SUCCESSFUL … `256:18694` DRIVER SCAN FAILED, with
+  frames added after the first survey under `720:*` and `675:*`.
+- No `.html` file remains anywhere in the tree.
+- **Audit #4 (`npm audit`).** Both projects are clean for production:
+  `npm audit --omit=dev` reports **0** in `web/` and **0** in `worker/`. The
+  remaining advisories are all build/test tooling and every one is a `high`
+  reached only through `fast-glob`→`braces` (the dev toolchain: `shadcn`,
+  `eslint-config-next` in `web/`; `wrangler`, `vitest` in `worker/`). `braces`
+  has no patched release (`3.0.3` is still flagged), and `npm audit fix --force`
+  would downgrade `eslint-config-next` to a Next 14 line, so no safe fix exists.
+  `shadcn` is genuinely used — `app/globals.css` imports `shadcn/tailwind.css` —
+  so it is not dead weight and was left in place.
+- Re-verified after the changes: `web` lint + `tsc --noEmit` + clean
+  `npm run build` (28 static pages), `worker` `tsc --noEmit` + `vitest` 58/58,
+  and the live Worker `/api/catalog/home` responds with real data.
+
