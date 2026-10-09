@@ -237,15 +237,32 @@ It is what CORS is pinned to.
 
 ## 5. Cloudflare Pages
 
+One command does both halves (API then app), with the preconditions checked
+first:
+
+```bash
+bash scripts/deploy-cloudflare.sh        # set PAGES_PROJECT / PAGES_BRANCH to override
+```
+
+By hand, if you prefer:
+
 ```bash
 cd web
 npm install
 npm run build
+npx wrangler pages deploy out --project-name u2gas
 ```
 
 The app is a Next.js static export (`output: "export"`), so the build writes
 `web/out/`. On Pages: framework preset **Next.js (Static HTML Export)**, root
 directory `web`, build command `npm run build`, output directory `out`.
+
+The build also writes `web/out/_headers` (`scripts/build-headers.mjs`): the CSP,
+HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, immutable caching for
+`/_next/static` and `/fonts`, and `no-store` on `/orders/*`. The CSP names the
+API and Supabase origins from the same `NEXT_PUBLIC_*` values the app was built
+with, so a non-embedded build with no `NEXT_PUBLIC_API_ORIGIN` fails on purpose
+rather than shipping a policy that blocks every call.
 
 Set the `NEXT_PUBLIC_*` variables (see `docs/ENVIRONMENT.md`) — they are public
 by design and compiled into the bundle, so nothing secret may go here.
