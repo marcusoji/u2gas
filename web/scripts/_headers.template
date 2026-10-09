@@ -1,0 +1,50 @@
+# U2GAS — Cloudflare Pages response headers
+#
+# GENERATED: do not edit web/out/_headers by hand or commit it. This template is
+# filled by scripts/build-headers.mjs during `npm run build`, which substitutes
+# the policy token below with the composed Content-Security-Policy and writes the
+# result into the static export. The policy is composed by the script rather than
+# left as a placeholder in the shipped file.
+#
+# The Worker sets its own headers for /api/*. This file covers the frontend,
+# which the Worker never sees.
+
+/*
+  # The app is a static Next.js export talking to one API origin. Nothing else
+  # needs to execute, connect, or embed.
+  #
+  # 'unsafe-inline' appears only for style-src: framer-motion and the design set
+  # inline styles for things computed at runtime (sheet transforms, tank fill
+  # height). No inline SCRIPT is allowed, which is the one that matters.
+  #
+  # Monnify is not listed because checkout is a full-page redirect to their
+  # domain, not an embedded iframe or script. If you ever switch to Monnify's
+  # inline SDK, add https://sdk.monnify.com to script-src and
+  # https://api.monnify.com to connect-src — and nothing else.
+  Content-Security-Policy: __CSP__
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  # Guest capability tokens travel in the URL. Without this, every outbound
+  # link and every third-party request leaks one in the Referer header.
+  Referrer-Policy: no-referrer
+  # geolocation is off everywhere. The app never calls navigator.geolocation:
+  # saved_address has optional lat/lng columns, but nothing populates them —
+  # addresses are typed, and the zone is chosen from a list. The camera is on
+  # for the scanner routes only, which `camera=(self)` allows.
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Order pages carry a guest token in the query string. An intermediary cache
+# holding one of these would serve a stranger someone else's order.
+/orders/*
+  Cache-Control: no-store, no-cache, must-revalidate, private
+  Referrer-Policy: no-referrer
+
+# Content-addressed by hash, so these can never go stale.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

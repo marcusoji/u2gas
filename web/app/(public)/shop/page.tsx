@@ -10,7 +10,6 @@ import type { Product } from "@/types";
 import { api } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 import { toViewProduct } from "@/lib/adapters";
-import { Loading, ScreenNotice } from "@/components/screen-notice";
 import { paths } from "@/utils/paths";
 
 export default function ShopPage() {

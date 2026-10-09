@@ -82,8 +82,15 @@ export function ShopModal({
 
   const activeInitial = initialProduct ?? initialItem;
 
-  // Sync initial item/product
-  useEffect(() => {
+  // Sync the sheet's view with the initial product, and clear transient state
+  // when it closes. Done during render (guarded) rather than in an effect so
+  // the detail view is correct on the opening commit, with no extra render.
+  const syncKey = `${open}|${
+    activeInitial?.product_id ?? activeInitial?.image ?? ""
+  }|${products.length}`;
+  const [syncedKey, setSyncedKey] = useState(syncKey);
+  if (syncKey !== syncedKey) {
+    setSyncedKey(syncKey);
     if (open) {
       if (activeInitial) {
         const found =
@@ -105,7 +112,7 @@ export function ShopModal({
       setPaymentStatus("idle");
       setError(null);
     }
-  }, [open, activeInitial, products]);
+  }
 
   useEffect(() => {
     if (isSearchOpen && inputRef.current) {

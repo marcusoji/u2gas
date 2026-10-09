@@ -58,11 +58,6 @@ export interface BottomSheetModalProps {
   contentClassName?: string;
 
   /**
-   * Additional classes for the backdrop wrapper.
-   */
-  backdropClassName?: string;
-
-  /**
    * Snap points for shadcn drawer (e.g. [0.48, 0.92]).
    */
   snapPoints?: (number | string)[];
@@ -85,7 +80,6 @@ export function BottomSheetModal({
   scrollable = true,
   className,
   contentClassName,
-  backdropClassName,
   snapPoints = [0.45, 0.78],
   defaultSnapPoint = 0.78,
 }: BottomSheetModalProps) {

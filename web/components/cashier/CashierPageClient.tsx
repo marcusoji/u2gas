@@ -84,7 +84,7 @@ export default function CashierPageClient() {
         {/* Cashier Navbar with Profile Avatar & Notification Bell */}
         <Navbar
           showProfile={true}
-          notificationCount={1}
+          notificationCount={unread}
           className="px-3 pt-3 pb-1"
           onProfileClick={() => setProfileOpen(true)}
           onNotificationClick={() => setHistoryOpen(true)}
@@ -133,6 +133,7 @@ export default function CashierPageClient() {
       <CashierHistoryModal
         open={historyOpen}
         onOpenChange={setHistoryOpen}
+        transactions={transactions}
       />
 
       {/* Profile Modal */}
@@ -146,6 +147,7 @@ export default function CashierPageClient() {
         open={manualOpen}
         onOpenChange={setManualOpen}
         onConfirm={handleManualConfirm}
+        serverError={manualError}
       />
 
       {/* Receipt Modal (Shown upon completing walk-in payment) */}

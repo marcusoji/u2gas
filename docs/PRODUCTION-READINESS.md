@@ -14,7 +14,7 @@ names a frontend file, it is the file that decision now lives in.
 | `web/public/fonts/jgs7.woff2` | The licensed pixel face, wired through `next/font/local` | The app ships the real face, not a reconstruction. Verified by rendering. |
 | `web/lib/env.ts` | Prefers `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; refuses to build if a `sb_secret_` key is configured | Part 5. A secret key in the browser bundle is total compromise — refuse to build rather than ship one. |
 | `web/lib/env.ts`, `web/.env.example` | Publishable key documented, legacy marked optional | Part 5. |
-| `web/public/_headers` | **To add.** CSP, HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, no-store on `/orders/*` | The Worker's headers never reach Pages responses. Guest tokens live in URLs, so a referrer would leak one to every third party. Not yet shipped with the current app — tracked in section D. |
+| `web/scripts/_headers.template`, `web/scripts/build-headers.mjs` | CSP, HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, no-store on `/orders/*`; generated into `web/out/_headers` on every build | The Worker's headers never reach Pages responses. Guest tokens live in URLs, so a referrer would leak one to every third party. The CSP names the API origin explicitly, so the script composes it from the same `NEXT_PUBLIC_*` values the app was built with and refuses a non-embedded build with no origin. Shipped. |
 | `worker/src/routes/payments.ts` | Passes `p_currency` to `confirm_payment` | Part 11. |
 | `worker/src/routes/staff.ts` | Passes `p_currency`; rate limit on `/lookup` | Parts 11, 34. Lookup returns customer phone numbers. |
 | `worker/src/routes/orders.ts` | Rate limit on guest order read | Part 34. A token-authorised read with no limit is a guessing oracle. |
@@ -103,8 +103,10 @@ names a frontend file, it is the file that decision now lives in.
 3. **CORS** pinned to `APP_ORIGIN`; dev origins only outside production; no wildcard.
 4. **Source maps disabled** for production builds.
 5. **Per-route code splitting** — Next.js emits per-route chunks; a customer does not download the admin route's code.
-6. **Security headers** — ship `web/public/_headers` for the CSP, HSTS and
-   `Referrer-Policy` at the Pages layer (not yet added to `web/`).
+6. **Security headers** — `web/scripts/build-headers.mjs` composes `web/out/_headers`
+   on every build for the CSP, HSTS, `Referrer-Policy` and `Permissions-Policy`
+   at the Pages layer. The `_next/static` and `fonts` blocks are immutable, and
+   `/orders/*` is `no-store`.
 
 ---
 

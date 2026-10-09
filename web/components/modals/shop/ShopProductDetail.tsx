@@ -30,7 +30,7 @@ export function ShopProductDetail({
         p.image === selectedProduct.image,
     );
     return matched.length > 0 ? matched : [selectedProduct];
-  }, [catalogue, selectedProduct?.name, selectedProduct?.image]);
+  }, [catalogue, selectedProduct]);
 
   const activeIndex = useMemo(() => {
     if (!selectedProduct) return 0;
@@ -38,7 +38,7 @@ export function ShopProductDetail({
       (v) => v.product_id === selectedProduct.product_id,
     );
     return idx >= 0 ? idx : 0;
-  }, [variants, selectedProduct?.product_id]);
+  }, [variants, selectedProduct]);
 
   const prevVariant =
     variants.length > 1
@@ -71,7 +71,7 @@ export function ShopProductDetail({
       }
     }
     return result.slice(0, 4);
-  }, [catalogue, selectedProduct?.image]);
+  }, [catalogue, selectedProduct]);
 
   return (
     <motion.div

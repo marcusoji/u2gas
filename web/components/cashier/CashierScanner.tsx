@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
@@ -26,16 +26,89 @@ export default function CashierScanner() {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
-  // Initialize and stop scanner
+  const stopScanner = useCallback(async () => {
+    if (qrScannerRef.current) {
+      try {
+        if (qrScannerRef.current.isScanning) {
+          await qrScannerRef.current.stop();
+        }
+      } catch {
+        // Safe ignore
+      }
+    }
+  }, []);
+
+  /**
+   * Redeem the scanned token with the server.
+   *
+   * A QR is a claim, not a proof: the client must not decide that a scan was
+   * good. `staff/scan` is the only thing that can mark the order collected, and
+   * it is the server that rejects a token that is wrong, expired or already
+   * redeemed — the same token scanned twice is the double-collection the route
+   * exists to stop.
+   */
+  const handleScanFailure = useCallback(
+    (text?: string) => {
+      void stopScanner();
+      setIsScanning(false);
+      setScanStatus("failed");
+      setScannedResult({
+        orderId: text?.trim() || "ORD-INVALID",
+        customer: "Unrecognized Order",
+        itemTitle: "Verification Failed",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      });
+    },
+    [stopScanner],
+  );
+
+  const verify = useCallback(
+    async (token: string) => {
+      void stopScanner();
+      setIsScanning(false);
+      try {
+        const res = await api.staff.scan(token);
+        setScanStatus("success");
+        setScannedResult({
+          orderId: res.order_number,
+          customer: "Verified",
+          itemTitle: "Order collected",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        });
+      } catch (e) {
+        handleScanFailure(token);
+        setScanError(
+          e instanceof ApiError ? e.message : "COULDN'T VERIFY THAT CODE",
+        );
+      }
+    },
+    [stopScanner, handleScanFailure],
+  );
+
+  const handleScanSuccess = useCallback(
+    (text: string) => {
+      void verify(text.trim());
+    },
+    [verify],
+  );
+
+  // Initialize and stop the camera. The mount/unmount path owns the scanner;
+  // `isScanning`/`scannedResult` only decide whether it should be running.
   useEffect(() => {
     let isMounted = true;
 
     if (isScanning && !scannedResult) {
-      setCameraError(null);
       const scannerId = "cashier-qr-reader";
 
       // Small delay to ensure DOM element is mounted
       const timer = setTimeout(async () => {
+        setCameraError(null);
         try {
           if (!qrScannerRef.current) {
             qrScannerRef.current = new Html5Qrcode(scannerId, {
@@ -74,80 +147,16 @@ export default function CashierScanner() {
       return () => {
         isMounted = false;
         clearTimeout(timer);
-        stopScanner();
+        void stopScanner();
       };
-    } else {
-      stopScanner();
     }
 
+    void stopScanner();
     return () => {
       isMounted = false;
-      stopScanner();
+      void stopScanner();
     };
-  }, [isScanning, scannedResult]);
-
-  const stopScanner = async () => {
-    if (qrScannerRef.current) {
-      try {
-        if (qrScannerRef.current.isScanning) {
-          await qrScannerRef.current.stop();
-        }
-      } catch {
-        // Safe ignore
-      }
-    }
-  };
-
-  const handleScanSuccess = (text: string) => {
-    void verify(text.trim());
-  };
-
-  const handleScanFailure = (text?: string) => {
-    stopScanner();
-    setIsScanning(false);
-    setScanStatus("failed");
-    setScannedResult({
-      orderId: text?.trim() || "ORD-INVALID",
-      customer: "Unrecognized Order",
-      itemTitle: "Verification Failed",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-  };
-
-  /**
-   * Redeem the scanned token with the server.
-   *
-   * A QR is a claim, not a proof: the client must not decide that a scan was
-   * good. `staff/scan` is the only thing that can mark the order collected, and
-   * it is the server that rejects a token that is wrong, expired or already
-   * redeemed — the same token scanned twice is the double-collection the route
-   * exists to stop.
-   */
-  const verify = async (token: string) => {
-    stopScanner();
-    setIsScanning(false);
-    try {
-      const res = await api.staff.scan(token);
-      setScanStatus("success");
-      setScannedResult({
-        orderId: res.order_number,
-        customer: "Verified",
-        itemTitle: "Order collected",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      });
-    } catch (e) {
-      handleScanFailure(token);
-      setScanError(
-        e instanceof ApiError ? e.message : "COULDN'T VERIFY THAT CODE",
-      );
-    }
-  };
+  }, [isScanning, scannedResult, handleScanSuccess, stopScanner]);
 
   const handleManualConfirm = (code: string) => {
     void verify(code.trim().toUpperCase());

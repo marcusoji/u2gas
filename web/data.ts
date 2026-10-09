@@ -12,7 +12,6 @@ import type {
   StaffDriverRecord,
   StaffCashierRecord,
   DriverDeliveryOrder,
-  DriverDeliveryStatusTab,
   CashierTransactionItem,
 } from "@/types";
 

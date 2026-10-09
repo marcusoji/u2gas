@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GasTerminalProps } from "@/types";
@@ -8,7 +7,6 @@ import MarqueeSlider from "@abundiko/react-marquee";
 import LedSign from "../../components/sign-box";
 import TerminalScreenBox from "@/components/terminal-screen-box";
 import { TerminalKeyboard } from "./terminal-keyboard";
-import { useAuthStore } from "@/stores/authStore";
 import Navbar from "@/components/layout/Navbar";
 import {
   getEffectiveRates,
@@ -35,13 +33,15 @@ export default function GasTerminal({
 }: GasTerminalProps) {
   const [displayValue, setDisplayValue] = useState<string>(initialValue);
   const [hasStartedTyping, setHasStartedTyping] = useState<boolean>(false);
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const user = useAuthStore((state) => state.user);
-
-  useEffect(() => {
+  // Reset the readout when the parent hands down a new value. Adjusting state
+  // during render (guarded) is the React-recommended alternative to an effect
+  // for "derive from a changed prop" — no extra commit, no flash.
+  const [lastInitial, setLastInitial] = useState(initialValue);
+  if (initialValue !== lastInitial) {
+    setLastInitial(initialValue);
     setDisplayValue(initialValue);
     setHasStartedTyping(false);
-  }, [initialValue]);
+  }
 
   // Close success/failed status on click anywhere outside or on Escape key & lock background scroll
   useEffect(() => {
@@ -111,8 +111,6 @@ export default function GasTerminal({
     setHasStartedTyping(true);
     updateDisplay(appendKeypadDigit(displayValue, key, isFirst));
   };
-
-  const rateTickerText = `Today's Rate: 1kg : ₦${effectiveRateNaira.toLocaleString()} • `;
 
   return (
     <div

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
@@ -32,16 +32,89 @@ export default function DriverScanner({
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
-  // Initialize and stop scanner
+  const stopScanner = useCallback(async () => {
+    if (qrScannerRef.current) {
+      try {
+        if (qrScannerRef.current.isScanning) {
+          await qrScannerRef.current.stop();
+        }
+      } catch {
+        // Safe ignore
+      }
+    }
+  }, []);
+
+  const handleScanFailure = useCallback(
+    (text?: string) => {
+      void stopScanner();
+      setIsScanning(false);
+      setScanStatus("failed");
+      setScannedResult({
+        orderId: text?.trim() || "ORD-INVALID",
+        customer: "Unrecognized Order",
+        itemTitle: "Verification Failed",
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      });
+    },
+    [stopScanner],
+  );
+
+  /**
+   * Redeem the scanned token with the server.
+   *
+   * The QR is signed and single-use; only `driver/scan` can mark the delivery
+   * done, and it is the server that refuses a token that is wrong, expired, for
+   * the wrong fulfilment type, or already redeemed. Deciding "success" in the
+   * client would let the same token complete two drops.
+   */
+  const verify = useCallback(
+    async (token: string) => {
+      void stopScanner();
+      setIsScanning(false);
+      try {
+        const res = await api.driver.scan(token);
+        setScanStatus("success");
+        onVerified?.();
+        setScannedResult({
+          orderId: res.order_number,
+          customer: "Verified",
+          itemTitle: "Delivery confirmed",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        });
+      } catch (e) {
+        handleScanFailure(token);
+        setScanError(
+          e instanceof ApiError ? e.message : "COULDN'T VERIFY THAT CODE",
+        );
+      }
+    },
+    [stopScanner, handleScanFailure, onVerified],
+  );
+
+  const handleScanSuccess = useCallback(
+    (text: string) => {
+      void verify(text.trim());
+    },
+    [verify],
+  );
+
+  // Initialize and stop the camera. The mount/unmount path owns the scanner;
+  // `isScanning`/`scannedResult` only decide whether it should be running.
   useEffect(() => {
     let isMounted = true;
 
     if (isScanning && !scannedResult) {
-      setCameraError(null);
       const scannerId = "driver-qr-reader";
 
       // Small delay to ensure DOM element is mounted
       const timer = setTimeout(async () => {
+        setCameraError(null);
         try {
           if (!qrScannerRef.current) {
             qrScannerRef.current = new Html5Qrcode(scannerId, {
@@ -80,80 +153,16 @@ export default function DriverScanner({
       return () => {
         isMounted = false;
         clearTimeout(timer);
-        stopScanner();
+        void stopScanner();
       };
-    } else {
-      stopScanner();
     }
 
+    void stopScanner();
     return () => {
       isMounted = false;
-      stopScanner();
+      void stopScanner();
     };
-  }, [isScanning, scannedResult]);
-
-  const stopScanner = async () => {
-    if (qrScannerRef.current) {
-      try {
-        if (qrScannerRef.current.isScanning) {
-          await qrScannerRef.current.stop();
-        }
-      } catch {
-        // Safe ignore
-      }
-    }
-  };
-
-  const handleScanFailure = (text?: string) => {
-    stopScanner();
-    setIsScanning(false);
-    setScanStatus("failed");
-    setScannedResult({
-      orderId: text?.trim() || "ORD-INVALID",
-      customer: "Unrecognized Order",
-      itemTitle: "Verification Failed",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-  };
-
-  /**
-   * Redeem the scanned token with the server.
-   *
-   * The QR is signed and single-use; only `driver/scan` can mark the delivery
-   * done, and it is the server that refuses a token that is wrong, expired, for
-   * the wrong fulfilment type, or already redeemed. Deciding "success" in the
-   * client would let the same token complete two drops.
-   */
-  const verify = async (token: string) => {
-    stopScanner();
-    setIsScanning(false);
-    try {
-      const res = await api.driver.scan(token);
-      setScanStatus("success");
-      onVerified?.();
-      setScannedResult({
-        orderId: res.order_number,
-        customer: "Verified",
-        itemTitle: "Delivery confirmed",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      });
-    } catch (e) {
-      handleScanFailure(token);
-      setScanError(
-        e instanceof ApiError ? e.message : "COULDN'T VERIFY THAT CODE",
-      );
-    }
-  };
-
-  const handleScanSuccess = (text: string) => {
-    void verify(text.trim());
-  };
+  }, [isScanning, scannedResult, handleScanSuccess, stopScanner]);
 
   const handleManualConfirm = (code: string) => {
     void verify(code.trim().toUpperCase());

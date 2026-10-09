@@ -263,9 +263,11 @@ export function ShopPaymentOverlay({
                 }}
                 className="relative w-66.5 h-88.5 max-w-full aspect-266/354 flex items-center justify-center -mb-6"
               >
-                <img
+                <Image
                   src="/images/success.png"
                   alt="Success"
+                  width={266}
+                  height={354}
                   className="object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.45)] pointer-events-none"
                 />
               </motion.div>

@@ -28,56 +28,65 @@ export function useAsync<T>(
   options: { enabled?: boolean } = {},
 ): AsyncState<T> {
   const enabled = options.enabled ?? true;
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [loading, setLoading] = useState(enabled);
   const [nonce, setNonce] = useState(0);
 
-  // Monotonic id per request so a late response cannot clobber a newer one.
-  const seq = useRef(0);
+  // The identity of the current request. Deriving `loading` from whether the
+  // latest result carries this key avoids a synchronous setState inside the
+  // fetch effect; a stale response is simply dropped by its own `active` flag.
+  const key = JSON.stringify([enabled, nonce, deps]);
+  const [result, setResult] = useState<{
+    key: string;
+    data: T | null;
+    error: ApiError | null;
+  } | null>(null);
 
   const loaderRef = useRef(loader);
-  loaderRef.current = loader;
+  // Sync the latest loader outside render so a reload never captures a stale
+  // closure. Declared before the fetch effect so it runs first on every commit.
+  useEffect(() => {
+    loaderRef.current = loader;
+  });
 
   useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-    const id = ++seq.current;
+    if (!enabled) return;
     let active = true;
-    setLoading(true);
-    setError(null);
 
     loaderRef
       .current()
-      .then((result) => {
-        if (!active || id !== seq.current) return;
-        setData(result);
+      .then((data) => {
+        if (active) setResult({ key, data, error: null });
       })
       .catch((e) => {
-        if (!active || id !== seq.current) return;
-        setError(
-          e instanceof ApiError
-            ? e
-            : new ApiError("INTERNAL", 500, "SOMETHING WENT WRONG"),
-        );
-      })
-      .finally(() => {
-        if (!active || id !== seq.current) return;
-        setLoading(false);
+        if (!active) return;
+        setResult({
+          key,
+          data: null,
+          error:
+            e instanceof ApiError
+              ? e
+              : new ApiError("INTERNAL", 500, "SOMETHING WENT WRONG"),
+        });
       });
 
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, nonce, ...deps]);
+  }, [enabled, key]);
 
+  const loading = enabled && result?.key !== key;
   const reload = useCallback(() => setNonce((n) => n + 1), []);
-  const mutate = useCallback((next: T | null) => setData(next), []);
+  const mutate = useCallback(
+    (next: T | null) => setResult({ key, data: next, error: null }),
+    [key],
+  );
 
-  return { data, error, loading, reload, mutate };
+  return {
+    data: result?.data ?? null,
+    error: loading ? null : (result?.error ?? null),
+    loading,
+    reload,
+    mutate,
+  };
 }
 
 /**
@@ -92,7 +101,10 @@ export function useMutation<Args extends unknown[], Result>(
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const fnRef = useRef(fn);
-  fnRef.current = fn;
+  // Keep the latest mutation fn without touching the ref during render.
+  useEffect(() => {
+    fnRef.current = fn;
+  });
 
   const run = useCallback(async (...args: Args): Promise<Result | undefined> => {
     setPending(true);

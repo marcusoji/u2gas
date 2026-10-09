@@ -13,7 +13,6 @@ import { useAsync } from "@/lib/hooks";
 import { toHomeView } from "@/lib/adapters";
 import { toHistoryReceipt } from "@/lib/receipts";
 import type { GasOrderDraft, HistoryReceipt, ReceiptItem } from "@/types";
-import type { Order } from "@/lib/types";
 
 /** Which payment route the customer chose in the sheet. */
 type PaymentChoice = "BANK" | "OPAY" | "DEPOT" | "CARD";
@@ -31,7 +30,6 @@ export default function GasOrderFlow() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [receiptItems, setReceiptItems] = useState<ReceiptItem[]>([]);
-  const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // The rate and stock come from the Worker, which reads the live rate from
@@ -71,7 +69,6 @@ export default function GasOrderFlow() {
           { kg: draft.gas_amount_kg, fulfillment },
           newIdempotencyKey(),
         );
-        setOrder(created.order);
 
         // A guest's capability token is a bearer value, so it lives in session
         // storage and never in a URL the customer might share.

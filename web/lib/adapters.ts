@@ -1,7 +1,6 @@
 import type {
   Product as ApiProduct,
   ShopItem,
-  Order,
   OrderSummary,
   Notification as ApiNotification,
   GasStock as ApiGasStock,
@@ -11,7 +10,6 @@ import type {
   DriverDrop,
   AdminOrder,
   AdminDriver,
-  AdminStaff,
   SavedAddress,
   Refund,
   ReportSummary,

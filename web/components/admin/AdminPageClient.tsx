@@ -15,7 +15,7 @@ export default function AdminPageClient() {
   const router = useRouter();
   const [updateOpen, setUpdateOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { level, setLevel } = useAdminTankStore();
+  const setLevel = useAdminTankStore((s) => s.setLevel);
 
   const [, setHistoryRecords] =
     useState<TankHistoryRecord[]>(dummyTankHistory);

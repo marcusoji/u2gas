@@ -119,9 +119,10 @@ export default function ProfileModal({
           {isEditing ? (
             <button
               type="submit"
-              className="bg-[#1317E4] hover:bg-[#0F12BE] active:scale-95 text-white text-[11px] font-bold px-5 py-0.5 rounded-full transition-all mt-2 shadow-xs cursor-pointer uppercase tracking-wider"
+              disabled={saving}
+              className="bg-[#1317E4] hover:bg-[#0F12BE] active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-white text-[11px] font-bold px-5 py-0.5 rounded-full transition-all mt-2 shadow-xs cursor-pointer uppercase tracking-wider"
             >
-              DONE
+              {saving ? "SAVING…" : "DONE"}
             </button>
           ) : (
             <button

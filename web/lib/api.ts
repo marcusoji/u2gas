@@ -9,6 +9,21 @@ import { getAccessToken } from "./supabase";
    `message` and `detail`; they never build error copy themselves.
    --------------------------------------------------------------------------- */
 
+export interface ApiFieldError {
+  field: string;
+  message: string;
+}
+
+/**
+ * Whatever the server attached to an error. The shape varies by code, so the
+ * fields the client reads are named and the rest is left open.
+ */
+export interface ApiErrorDetail {
+  available_kg?: number;
+  fields?: ApiFieldError[];
+  [key: string]: unknown;
+}
+
 export class ApiError extends Error {
   constructor(
     public code: string,
@@ -17,7 +32,7 @@ export class ApiError extends Error {
     message: string,
     // Deliberately loose: this is whatever the server attached to the error,
     // and its shape varies by code. Callers read named fields off it.
-    public detail: Record<string, any> = {},
+    public detail: ApiErrorDetail = {},
   ) {
     super(message);
     this.name = "ApiError";

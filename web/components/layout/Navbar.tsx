@@ -33,7 +33,6 @@ export function Navbar({
   onNotificationClick,
   className = "",
 }: NavbarProps) {
-  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const user = useAuthStore((state) => state.user);
 
   const shouldShowProfile = showProfile;
