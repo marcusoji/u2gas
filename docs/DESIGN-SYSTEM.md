@@ -177,9 +177,9 @@ it's part of the character. Errors are stamped, not apologised for.
 
 ## Where the build deliberately differs from the Figma file
 
-The artboards in `web/src/figma/` reproduce the live Figma file exactly,
-including its defects, because they are the record of what was drawn. The
-application does not. Each deviation below is intentional.
+The live file carries some drawing defects verbatim. The app (`web/`) rebuilds
+each screen with Tailwind components from the tokens below; where it
+deliberately departs from the file, the reason is recorded here for reference.
 
 | # | In the file | In the build | Why |
 |---|---|---|---|
@@ -191,7 +191,7 @@ application does not. Each deviation below is intentional.
 | 6 | ORDER SUMMARY reads 10kg / ₦10,000 beside a kiosk showing 1KG at ₦1,400/kg | Computed from the order | The two do not reconcile under any rate. |
 | 7 | Receipt wording outlined to vectors (`1:858`, `1:866`, `1:884`, `1:894`) | Live jgs7 text | Outlines cannot be edited, translated or read aloud. The outlines are jgs7, so rendering as text is visually identical. |
 | 8 | FAILED screen's thumb layer named "TWO TONE THUMBS UP 1" (`1:577`) | Named for what it shows | Right image, misleading name. |
-| 9 | Gas cylinder photo carries a Dreamstime watermark | Must be replaced | Not licensed. Tracked in `web/public/img/FIGMA-ASSETS.txt`. |
+| 9 | Gas cylinder photo carries a Dreamstime watermark | Must be replaced | Not licensed. |
 | 10 | Battery photo is a branded Energizer product shot | Should be replaced | Trademarked imagery on a commercial storefront. |
 
 Items 9 and 10 are the only two that block launch. The rest are cosmetic or
@@ -505,8 +505,7 @@ id. Every screen is checked for duplicate ids on build.
 The full-quality images come from the project's Drive folder. They are
 re-exports of Figma layers, and the build machine cannot reach Drive.
 `scripts/fetch-drive-images.sh` downloads the originals into
-`web/public/img/drive/`; `manifest.json` there records which file fills which
-slot and how it is framed:
+`web/public/images/drive/`; each file fills one screen slot:
 
 - **render** — rotation and drop shadow baked in, placed at the layer's
   `absoluteRenderBounds` with no CSS rotation or shadow.
@@ -614,10 +613,11 @@ matches but whose width differs while jgs5 is missing.
 
 ## Artboard order
 
-The artboards follow the live Figma canvas, left to right, and take each
-screen's section from the DIVIDER frames. Two placements worth knowing:
-`83:246` sits at x=12112, inside the CASHIER section despite being named
-"Admin stock notification expanded", and `88:55` at x=1741 is in DRIVER.
+The artboards in the live file's screens page (`MAIN SCREENS`, `256:14758`)
+follow the canvas left to right, and take each screen's section from the DIVIDER
+frames. Two placements worth knowing: `83:246` sits at x=12112, inside the
+CASHIER section despite being named "Admin stock notification expanded", and
+`88:55` at x=1741 is in DRIVER.
 
 ## The tank
 
@@ -698,7 +698,7 @@ it.
 figma 1:1585 is a photograph (148 KB at full size, 51 KB at half), too large
 to embed through this channel. The full-quality original loads from the
 project Drive folder (`shopping basket 3 1.png`), and
-`scripts/fetch-drive-images.sh` vendors it into `web/public/img/drive/`.
+`scripts/fetch-drive-images.sh` vendors it into `web/public/images/drive/`.
 
 Until it loads — and offline — the cart draws a wire basket instead of the
 grey placeholder that was there before, so the screen reads correctly either
@@ -848,12 +848,9 @@ the screens and not in the product. Only 7 CSS selectors were even shared —
 the screens place elements from the file's own measurements, the app re-drew
 them from 163 hand-written rules.
 
-`web/src/figma/` now carries the live Figma file's artboards as the exact
-markup the screens render — all **61 artboards**. The live file
-(`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source; there is no committed
-HTML snapshot and no generator. `FigmaScreen` renders one artboard and
-substitutes live values by Figma node id, so data can never restyle the
-design. `web/src/styles/figma.css` is the artboards' own stylesheet.
+The live file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source; there is no
+committed HTML snapshot and no generator. Each screen is built from these
+tokens, so data and layout live in the components and never restyle the design.
 
 Behaviour is unchanged: routes still own state, data and interaction, and
 interactive controls stay React components over the artboard.

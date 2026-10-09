@@ -163,7 +163,8 @@ Work top to bottom. Each section depends on the one above it.
 - [ ] Every secret set in the dashboard, none in Git
 - [ ] `APP_ORIGIN` is the real production origin
 - [ ] CORS rejects a request from any other origin
-- [ ] `_headers` and `_redirects` present in the build output
+- [ ] `public/_headers` shipped for the CSP and security headers (not yet added to `web/`)
+- [ ] `NEXT_PUBLIC_API_ORIGIN` set to the real production API origin
 
 ## Security
 

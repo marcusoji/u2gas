@@ -69,7 +69,7 @@ app.use("/api/*", async (c, next) => {
 app.use("*", (c, next) => {
   const allowed = [c.env.APP_ORIGIN];
   if (c.env.ENVIRONMENT !== "production") {
-    allowed.push("http://127.0.0.1:5173", "http://localhost:5173");
+    allowed.push("http://127.0.0.1:3000", "http://localhost:3000");
   }
   return cors({
     origin: (origin) => (allowed.includes(origin) ? origin : null),
@@ -163,6 +163,44 @@ app.get("/api/notifications", requireAuth, async (c) => {
       .limit(Number(c.req.query("limit") ?? 50)),
   );
   return c.json({ ok: true, notifications: list });
+});
+
+/**
+ * The person's own profile fields.
+ *
+ * Only the three fields a person owns are writable here. `role` is deliberately
+ * absent: letting a caller name their own role is the whole privilege-escalation
+ * bug, and it is changed only through the admin staff lifecycle. The write goes
+ * through the caller's own RLS-scoped client, so it can only ever touch the row
+ * the session already owns.
+ */
+app.patch("/api/me", requireAuth, rateLimit("me", 30, 60_000), async (c) => {
+  const caller = c.get("caller")!;
+  const body = await c.req.json().catch(() => ({}));
+
+  const patch: Record<string, string | null> = {};
+  if (typeof body.first_name === "string") patch.first_name = body.first_name.trim().slice(0, 80);
+  if (typeof body.last_name === "string") patch.last_name = body.last_name.trim().slice(0, 80);
+  if (typeof body.phone === "string") {
+    const phone = body.phone.trim();
+    patch.phone = phone.length ? phone : null;
+  }
+
+  if (Object.keys(patch).length === 0) return c.json({ ok: true });
+
+  const name = [patch.first_name, patch.last_name].filter(Boolean).join(" ").trim();
+  if (name) patch.display_name = name;
+
+  const { error } = await c.get("db").from("profile")
+    .update(patch).eq("profile_id", caller.profileId);
+  // The driver's message may name columns; it is logged, never returned —
+  // `detail` is echoed to the client by errorBody.
+  if (error) {
+    console.error("profile update failed", { request_id: c.get("requestId"), error: error.message });
+    throw appError("INTERNAL");
+  }
+
+  return c.json({ ok: true, profile: { profile_id: caller.profileId, ...patch } });
 });
 
 app.post("/api/notifications/read", requireAuth, async (c) => {

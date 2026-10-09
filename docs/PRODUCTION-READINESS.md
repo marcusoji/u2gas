@@ -1,18 +1,20 @@
 # U2GAS — Production Readiness Report
 
-Covers the hardening pass across all 56 parts of the brief.
+Covers the hardening pass across all 56 parts of the brief. The Worker and
+Supabase work in this report carries directly into the current app; where a row
+names a frontend file, it is the file that decision now lives in.
 
 ---
 
-## A. Files changed in this final pass
+## A. Files changed in the hardening pass
 
 | Path | What changed | Why |
 |---|---|---|
 | *(whole tree)* | `gift-tech` → `u2gas`, `GIFT-TECH` → `U2GAS` | Project renamed. 0 residual references. |
-| `web/public/fonts/*` | Regenerated from `tools/make_pixel_font.py` | The rename ran `sed` across the tree; regenerating rules out a silently corrupted binary. Verified by rendering. |
-| `web/src/lib/auth.ts` | Prefers `VITE_SUPABASE_PUBLISHABLE_KEY`; throws if a `sb_secret_` key is configured | Part 5. A secret key in the browser bundle is total compromise — refuse to start rather than ship one. |
-| `web/src/vite-env.d.ts`, `web/.env.example` | Publishable key documented, legacy marked optional | Part 5. |
-| `web/public/_headers` | **New.** CSP, HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, no-store on `/orders/*` | Part 29 + 30. The Worker's headers never reach Pages responses. Guest tokens live in URLs, so a referrer would leak one to every third party. |
+| `web/public/fonts/jgs7.woff2` | The licensed pixel face, wired through `next/font/local` | The app ships the real face, not a reconstruction. Verified by rendering. |
+| `web/lib/env.ts` | Prefers `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; refuses to build if a `sb_secret_` key is configured | Part 5. A secret key in the browser bundle is total compromise — refuse to build rather than ship one. |
+| `web/lib/env.ts`, `web/.env.example` | Publishable key documented, legacy marked optional | Part 5. |
+| `web/public/_headers` | **To add.** CSP, HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, no-store on `/orders/*` | The Worker's headers never reach Pages responses. Guest tokens live in URLs, so a referrer would leak one to every third party. Not yet shipped with the current app — tracked in section D. |
 | `worker/src/routes/payments.ts` | Passes `p_currency` to `confirm_payment` | Part 11. |
 | `worker/src/routes/staff.ts` | Passes `p_currency`; rate limit on `/lookup` | Parts 11, 34. Lookup returns customer phone numbers. |
 | `worker/src/routes/orders.ts` | Rate limit on guest order read | Part 34. A token-authorised read with no limit is a guessing oracle. |
@@ -24,7 +26,7 @@ Covers the hardening pass across all 56 parts of the brief.
 | `supabase/functions/expire-order-holds/index.ts` | Cleanup removed; raw error no longer returned | Parts 25, 35. |
 | `supabase/functions/send-notifications/index.ts` | Raw error no longer returned | Part 35. |
 | `supabase/tests/01_concurrency.sql` | Test 20 added | Part 48. |
-| `docs/*` | Migration lists regenerated to 0001-0023, stale `VITE_API_ORIGIN` removed, legacy `VITE_SUPABASE_ANON_KEY` documented | This pass. |
+| `docs/*` | Migration lists regenerated to 0001-0024, stale names removed, legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` documented | This pass. |
 | *(tree)* | Three stray `{components,lib,...}` directories removed | Brace-expansion artifacts from failed `mkdir` calls. |
 
 ---
@@ -100,8 +102,9 @@ Covers the hardening pass across all 56 parts of the brief.
 2. **KV placeholder** is marked `YOUR-KV-ID` with instructions, not a fake id that looks real.
 3. **CORS** pinned to `APP_ORIGIN`; dev origins only outside production; no wildcard.
 4. **Source maps disabled** for production builds.
-5. **Per-role chunk splitting** — a customer never downloads the admin bundle.
-6. **`_headers` and `_redirects`** for Pages.
+5. **Per-route code splitting** — Next.js emits per-route chunks; a customer does not download the admin route's code.
+6. **Security headers** — ship `web/public/_headers` for the CSP, HSTS and
+   `Referrer-Policy` at the Pages layer (not yet added to `web/`).
 
 ---
 
@@ -167,13 +170,10 @@ at all. It does not substitute for running the code.
 
 ### Non-blocking
 
-- **Fonts identified and wired, not yet downloaded.** The file specifies
-  **jgs7** (Adél Faure) for the pixel face and **Homemade Apple** (Google
-  Fonts, SIL OFL) for the handwriting. Both are freely licensed, so both ship
-  with the project rather than being placeholders. Run `./tools/fetch-fonts.sh`
-  once on a machine with network access; it downloads, subsets to the glyphs
-  used, and writes woff2 + woff into `web/public/fonts`. Commit the results.
-  Until then the generated `u2-pixel` fallback renders the app correctly.
+- **Fonts wired.** The file specifies **jgs7** (Adél Faure, Velvetyne, SIL OFL)
+  for the pixel face. It ships at `web/public/fonts/jgs7.woff2`, wired through
+  `next/font/local`; Barlow Semi Condensed is pulled by `next/font/google` at
+  build time. `scripts/fetch-fonts.sh` refreshes jgs7 from upstream.
 - ~~Halftone scanner glyphs~~ **Done.** Supplied from Figma and installed. The
   exports were JPEG, which cannot carry alpha, so the transparency was
   reconstructed by corner flood-fill before encoding to lossless WebP.

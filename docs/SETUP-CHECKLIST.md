@@ -49,8 +49,8 @@ Two hostnames to confirm: `api.<domain>` for the API, and `<domain>` plus
 
 | Credential | Goes to |
 |---|---|
-| Project URL | Worker `SUPABASE_URL`, Pages `VITE_SUPABASE_URL` |
-| Publishable key (`sb_publishable_…`) | Worker `SUPABASE_PUBLISHABLE_KEY`, Pages `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| Project URL | Worker `SUPABASE_URL`, Pages `NEXT_PUBLIC_SUPABASE_URL` |
+| Publishable key (`sb_publishable_…`) | Worker `SUPABASE_PUBLISHABLE_KEY`, Pages `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
 | Secret key (`sb_secret_…`) | Worker `SUPABASE_SECRET_KEY` — **secret, never in the browser** |
 | JWT secret | Worker `SUPABASE_JWT_SECRET` — **only** if the project still signs HS256 |
 
@@ -119,7 +119,7 @@ Three refund facts to plan around before you take real money:
    magic-link sign-in email never arrives.
 4. **Auth → Providers** — Email stays enabled with confirm-email on. If Google
    or Apple is disabled, remove the matching button from
-   `web/src/routes/auth/Login.tsx`.
+   `web/components/login/SocialAuth.tsx`.
 
 ---
 
@@ -147,12 +147,12 @@ Replace every placeholder.
 
 ### Cloudflare Pages — frontend
 
-`VITE_API_BASE` · `VITE_API_ORIGIN` · `VITE_SUPABASE_URL` ·
-`VITE_SUPABASE_PUBLISHABLE_KEY` · `VITE_MEDIA_BASE`
+`NEXT_PUBLIC_API_BASE` · `NEXT_PUBLIC_API_ORIGIN` · `NEXT_PUBLIC_SUPABASE_URL` ·
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` · `NEXT_PUBLIC_MEDIA_BASE`
 
-`VITE_API_ORIGIN` is missing from the no-CLI guide's Phase 12, but the build
-fails without it: it is substituted into the Content-Security-Policy by
-`web/scripts/build-headers.mjs`. Add it or the first Pages deploy breaks.
+The Next.js build inlines every `NEXT_PUBLIC_*` value at build time
+(`web/lib/env.ts`). `NEXT_PUBLIC_API_ORIGIN` is used for the security headers
+and media fallbacks; set it so a real deployment pins the API origin.
 
 ### Edge Function secrets
 
@@ -192,12 +192,11 @@ no Cloudflare, no keys, no sign-in.
 
 ```bash
 cd web
-npm ci
-npm run dev -- --host 0.0.0.0 --port 12001 --strictPort
+npm install
+NEXT_PUBLIC_EMBEDDED_API=true npm run dev
 ```
 
-Identity is chosen with `?as=customer|staff|driver|admin`, or the bottom-right
-role switch. The accounts above are only needed for real data.
+The accounts above are only needed for real data.
 
 ---
 
@@ -221,7 +220,7 @@ The database ships with no products, no stock and no staff.
 ## I. Never do these
 
 - Never commit `.env`, or any file containing `sb_secret_`, `sk_` or `re_`.
-- Never put a secret in a `VITE_` variable — it is compiled into the browser
+- Never put a secret in a `NEXT_PUBLIC_` variable — it is compiled into the browser
   bundle.
 - Never set CORS to `*`.
 - Never trust a payment amount sent by the browser; it always comes from the

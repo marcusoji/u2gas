@@ -1,54 +1,44 @@
-# Frontend Figma Parity Implementation
+# Frontend Figma parity
 
 ## Source of truth
 
-The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the design source.
-`web/src/figma/` mirrors its artboards as the exact markup the routes render, so
-route components must not recreate that artwork with a second CSS
-implementation.
+The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the **only** design
+source. There is no committed HTML snapshot of the screens and no generator. Its
+screens live on the page `MAIN SCREENS` (`256:14758`); the other page,
+`workshop`, is scratch.
+
+To match a screen, read its frame through the Figma MCP and rebuild it in the
+Next.js app (`web/`). Never change a screen without a matching change in the
+file, and never reintroduce a committed HTML snapshot or a markup generator —
+the live file is the only design source.
 
 ## Current implementation rule
 
-- `FigmaScreen` renders the exact artboard markup.
-- `FigmaRouteFrame` provides the standard shell for combining that exact visual
-  layer with real React interaction/data.
-- `routeRegistry.ts` maps every application route to the Figma artboards/states
-  it must implement.
-- Dynamic records must be rendered with React templates that preserve the
-  measured Figma row/card geometry; frozen sample text must never be treated as
-  a variable-length list implementation.
-
-## Migration order
-
-1. Customer: shop/product/cart/checkout/order/payment/receipt/profile/history/
-   notifications/addresses.
-2. Auth: login and callback/sent states.
-3. Driver: drops/drop/scan/profile.
-4. Staff: scan/queue/walk-in/collect/lookup/shift.
-5. Admin: tank/products/bundles/orders/people/settings/reports/audit.
-6. Verify every route/state with runtime console checks and visual screenshots.
+- A route is a thin `app/(public)/…/page.tsx` server component over a
+  `"use client"` view component in `web/components/`.
+- Screens are built from Tailwind components using the tokens in
+  `docs/DESIGN-SYSTEM.md`; the design's geometry (440px frames, the pixel face,
+  the terminal chrome) is reproduced, not approximated with a second stylesheet.
+- Live records are rendered with React row templates derived from the drawn
+  measurements. A drawn sample string must never be treated as a variable-length
+  list.
+- Data comes from `lib/api.ts` (Worker) and Supabase through `lib/adapters.ts` /
+  `lib/receipts.ts`. A fixture left on a screen is unfinished wiring.
 
 ## Non-negotiable constraints
 
 - Preserve API calls, authentication, authorization, reservation/hold logic,
   payment verification, QR logic and server-side security.
-- Do not replace functional controls with decorative Figma markup.
-- Do not approximate Figma geometry with new CSS when an exact artboard exists.
-- Do not claim parity until the route has actually rendered the corresponding
-  artboard/state and its dynamic data has been tested.
-- A route can have several Figma states; the implementation must choose the
-  correct state from actual application state.
+- Do not replace functional controls with decorative markup.
+- Do not approximate the file's geometry with new CSS when the frame gives an
+  exact measurement.
+- Do not claim parity until the route has rendered the corresponding frame and
+  its dynamic data has been exercised against the API.
 
+## Verification
 
-## Implementation progress — 2026-09-24
-
-Completed in the working source:
-- Added `FigmaScreen` image-source overrides so API-backed product/avatar media can occupy the exact Figma image nodes without rebuilding their geometry.
-- Added the shared `FigmaRouteFrame` functional-overlay layer and its route-frame CSS.
-- Reworked customer Shop to use the exact `SHOP - SEARCH` artboard with API-backed image replacement and transparent hit targets.
-- Reworked customer Product to switch between the exact available/unavailable Figma artboards, substitute live product copy, replace the designed product image, and retain the real add-to-cart flow.
-- Reworked customer Profile to use the exact `USER PROFILE` artboard, live name/avatar, navigation hit targets, avatar upload, and logout.
-- Reworked driver Profile/ME to use the exact `DRIVER PROFILE` artboard while retaining live availability controls, server rollback behaviour, vehicle data and logout.
-- Reworked driver Scan to use the exact successful/failed scan artboards with the real QR scanner and API scan action layered into the designed camera region.
-
-Not yet claimed as complete: all remaining routes, exhaustive visual screenshot parity, clean dependency install, typecheck/build, and final browser/device verification.
+There is no automated parity gate. Verify by reading the live frame through the
+Figma MCP and comparing the running app against it: structure, geometry and
+computed tokens (font, colour, weight, tracking, radius, opacity, transform),
+plus each leaf's `visible` flag. Compare element boxes, not full-page
+screenshots. Then `npx tsc --noEmit`, `npm run lint` and `npm run build`.

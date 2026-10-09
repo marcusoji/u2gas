@@ -243,33 +243,25 @@ npm install
 npm run build
 ```
 
-Build command `npm run build`, output directory `dist`. Set the `VITE_*`
-variables from `.env.example` — all four are public by design and compiled
-into the bundle, so nothing secret may go here.
+The app is a Next.js static export (`output: "export"`), so the build writes
+`web/out/`. On Pages: framework preset **Next.js (Static HTML Export)**, root
+directory `web`, build command `npm run build`, output directory `out`.
 
-Add a `_redirects` file so client-side routes resolve on refresh:
+Set the `NEXT_PUBLIC_*` variables (see `docs/ENVIRONMENT.md`) — they are public
+by design and compiled into the bundle, so nothing secret may go here.
 
-```
-/*  /index.html  200
-```
-
-Without it, someone refreshing on `/admin/products` gets a 404 from the CDN.
+Because every route is a directory with its own `index.html`
+(`trailingSlash: true`), a refresh on `/admin/products/` resolves without a
+redirect rule. Ids live in query parameters, not paths, so there is no dynamic
+route for the CDN to 404.
 
 ### Fonts and images
 
-Before the first deploy, export from the Figma file into `web/public/`:
-
-```
-public/fonts/u2-pixel-400.woff2
-public/fonts/u2-pixel-700.woff2
-public/fonts/u2-script.woff2
-public/img/thumb-up.webp
-public/img/thumb-down.webp
-```
-
-Subset the pixel faces to the glyph range in the `@font-face` rules — the full
-character set is several times the 90KB font budget. The halftone thumbs are
-the scanner's success and failure states.
+The pixel face (`jgs7`) is self-hosted at `web/public/fonts/jgs7.woff2` and
+`jgs7.woff` and wired through `next/font/local`. Product and state imagery is
+under `web/public/images/` and `web/public/shop/`. Export any face or picture
+the live Figma file uses that is not yet present, so nothing falls back — the
+live file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source.
 
 ---
 
@@ -317,7 +309,7 @@ Work down this list in order. Each step depends on the one above it.
 - [ ] Staff lookup for `a,b)` returns nothing rather than erroring
 - [ ] Submitting the same order twice does not reserve the stock twice
 - [ ] An order paid one second after its hold lapsed is NOT swept
-- [ ] `npx lhci autorun` passes every budget on all four routes
+- [ ] The static export loads from `web/out/` with no console error on all four role apps
 
 ---
 
@@ -328,7 +320,7 @@ Work down this list in order. Each step depends on the one above it.
 cd worker && npm install && npm run dev        # 127.0.0.1:8787
 
 # Web
-cd web && cp .env.example .env && npm install && npm run dev   # localhost:5173
+cd web && cp .env.example .env && npm install && npm run dev   # localhost:3000
 ```
 
 Point `.env` at a Supabase project with the migrations applied. There is no

@@ -1,0 +1,15 @@
+export const paths = {
+  home: "/",
+  shop: "/shop",
+  login: "/login",
+  cashier: "/cashier",
+  driver: "/driver",
+  admin: "/admin",
+  adminMenu: "/admin/menu",
+  adminStaff: "/admin/staff",
+  adminStaffEdit: "/admin/staff/edit",
+  adminStaffHistory: "/admin/staff/history",
+  adminHistory: "/admin/history",
+  adminSalesHistory: "/admin/sales-history",
+  adminCompare: "/admin/compare",
+} as const;

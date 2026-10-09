@@ -33,16 +33,20 @@ In `wrangler.toml` under `[vars]`.
 
 ## Cloudflare Pages
 
-All public. Anything secret here is a leak.
+All public. Anything secret here is a leak. The Next.js app reads these from
+`NEXT_PUBLIC_*` at build time (`web/lib/env.ts`) and inlines them. The Supabase
+**publishable** key is the only Supabase key the browser may see; `env.ts`
+refuses to build if a `sb_secret_` / `service_role` key is configured.
 
 | Name | Example |
 |---|---|
-| `VITE_API_BASE` | `https://api.u2gas.ng/api` |
-| `VITE_API_ORIGIN` | `https://api.u2gas.ng` — written into the CSP in `dist/_headers`; the real build fails without it. A `VITE_EMBEDDED_API=true` build (local preview) contacts no API and may leave it unset. |
-| `VITE_SUPABASE_URL` | `https://<ref>.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | the sb_publishable_ key, never the secret key |
-| `VITE_SUPABASE_ANON_KEY` | optional. Legacy name for the same public key, still accepted as a fallback so an older deployment keeps working. Set the publishable key on anything new. |
-| `VITE_MEDIA_BASE` | `https://<ref>.supabase.co/storage/v1/object/public/public-media` |
+| `NEXT_PUBLIC_API_BASE` | `https://api.u2gas.ng/api` |
+| `NEXT_PUBLIC_API_ORIGIN` | `https://api.u2gas.ng` — used for the CSP and media fallbacks |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the `sb_publishable_` key, never the secret key |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | optional. Legacy name for the same public key, accepted as a fallback so an older deployment keeps working. Set the publishable key on anything new. |
+| `NEXT_PUBLIC_MEDIA_BASE` | `https://<ref>.supabase.co/storage/v1/object/public/public-media` |
+| `NEXT_PUBLIC_EMBEDDED_API` | `true` runs the whole UI from in-browser fixtures, contacting no API. Omit for a real deployment. |
 
 ## Supabase Edge Functions
 

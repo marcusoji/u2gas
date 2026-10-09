@@ -1,11 +1,10 @@
 node_modules/
+.next/
+out/
 dist/
 .env
 .env.local
 .env.*.local
-# web/.env.development is intentionally committed: it only forces the embedded
-# (no-backend) mode for `vite dev` and is never read by a build.
-!web/.env.development
 .wrangler/
 .dev.vars
 *.log
@@ -13,6 +12,3 @@ dist/
 coverage/
 .lighthouseci/
 *.tsbuildinfo
-
-# Figma comparison scratch
-.figdiff/

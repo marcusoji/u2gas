@@ -3,7 +3,7 @@
 The Worker's real surface: every type it returns, every endpoint, every enum and
 the rules that connect them. Written for whoever is wiring screens to data.
 
-The types here are the ones in `web/src/lib/api.ts`, which mirror what the
+The types here are the ones in `web/lib/api.ts`, which mirror what the
 Worker returns. Keep them honest — a wrong field name should be a compile error,
 not a blank space on a receipt at the depot counter.
 
@@ -451,7 +451,7 @@ interface FlaggedQueue {
 
 ## 4. Endpoints
 
-Every path is relative to `VITE_API_BASE` (default `/api`).
+Every path is relative to `NEXT_PUBLIC_API_BASE` (default `/api`).
 
 ### Catalogue — public
 
@@ -774,8 +774,8 @@ rather than hardcoding `"monnify"`. That keeps the next provider change
 invisible to the frontend too.
 
 **Out of scope for the frontend, confirmed:** it does not call the gateway's
-API, does not verify signatures, and does not name the gateway except in a route
-label in `routeRegistry.ts`. Monnify is a Worker and migration concern.
+API, does not verify signatures, and does not name the gateway except in a
+route label. Monnify is a Worker and migration concern.
 
 
 
@@ -915,21 +915,21 @@ Admin-editable, seeded in `0007`:
 
 ---
 
-## 10. Live Figma state — the file has been restructured again
+## 10. Live Figma state — the file has been restructured
 
-⚠️ **Read this before touching `web/src/figma/`.**
+⚠️ **Read this before matching a screen.**
 
-The live U2-GAS file (`v4xgWC0Q0wtSKmAff3EOzU`) no longer has a `u2` page. It now
-has two:
+The live U2-GAS file (`v4xgWC0Q0wtSKmAff3EOzU`) now has two pages:
 
 | Page | Node | Contents |
 |---|---|---|
 | `workshop` | `0:1` | Scratch |
 | **`MAIN SCREENS`** | **`256:14758`** | Every screen |
 
-Every node id has moved: old `1:*` ids are gone, replaced by `256:*` and
-`369:*`. The app's `web/src/figma/screens/*` and `artboards.ts` key on the old
-`1:*` ids, so **they no longer resolve against the live file.**
+The node ids are `256:*` and `369:*`. There is no committed snapshot of these
+frames and no generator — the app matches them by reading the live file through
+the Figma MCP, so a new frame or a moved node must be re-read from
+`MAIN SCREENS` before a screen is built.
 
 Frames on `MAIN SCREENS`, by role:
 
@@ -965,15 +965,15 @@ Frames on `MAIN SCREENS`, by role:
 `DIVIDER` `256:16920` ("USER APP"), `256:18559` ("CASHIER APP"),
 `256:18923` / `256:18925` ("DRIVER APP")
 
-Also new: a `Keyboard/Default` **component set** `212:9799` — the on-screen
-keypad is now a reusable component rather than a drawn group.
+Also present: a `Keyboard/Default` **component set** `212:9799` — the on-screen
+keypad is a reusable component rather than a drawn group.
 
-**What this means for the frontend work:** the app still renders correctly,
-because `web/src/figma/` is a snapshot — it does not read the live file at
-runtime. But any *new* frame the designer draws, and any node binding keyed on a
-`1:*` id, must be re-read from `MAIN SCREENS` and re-keyed to the `256:*` ids.
-Bindings by node id (`values={{ "1:2096": … }}`, `data-node` hit-tests, the
-`useDrawnBoxes` back hotspots) are the ones that will silently stop matching.
+**What this means for the frontend work:** the Next.js app (`web/`) rebuilds
+each screen from the live frame, so a frame that moves must be re-read before
+the matching component is changed. A drawn leaf is drawn text, including its
+typos (`C0PYRIGHT`, `INSUFFICIENT- Please redude`); match it character for
+character. A leaf the file marks `visible: false` must not be drawn, and one it
+draws must not be omitted.
 
 ---
 

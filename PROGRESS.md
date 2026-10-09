@@ -71,106 +71,52 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 
 ## Not started
 
-### Frontend — `web/` (in progress)
-- [x] `package.json`, `vite.config.ts` with per-role chunk splitting,
-      `tsconfig.json`, `index.html` with font preloads, `.env.example`
-- [x] `lighthouserc.json` — the 2s budget as failing CI thresholds
-- [x] `styles/tokens.css` — every token sampled from the frames, subset
-      self-hosted fonts, reduced-motion honoured
-- [x] `styles/components.css` — the full component catalogue
-- [x] `components/primitives.tsx` — Pill, Input, Segmented, Tabs, Chip, Stamp,
-      LoadBar, Empty, ErrorState, Sheet with focus trap, Modal, U2Mark,
-      ProductImage with srcset and explicit dimensions
-- [x] `components/terminal.tsx` — Ticker, HoldCountdown, LedWindow, Terminal,
-      Keypad, ReceiptSlot, Receipt with the feed animation
-- [x] `components/illustrated.tsx` — TankGauge with ruler, WireBasket drawn in
-      SVG, Scanner with lazily loaded WASM decoder
-- [x] `lib/api.ts` — typed client, error codes surfaced with their detail,
-      one silent retry for 5xx only
-- [x] `lib/auth.ts` — Supabase Auth, role read from the profile table,
-      open-redirect guard on `next`
-- [x] `lib/useImageCompressor.ts` + `workers/compress.worker.ts` — off-thread
-      compression, alpha preserved, WebP with a PNG fallback
-- [x] `App.tsx` — router, role guards, deep links preserved through login
-- [x] `routes/customer/Home.tsx` — terminal, keypad, advisory availability,
-      **insufficient stock with TAKE NKG**, payment sheet, delivery zones
-- [x] `routes/customer/OrderStatus.tsx` — **hold countdown**, **expiry**,
-      QR issuance, Monnify return verification, delivery tracking
+### Frontend — `web/` (Next.js 16, in progress)
 
-- [x] `lib/cart.ts` — browser-only cart. Adding reserves nothing; stock is
-      only held at checkout, per spec 27. Cross-tab sync, malformed storage
-      discarded rather than crashing the shop.
-- [x] `routes/customer/Shop.tsx` — grid, ticker-as-search, category tabs,
-      unavailable stamps, first row eager for LCP
-- [x] `routes/customer/Product.tsx` — products and bundles, members in slot
-      order, saving against buying separately, **names the short member**
-- [x] `routes/customer/Cart.tsx` — wire basket, checkout sheet,
-      **stamps the exact item the server refused**
-- [x] `routes/customer/History.tsx` — month tabs, live status strip, receipts
-- [x] `routes/customer/Profile.tsx` — script-face name, inline detail editing
-- [x] `routes/customer/Notifications.tsx` — filtered list
-- [x] `routes/auth/Login.tsx` — clipped terminal, magic link, Google, Apple
-- [x] `routes/auth/VerifySent.tsx` — **check your mail**, 60s resend cooldown
-- [x] `routes/auth/Callback.tsx` — **expired and failed link states**
-- [x] `routes/auth/ResetRequest.tsx` — identical response either way, so it
-      cannot be used to enumerate customers
-
-- [x] `routes/staff/StaffApp.tsx` — own chunk, bottom nav (the prototype
-      navigated by swiping frames, which a cashier mid-transaction cannot do)
-- [x] `routes/staff/Scan.tsx` — idle, success, failure, plus the **flagged
-      state** with the next action on screen
-- [x] `routes/staff/Queue.tsx` — paid and awaiting-payment queues, polls only
-      while visible
-- [x] `routes/staff/Collect.tsx` — order detail and **change due**, nothing
-      recorded until explicit confirmation
-- [x] `routes/staff/WalkIn.tsx` — keypad order, name and phone required
-- [x] `routes/staff/Lookup.tsx` — keypad doubles as the search pad
-- [x] `routes/staff/Shift.tsx` — **cash reconciliation**, expected computed
-      server-side, variance stamped
-- [x] `routes/driver/DriverApp.tsx` + `Drops.tsx` — own chunk, route list
-- [x] `routes/driver/Drop.tsx` — **en route**, call customer, **failed with
-      reschedule or return**, unpaid warning
-- [x] `routes/driver/DriverScan.tsx` — doorstep scan pinned to delivery
-- [x] `routes/driver/DriverMe.tsx` — **availability toggle** with optimistic
-      update and rollback when the API refuses
-
-- [x] `routes/admin/AdminApp.tsx` — own chunk, scrolling bottom nav
-- [x] `routes/admin/Tank.tsx` — gauge, −/+ stock entry modal, rate change,
-      month-tabbed history. available_kg is read, never edited
-- [x] `routes/admin/Products.tsx` — **accessories inventory**, stock shown as
-      STOCK / RSVD / AVAIL together, adjusted by delta not absolute value
-- [x] `routes/admin/BundleUpload.tsx` — **the three-slot upload**: live
-      compatibility check, per-slot compression meters, manager override with
-      a required reason, atomic publish
-- [x] `routes/admin/Orders.tsx` — orders and the **flagged queue**, refunds
-      owed first, driver reassignment, cancel with reason
-- [x] `routes/admin/People.tsx` — staff and driver grids with detail
-- [x] `routes/admin/Settings.tsx` — **delivery zones and fees**, hold and QR
-      timings via the same −/+ stepper
-- [x] `routes/admin/Audit.tsx` — **reports** in the tank's visual language
-      rather than a charting library, plus the **audit log**
-
-- [x] `components/states.tsx` — offline banner driven by real request
-      failures rather than `navigator.onLine` alone, permission-denied screen,
-      and a render error boundary so one broken screen cannot blank the app
+- [x] `package.json`, `next.config.ts` (`output: "export"`, `trailingSlash`),
+      `tsconfig.json`, `eslint.config.mjs`, `.env.example`
+- [x] `app/layout.tsx` — `next/font/local` for the pixel face,
+      `next/font/google` for Barlow Semi Condensed, providers mounted once
+- [x] `app/(public)/…` — one route per screen, thin server components over a
+      `"use client"` view component
+- [x] `components/` — the screens grouped by role: `admin/`, `cashier/`,
+      `driver/`, `login/`, `modals/`, `home/`, `receipt/`, `ui/`, plus
+      `providers.tsx`, `require-role.tsx`, `screen-notice.tsx`
+- [x] `lib/api.ts` — typed Worker client; `ApiError` carries the code, the
+      interface copy and the numbers a screen needs; `OFFLINE` on a network
+      failure
+- [x] `lib/supabase.ts` — Supabase Auth only, role read from the `profile`
+      row, `safeNext` open-redirect guard
+- [x] `lib/hooks.ts` — `useAsync`, load-once with a stale-response guard
+- [x] `lib/adapters.ts`, `lib/receipts.ts` — backend rows → the view models
+      the drawings use; no screen reads `price_kobo` or `image_asset` directly
+- [x] `stores/` — Zustand view stores (`authStore`, `cartStore`,
+      `adminStaffStore`, `adminTankStore`)
+- [x] Auth flow — `/login`, magic-link + Google/Apple, `/auth/callback` routes
+      each role to its own app
+- [x] Customer — home terminal, shop/product/cart, order summary, payment
+      (delivery and walk-in), receipt/history, profile
+- [x] Cashier — scan, queue, walk-in, collect, lookup, shift
+- [x] Driver — drops, drop, doorstep scan, profile
+- [x] Admin — tank, products, bundles, orders, people, settings, reports
+- [ ] Remove the remaining `data.ts` fixtures (cashier history, admin gas/staff
+      history, admin staff store, add-address) and read the API throughout
 
 ### Docs
 - [x] `README.md` — the one architectural idea and how to run it
-- [x] `docs/DEPLOYMENT.md` — Supabase, the signup trigger, Storage, the cron
-      schedule, Resend SMTP, Monnify, Workers, Pages, Hostinger to Cloudflare
-      DNS, and a verification checklist in dependency order
+- [x] `docs/DEPLOYMENT.md` — Supabase, Storage, cron schedule, Resend SMTP,
+      Monnify, Workers, Pages, Hostinger to Cloudflare DNS
 - [x] `docs/ENVIRONMENT.md` — every key, where it comes from, what breaks
       without it, and what rotating it costs
-- [x] `web/public/_redirects`, `.gitignore`, asset placeholders with
-      instructions
+- [x] `AGENTS.md` — the Next.js architecture and the live-Figma-only design rule
+- [x] `docs/HANDOVER.md` — running with no API, adding a page, the asset
+      workflow
 
-### Deployment — `docs/`
-- [ ] Cloudflare Pages and Workers configuration
+### Deployment
+- [ ] Cloudflare Pages (static export) and Workers configuration
 - [ ] Supabase project setup, storage buckets and policies
 - [ ] Resend SMTP wiring through Supabase Auth
 - [ ] Hostinger to Cloudflare DNS instructions
-- [ ] Environment variable reference
-- [ ] Lighthouse CI budget enforcement
 
 ---
 
@@ -180,15 +126,13 @@ Updated as each piece lands. Anything not ticked has not been written yet.
    If the intent was customers adding three compatible items to the cart in one
    action, the schema still supports it but `publish_bundle` needs replacing
    with a customer-facing suggestion endpoint.
-2. **Frontend framework.** React with Vite, chosen for the code splitting
-   Cloudflare Pages needs. Say if the existing repo uses something else.
-5. **Fonts.** `tokens.css` references `/fonts/u2-pixel-*.woff2` and
-   `/fonts/u2-script.woff2`. Export the licensed faces from the Figma file,
-   subset them to the glyph range in the `@font-face` rules, and drop them in
-   `web/public/fonts/`. The fallback stack is metric-matched so nothing
-   reflows before they land.
-6. **Halftone assets.** The scanner success and failure glyphs are referenced
-   at `/img/thumb-up.webp` and `/img/thumb-down.webp`. Export from Figma.
+2. **Frontend framework.** Next.js 16 with a static export, matching the
+   uploaded app and Cloudflare Pages. The design file is the only design source.
+5. **Fonts.** The pixel face is `web/public/fonts/jgs7.woff2` wired through
+   `next/font/local`; Barlow Semi Condensed comes from `next/font/google`.
+   Export any further face the Figma file uses from the live file.
+6. **Halftone assets.** The scanner success and failure pictures live in
+   `web/public/images/`. Export any the file uses from the live file.
 3. **Background removal.** The design needs transparent cut-outs. Doing this
    automatically needs a model the Worker cannot run. Assumption for now:
    admins upload pre-cut PNGs, and the pipeline preserves alpha rather than
@@ -333,15 +277,11 @@ Checked mechanically across the whole tree, not just per file:
 
 ## Fonts
 
-`tools/make_pixel_font.py` generates `u2-pixel-400` and `u2-pixel-700` from a
-5x7 dot-matrix grid reconstructed from the prototype frames. Full printable
-ASCII plus naira, multiply, middot and em dash. About 3KB per WOFF, against a
-90KB budget. These are a reconstruction, not the licensed face — drop the real
-files in over the top and nothing will move, because the metrics match.
-
-`u2-script` still needs exporting from Figma. A handwriting face cannot be
-reconstructed from a grid the way a pixel one can. Until it exists the stack
-falls through to a system cursive and the profile screens read correctly.
+`web/public/fonts/jgs7.woff2` is the pixel face (Adél Faure's Jgs, Velvetyne,
+SIL OFL 1.1), wired through `next/font/local` in `app/layout.tsx`; the licence
+is committed beside it. Barlow Semi Condensed comes from `next/font/google`.
+`scripts/fetch-fonts.sh` refreshes jgs7 from upstream. There is no reconstructed
+fallback: the real face ships.
 
 ## Verification status
 

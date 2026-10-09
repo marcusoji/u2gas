@@ -1,150 +1,97 @@
-# Handover — continue the Figma parity work
+# Handover — continue the frontend work
 
-This is the short version for whoever picks this up next. The long, detailed
-rules live in [`AGENTS.md`](../AGENTS.md) at the repo root; read it before
-changing an artboard. This file is the "get running in five minutes" plus the
-list of what is and is not done.
+This is the short version for whoever picks this up next. The detailed rules
+live in [`AGENTS.md`](../AGENTS.md) at the repo root; read it before changing a
+screen. This file is the "get running in five minutes" plus what is and is not
+done.
 
 ## Run it with no API keys at all
 
 Nothing in the dev flow needs a backend, a Supabase project, a Worker, or a
-sign-in. `web/.env.development` is committed and forces the embedded mode, so:
+sign-in. Turn on the embedded (in-browser fixtures) mode and run the dev server:
 
 ```bash
 git clone <repo> && cd u2gas
-cd web && npm ci
-npm run dev -- --host 0.0.0.0 --port 12001 --strictPort
+cd web && npm install
+NEXT_PUBLIC_EMBEDDED_API=true npm run dev
 ```
 
-Open `http://localhost:12001/`. Every screen is reachable from in-browser
-fixtures. Identity is picked with `?as=<role>`
-(`customer` | `staff` | `driver` | `admin`) or the bottom-right role switch.
-
-Committing `.env.development` is deliberate: Vite reads it only in `dev` mode,
-never for `build` (that reads `.env`), so it cannot reach a production bundle.
-The real-API values, if you ever need them, are documented in
-`web/.env.example`.
+Open `http://localhost:3000/`. Every screen is reachable from the fixtures, and
+the app answers as whichever role you sign in as — the role gate a real
+deployment authorises on the server. The real-API values, if you need them, are
+documented in `docs/ENVIRONMENT.md`.
 
 ### Checks (run them before you commit)
 
 ```bash
 cd web
-npm run check:frontend      # assets exist + every named artboard is a real screen
-npm run check:assets        # no CSS font/image reference is missing
-npm run typecheck           # tsc --noEmit
+npx tsc --noEmit        # typecheck
+npm run lint            # ESLint, eslint-config-next
+npm run build           # static export into web/out
 ```
 
-The checks:
-
-| command | requires | proves |
-|---|---|---|
-| `npm run check:frontend` | — | registry/assets consistency |
+The build is `output: "export"`, so it talks to no server at build time; a build
+without Supabase env values still succeeds, it just cannot sign anyone in.
 
 ## The one contract to keep
 
-The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`, page `u2`) is the only
-design source.** There is no committed HTML snapshot. The app carries the file's
-markup verbatim in `web/src/figma/` and renders it through `FigmaScreen` /
-`FigmaRouteFrame`. Two rules:
+The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design
+source.** There is no committed HTML snapshot of the screens and no generator.
+Two rules:
 
-1. **`web/src/figma/` is not generated from anything in this repo.** To change a
-   screen, change it in Figma, re-read the frame through the Figma MCP, and
-   update the matching module by hand. Never edit a screen without a matching
-   live-file change.
-2. **Nothing may reach inside `.frame`** to change layout, colour, or text
-   metrics. A value the file draws is drawn text, including its typos
-   (`C0PYRIGHT`, `INSUFFICIENT- Please redude`) — match it character for
-   character.
-
-When you add a back control, a new page, or a state, clear it against the rules
-in AGENTS.md first (visible-back-hotspot, state-vs-template, `data-node`
-bindings, the `letter-spacing`/class-leak traps). Nearly every regression in
-this repo's history came from breaking one of them.
+1. **To change a screen, change it in Figma first.** Re-read the frame through
+   the Figma MCP (the file's screens page is `MAIN SCREENS`, `256:14758`) and
+   update the app to match. Never change a screen without a matching live-file
+   change.
+2. **A value the file draws is drawn text, typos included** (`C0PYRIGHT`,
+   `INSUFFICIENT- Please redude`, curly punctuation) — match it character for
+   character. Watch a leaf's `visible` flag: a node that is `visible: false` in
+   Figma must not be drawn, and one the file draws must not be omitted.
 
 ## Adding a new page
 
-1. Draw it in Figma. Get the frame's node id.
-2. Read the frame through the Figma MCP (file `v4xgWC0Q0wtSKmAff3EOzU`) and add
-   its markup to `web/src/figma/screens/<Name>.ts`, then register it in
-   `web/src/figma/artboards.ts`.
-3. Add a route that renders `<FigmaScreen node="…" />`. A registry entry in
-   `routeRegistry.ts` must name an artboard *and* say which row template fills
-   it, if any; `check:frontend` fails on a claimed-but-unrendered board.
-4. Bind live data with `values={{ "node-id": text }}`; text you leave unbound
-   keeps the file's drawn sample. Rows the file does not id must be painted
-   over a reserved band (see the `/history` and `/cart` patterns in AGENTS.md).
-5. Run `npm run check:frontend`, `npm run check:assets` and `npm run typecheck`.
-   Then `npm run build` (fails if `VITE_API_ORIGIN` is unset and
-   `VITE_EMBEDDED_API` is not `true`).
+1. Draw it in Figma and get the frame's node id.
+2. Read the frame through the Figma MCP (file `v4xgWC0Q0wtSKmAff3EOzU`) to get
+   its structure, geometry and tokens.
+3. Add `app/(public)/<route>/page.tsx` — a thin server component exporting
+   `metadata` and rendering the interactive piece. Any component with state,
+   effects or handlers is `"use client"`.
+4. Build the screen from the existing primitives and view-model shapes
+   (`lib/adapters.ts`, `lib/receipts.ts`, `types/`). Bind live data through
+   `lib/api.ts` + `useAsync`; do not leave a fixture from `data.ts` on screen.
+5. Put a dynamic id in a query parameter (`/orders?id=…`), not the path — the
+   static export cannot pre-render unknown path segments. A `useSearchParams`
+   page needs a `Suspense` boundary or the build fails.
+6. Gate the route with `RequireRole` if it belongs to a role. Remember the gate
+   is convenience only; the Worker authorises every request.
+7. Run `npx tsc --noEmit`, `npm run lint` and `npm run build`, then compare the
+   running screen against the live frame.
 
 ## Fonts
 
-The pixel faces are Velvetyne's **Jgs** family (SIL OFL): `jgs7` is every
-heading/label/button, `jgs5` the LED readouts and tickers. Both are committed
-under `web/public/fonts/`, byte-identical to the upstream repo. The whole
-upstream repository also ships at the repo root as `jgs-main.zip`, so the
-masters can be refreshed offline; it carries `jgs5`, `jgs7`, `jgs9` and the
-`jgs_Font` master (the last two are not used by any artboard). Inventory and
-licences are in `web/public/fonts/README.txt`.
+The pixel face is Velvetyne's **Jgs** family (SIL OFL): `jgs7` is every
+heading/label/button and the LED readouts. It is self-hosted under
+`web/public/fonts/` and wired through `next/font/local` in `app/layout.tsx`.
+Barlow Semi Condensed is loaded from Google Fonts via `next/font/google` for
+caption strings. The upstream repo also ships at the repo root as
+`jgs-main.zip`, so masters can be refreshed offline.
 
-## Asset workflow (pictures the artboards embed)
+## Asset workflow (pictures the screens show)
 
-Pictures for the *drawn* artboards (product tiles, the shop strip/grid, the
-notification panel thumbnail and pin map) are the modules in
-`web/src/figma/assets.ts`, one data URI each, painted by the artboard markup's
-`--src` custom property.
+Pictures the screens show at runtime come from the Worker's media pipeline
+(`lib/media.ts` `mediaUrl`) or from `web/public/` (product fallbacks, icons,
+avatars). A picture the *design* embeds should be exported from the live Figma
+file into `web/public/` and referenced by path. Live things a route supplies at
+runtime (the camera feed, uploaded product photos, avatars) must not be stamped
+into a static file — the route paints them over the drawn placeholder.
 
-To add or replace a drawn picture:
+## Still to do
 
-1. Change the picture in the live Figma file.
-2. Re-read the frame through the Figma MCP and export the image fill; put the
-   source somewhere the repo does not track (e.g. `.figdiff/`, gitignored) and
-   downscale it.
-3. Add or update the matching `export const aN = "data:image/…"` in
-   `assets.ts`, and point the relevant artboard span's `--src` at it.
-4. Compare the app's render against the live frame.
-
-Live pictures a route supplies at runtime (the camera feed, user avatars,
-product photos from storage) do **not** belong in the drawn artboards: the
-drawing keeps the honest `camera feed` placeholder and the route paints a real
-`<Scanner>`/`<img>` over that box. Do not stamp a screenshot of a live feed
-into the drawing.
-
-## Verified state (last commit on `main`)
-
-- All 61 artboards render, `tsc` clean, `check:frontend` passes.
-- Done since the GIFT-TECH re-issue: manager role removed; TRANS HISTORY, admin
-  GAS HISTORY and the seven notification panels redrawn; shop strip + shop grid
-  added where the live file draws them; thumb-glow state colours; admin gauge
-  axis opacity/`%`; walk-in copy (`AMOUNT IN NAIRA`, `SCAN`); STAFF HISTORY
-  panels (`1:3675`/`1:3781`) rebuilt from live.
-
-## Still to do (verified deltas against live Figma)
-
-All coordinates below are board-relative, read from the live file
-(`v4xgWC0Q0wtSKmAff3EOzU`, page `u2`) via the Figma MCP, with Figma's 20px
-export margin cropped.
-
-1. **Walk-in panels — the four outer frames (`1:4466`, `1:4527`, `1:4592`,
-   `1:4047`)** are redrawn, not re-worded, so the panel internals must be
-   rebuilt (same technique as the notif panels). Confirmed:
-   - `AMOUNT IN NAIRA` sits at y **177 / 179 / 178 / 162** (drawn at
-     166/168/167/151) and is `#D4D4D4`, not `rgba(0,0,0,.45)`.
-   - `1:4466`: LED readout box at y **182** (drawn 192); keypad at
-     left **114** / top **301** (drawn 44/165).
-   - `1:4592`, `1:4047`: `UPDATE` sheet is **380×427** at (30,257); selected
-     `DELIVERY OR WALK-IN` toggle extended to `1:4527`.
-2. **`1:4683` DELIVERY NOTIFS, `1:4803` COMPLETED DELIVERY** — the live file
-   draws a `SEE ALL` / `ALL` / `DELIVERIES` filter row above the list that the
-   app lacks. Confirm against the frame, then bring it across.
-3. **`1:2847` GAS HISTORY** — the live month strip adds `MARCH`…`DECEMBER`
-   chips. Most already exist; diff the chip list before adding.
-4. **`306:8081 BLACK CONCEPT` and `376:11738 PERSONAL DTS`** — live frames the
-   app never carried (`1:2090` / `1:2244` are their stale counterparts).
-   Decide per board: "not designed yet" (leave) or superseded (retire).
-5. **Scan screens** — the live scanner body is now an image-backed frame
-   (`Frame 60`/`Frame 65`). This is an image-dependent redraw, tracked
-   separately from the copy pass.
-
-Expected, not drift: the camera feed placeholder on the scan boards, where the
-route paints a real feed at runtime.
+- Remove the remaining `data.ts` fixtures from screens that should read the API
+  (cashier history, admin gas/staff history, admin staff store, add-address).
+- Verify the driver and cashier queue/history flows against the Worker +
+  Supabase.
+- Confirm the admin screens (tank, sales history, staff) against the live
+  frames.
+- Full typecheck, lint and static build.
+- Deploy the static export to Cloudflare Pages and confirm.

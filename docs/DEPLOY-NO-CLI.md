@@ -188,7 +188,7 @@ Both suites end in `rollback`, so they leave nothing behind.
 2. **Site URL:** `https://YOURDOMAIN.com`
 3. **Redirect URLs** — click **Add URL** for each:
    - `https://YOURDOMAIN.com/auth/callback`
-   - `http://127.0.0.1:5173/auth/callback` (only while developing)
+   - `http://localhost:3000/auth/callback` (only while developing)
 4. Click **Save**.
 
 Supabase rejects any redirect not on this list. That is what stops someone
@@ -209,7 +209,7 @@ pointing your login flow at their own site.
   toggle Apple **off**.
 
 **If you disable Google or Apple, remove the matching button** from
-`web/src/routes/auth/Login.tsx` before deploying. A button that always errors
+`web/components/login/SocialAuth.tsx` before deploying. A button that always errors
 is worse than no button.
 
 There is no password login and no password reset. That is intentional.
@@ -479,25 +479,27 @@ Then go back to Resend and click **Verify**.
 | Field | Value |
 |---|---|
 | Production branch | `main` |
-| Framework preset | `Vite` |
+| Framework preset | `Next.js (Static HTML Export)` |
 | Build command | `npm run build` |
-| Build output directory | `dist` |
+| Build output directory | `out` |
 | Root directory | `web` |
 
-4. Expand **Environment variables** and add these five:
+4. Expand **Environment variables** and add these:
 
 | Name | Value |
 |---|---|
-| `VITE_API_BASE` | `https://api.YOURDOMAIN.com/api` |
-| `VITE_SUPABASE_URL` | your Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | your `sb_publishable_...` key |
-| `VITE_MEDIA_BASE` | `https://YOUR-PROJECT.supabase.co/storage/v1/object/public/public-media` |
+| `NEXT_PUBLIC_API_BASE` | `https://api.YOURDOMAIN.com/api` |
+| `NEXT_PUBLIC_API_ORIGIN` | `https://api.YOURDOMAIN.com` |
+| `NEXT_PUBLIC_SUPABASE_URL` | your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | your `sb_publishable_...` key |
+| `NEXT_PUBLIC_MEDIA_BASE` | `https://YOUR-PROJECT.supabase.co/storage/v1/object/public/public-media` |
 
 5. Click **Save and Deploy**.
 
-**Anything starting with `VITE_` is compiled into the JavaScript your customers
-download.** Anyone can read it by opening developer tools. Never put a secret
-key here. The publishable key is designed to be public; the secret key is not.
+**Anything starting with `NEXT_PUBLIC_` is compiled into the JavaScript your
+customers download.** Anyone can read it by opening developer tools. Never put a
+secret key here. The publishable key is designed to be public; the secret key is
+not.
 
 ---
 
@@ -840,10 +842,10 @@ Only when every test above passes.
 
 | Variable | Service | Public or secret | Where from | Purpose |
 |---|---|---|---|---|
-| `VITE_API_BASE` | Pages | Public | You | Where the frontend calls the API |
-| `VITE_SUPABASE_URL` | Pages | Public | Supabase | Auth from the browser |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Pages | Public | Supabase | Auth from the browser |
-| `VITE_MEDIA_BASE` | Pages | Public | Supabase | Image URLs |
+| `NEXT_PUBLIC_API_BASE` | Pages | Public | You | Where the frontend calls the API |
+| `NEXT_PUBLIC_SUPABASE_URL` | Pages | Public | Supabase | Auth from the browser |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Pages | Public | Supabase | Auth from the browser |
+| `NEXT_PUBLIC_MEDIA_BASE` | Pages | Public | Supabase | Image URLs |
 | `SUPABASE_URL` | Worker | Public | Supabase | Database connection |
 | `SUPABASE_PUBLISHABLE_KEY` | Worker | Public | Supabase | Reads under RLS |
 | `SUPABASE_SECRET_KEY` | Worker | **SECRET** | Supabase | All writes |
@@ -862,7 +864,7 @@ Only when every test above passes.
 ## Never do these
 
 - Never commit `.env`, or any file containing `sb_secret_`, `sk_`, or `re_`.
-- Never put a secret key in a `VITE_` variable. It ends up in the browser.
+- Never put a secret key in a `NEXT_PUBLIC_` variable. It ends up in the browser.
 - Never set CORS to `*`.
 - Never trust a payment amount sent by the browser.
 - Never mark a payment as successful by editing the database by hand.
