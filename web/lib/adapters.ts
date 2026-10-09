@@ -28,6 +28,10 @@ import type {
 
 export interface ViewProduct {
   product_id: string;
+  /** Whether the row is a product or a bundle. The cart checkout needs this to
+   *  send the right id field: a bundle's id belongs in `bundle_id`, not
+   *  `product_id`. */
+  kind: "product" | "bundle";
   name: string;
   subtitle: string | null;
   description: string | null;
@@ -52,8 +56,10 @@ export function toViewProduct(p: ApiProduct | ShopItem): ViewProduct {
   // A shop row is identified by `id`; a product by `product_id`. A bundle row
   // reaching here keeps its own id, which is what the cart keys on.
   const id = "product_id" in p ? p.product_id : p.id;
+  const kind = "kind" in p ? p.kind : "product";
   return {
     product_id: id,
+    kind,
     name: p.name,
     subtitle: p.subtitle ?? null,
     description: "description" in p ? (p.description ?? null) : null,

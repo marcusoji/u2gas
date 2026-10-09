@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { safeNext, type Role } from "@/lib/supabase";
+import { EMBEDDED_API } from "@/lib/env";
 
 /**
  * Front the app for one role.
@@ -30,6 +31,10 @@ export function RequireRole({
   const router = useRouter();
 
   useEffect(() => {
+    // The preview build has no session to hold a role, so the gate is skipped:
+    // every screen must be reachable with no sign-in. The Worker still checks
+    // the token on every call, so this only affects what renders.
+    if (EMBEDDED_API) return;
     if (loading) return;
     if (!profile) {
       const here =
@@ -59,6 +64,7 @@ export function RequireRole({
   }
 
   const allowed = Array.isArray(role) ? role : [role];
+  if (EMBEDDED_API) return <>{children}</>;
   if (!profile || !allowed.includes(current as Role)) return null;
 
   return <>{children}</>;

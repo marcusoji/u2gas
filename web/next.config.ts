@@ -18,6 +18,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
+  // The preview tunnel serves the dev server through a different host, and
+  // Next 16 blocks cross-origin requests to its own dev resources (HMR, fonts,
+  // RSC) by default — the page loads but hot reload and some dev asset fetches
+  // 400. These hosts are the agent runtime's tunnels, never a production origin
+  // (a static export has no dev server at all), so allowing them is safe.
+  allowedDevOrigins: [
+    "*.prod-runtime.all-hands.dev",
+    "*.all-hands.dev",
+    "*.openhands.dev",
+  ],
   // Next 16 otherwise writes its own AGENTS.md/CLAUDE.md into the project root,
   // which would shadow the repository's real AGENTS.md — the file this project
   // treats as its memory. The generated files are noise here.

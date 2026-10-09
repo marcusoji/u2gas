@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GasOrderDraft } from "@/types";
+import DeliveryDetailsForm, {
+  type DeliveryDetails,
+} from "@/components/checkout/DeliveryDetailsForm";
 
 type PaymentModalProps = {
   open: boolean;
@@ -19,9 +22,14 @@ type PaymentModalProps = {
   /**
    * The chosen route. The parent places the order and either redirects to the
    * gateway or settles a depot payment — this sheet does not decide that, and
-   * does not pretend to have paid.
+   * does not pretend to have paid. A delivery carries the address and area the
+   * Worker requires; a walk-in carries nothing extra.
    */
-  onSelectMethod?: (method: string) => void;
+  onSelectMethod?: (method: string, details?: DeliveryDetails) => void;
+  /** True while the parent is placing the order; the sheet shows progress. */
+  processing?: boolean;
+  /** A refusal from the parent (e.g. INSUFFICIENT_GAS) shown in the sheet. */
+  notice?: string | null;
 };
 
 /** The words the sheet shows, mapped to the routes the parent understands. */
@@ -38,12 +46,16 @@ export default function PaymentModal({
   onOpenChange,
   order,
   onSelectMethod,
+  processing = false,
+  notice = null,
 }: PaymentModalProps) {
   const [mode, setMode] = useState<"walk-in" | "delivery">("walk-in");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  // Held only so the confirmation view can render while the parent works; the
-  // parent owns the real outcome and closes this sheet.
-  const [isProcessing, setIsProcessing] = useState(false);
+  // A delivery cannot be placed without an area and an address, so the sheet
+  // collects them before the payment options become usable.
+  const [delivery, setDelivery] = useState<DeliveryDetails | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const isProcessing = processing;
 
   // Lock background scroll when payment modal is open
   useEffect(() => {
@@ -63,15 +75,20 @@ export default function PaymentModal({
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
     if (!nextOpen) {
-      setIsProcessing(false);
       setSelectedMethod(null);
+      setDelivery(null);
+      setFormError(null);
     }
   };
 
   const handleSelectMethod = (method: string) => {
+    if (mode === "delivery" && !delivery) {
+      setFormError("CONFIRM YOUR DELIVERY ADDRESS FIRST");
+      return;
+    }
+    setFormError(null);
     setSelectedMethod(method);
-    setIsProcessing(true);
-    onSelectMethod?.(METHOD_ROUTE[method] ?? method);
+    onSelectMethod?.(METHOD_ROUTE[method] ?? method, delivery ?? undefined);
   };
 
   const quantity =
@@ -154,7 +171,6 @@ export default function PaymentModal({
                       <PaymentOption
                         label={selectedMethod || "OPAY"}
                         rotation="rotate-[8deg]"
-                        onClick={() => setIsProcessing(false)}
                       />
                     </div>
                   </div>
@@ -236,21 +252,31 @@ export default function PaymentModal({
                     </button>
                   </div>
 
-                  {/* Delivery Section: Map */}
+                  {/* Delivery Section: Map + the address the Worker needs */}
                   {mode === "delivery" && (
-                    <div className="w-full h-28 mb-4  rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
-                      <Image
-                        src="/images/map.jpg"
-                        alt="Delivery map"
-                        fill
-                        className="object-cover"
+                    <div className="w-full flex flex-col items-center gap-3 mb-2">
+                      <div className="w-full h-28 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
+                        <Image
+                          src="/images/map.jpg"
+                          alt="Delivery map"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <DeliveryDetailsForm
+                        onConfirmed={(details) => {
+                          setDelivery(details);
+                          setFormError(null);
+                        }}
                       />
-                      <button
-                        type="button"
-                        className="relative z-10 bg-brand-primary text-white text-[11px] px-5 py-2.5 rounded-[10px] cursor-pointer"
-                      >
-                        CONFIRM DELIVERY ADDRESS
-                      </button>
+                      {formError && (
+                        <p
+                          role="alert"
+                          className="text-[10px] font-mono tracking-wider text-red-500 uppercase text-center"
+                        >
+                          {formError}
+                        </p>
+                      )}
                     </div>
                   )}
 
@@ -258,6 +284,15 @@ export default function PaymentModal({
                   <p className="text-[#B5B5B5] text-base tracking-[0.14em] uppercase mb-3">
                     PAYMENT OPTIONS
                   </p>
+
+                  {notice && (
+                    <p
+                      role="alert"
+                      className="text-[10px] font-mono tracking-wider text-red-500 uppercase text-center -mt-1"
+                    >
+                      {notice}
+                    </p>
+                  )}
 
                   {/* Cards for Delivery Mode */}
                   {mode === "delivery" ? (

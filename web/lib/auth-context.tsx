@@ -9,7 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase, loadProfile, HOME, type Role, type Profile } from "./supabase";
+import {
+  supabase,
+  loadProfile,
+  HOME,
+  type Role,
+  type Profile,
+} from "./supabase";
+import { EMBEDDED_API } from "./env";
 
 export interface AuthState {
   session: Session | null;
@@ -41,15 +48,18 @@ const AuthContext = createContext<AuthState>({
 const SESSION_READ_TIMEOUT_MS = 10_000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    session: null,
-    profile: null,
-    loading: true,
-    home: "/login",
-    role: null,
-  });
+  // The preview build contacts no API. Calling Supabase would stall on a host
+  // that does not exist until the timeout fires, so every role screen sat on
+  // "LOADING…" for ten seconds before bouncing to sign-in. Seed the state as
+  // already-signed-out instead; the role screens then redirect at once.
+  const [state, setState] = useState<AuthState>(() =>
+    EMBEDDED_API
+      ? { session: null, profile: null, loading: false, home: "/login", role: null }
+      : { session: null, profile: null, loading: true, home: "/login", role: null },
+  );
 
   useEffect(() => {
+    if (EMBEDDED_API) return;
     let active = true;
 
     async function load(session: Session | null) {

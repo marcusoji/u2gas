@@ -167,6 +167,9 @@ export interface CartItem {
   priceNaira: number;
   quantity: number;
   unavailable?: boolean;
+  /** Product or bundle. A bundle's id is sent as `bundle_id`, not
+   *  `product_id`, when the basket is checked out. */
+  kind?: "product" | "bundle";
 }
 
 export interface ReceiptItem {

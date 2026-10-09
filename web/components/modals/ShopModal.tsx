@@ -11,6 +11,7 @@ import { api, ApiError, newIdempotencyKey } from "@/lib/api";
 import { saveGuestToken, savePendingReference } from "@/lib/payment-return";
 import { useAsync } from "@/lib/hooks";
 import { toViewProduct } from "@/lib/adapters";
+import type { DeliveryDetails } from "@/components/checkout/DeliveryDetailsForm";
 import { paths } from "@/utils/paths";
 import {
   ShopBasketView,
@@ -150,25 +151,38 @@ export function ShopModal({
    * price is recomputed — never from the cart's own numbers, which a client can
    * edit.
    */
-  const handleSelectPayment = async (method: string) => {
+  const handleSelectPayment = async (
+    method: string,
+    details?: DeliveryDetails,
+  ) => {
     setSelectedPaymentMethod(method);
     setError(null);
     setIsProcessing(true);
     setPaymentStatus("processing");
 
     const apiMethod = METHOD_TO_API[method] ?? "monnify";
+    const isDelivery = checkoutMode === "delivery";
 
     try {
+      // A bundle's id belongs in `bundle_id`; sending it as `product_id` would
+      // fail the product foreign key. The cart keeps the drawn kind so the
+      // right field is chosen here, not guessed from the id's shape.
       const lines = cartItems.map((item) => ({
-        kind: "product" as const,
-        product_id: item.id,
+        kind: item.kind ?? "product",
+        ...(item.kind === "bundle"
+          ? { bundle_id: item.id }
+          : { product_id: item.id }),
         quantity: item.quantity,
       }));
 
       const created = await api.createCartOrder(
         {
           lines,
-          fulfillment: checkoutMode === "walk-in" ? "pickup" : "delivery",
+          fulfillment: isDelivery ? "delivery" : "pickup",
+          zone_id: isDelivery ? details?.zone_id : undefined,
+          address: isDelivery ? details?.address : undefined,
+          guest_name: details?.guest_name,
+          guest_phone: details?.guest_phone,
         },
         newIdempotencyKey(),
       );

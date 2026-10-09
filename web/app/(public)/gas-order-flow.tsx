@@ -10,6 +10,7 @@ import { saveGuestToken, savePendingReference } from "@/lib/payment-return";
 import { useAsync } from "@/lib/hooks";
 import { toHomeView } from "@/lib/adapters";
 import { toHistoryReceipt } from "@/lib/receipts";
+import type { DeliveryDetails } from "@/components/checkout/DeliveryDetailsForm";
 import type { GasOrderDraft, HistoryReceipt, ReceiptItem } from "@/types";
 
 /**
@@ -85,7 +86,7 @@ export default function GasOrderFlow() {
 
   /** Place the order, then hand off to the gateway. */
   const startPayment = useCallback(
-    async (choice: PaymentChoice) => {
+    async (choice: PaymentChoice, details?: DeliveryDetails) => {
       if (!draft || draft.gas_amount_kg <= 0) return;
       setError(null);
       setTerminalStatus("processing");
@@ -93,7 +94,17 @@ export default function GasOrderFlow() {
       try {
         const fulfillment = choice === "DEPOT" ? "pickup" : "delivery";
         const created = await api.createGasOrder(
-          { kg: draft.gas_amount_kg, fulfillment },
+          {
+            kg: draft.gas_amount_kg,
+            fulfillment,
+            // A delivery must carry the area and address the Worker validates,
+            // and a guest must carry a phone number; without them the request
+            // is refused with ZONE_REQUIRED / VALIDATION_FAILED.
+            zone_id: fulfillment === "delivery" ? details?.zone_id : undefined,
+            address: fulfillment === "delivery" ? details?.address : undefined,
+            guest_name: details?.guest_name,
+            guest_phone: details?.guest_phone,
+          },
           newIdempotencyKey(),
         );
 
@@ -136,10 +147,15 @@ export default function GasOrderFlow() {
         setShowPayment(false);
         history.reload();
       } catch (e) {
+        if (e instanceof ApiError) {
+          // The keypad can correct the amount, so the sheet stays open and the
+          // refusal is shown in place rather than as a terminal failure.
+          setTerminalStatus("idle");
+          setError(e.message);
+          return;
+        }
         setTerminalStatus("failed");
-        setError(
-          e instanceof ApiError ? e.message : "WE COULDN'T PLACE THAT ORDER",
-        );
+        setError("WE COULDN'T PLACE THAT ORDER");
       }
     },
     [draft, history],
@@ -168,7 +184,7 @@ export default function GasOrderFlow() {
 
   return (
     <>
-      {error && (
+      {error && !showPayment && (
         <div
           role="alert"
           className="w-full max-w-90 mx-auto mb-2 rounded-[10px] border border-red-200 bg-red-50 px-4 py-2 text-center text-[11px] font-mono tracking-wider text-red-600 uppercase"
@@ -195,7 +211,11 @@ export default function GasOrderFlow() {
           open={showPayment}
           onOpenChange={setShowPayment}
           order={draft}
-          onSelectMethod={(m) => void startPayment(m as PaymentChoice)}
+          processing={terminalStatus === "processing"}
+          notice={error}
+          onSelectMethod={(m, details) =>
+            void startPayment(m as PaymentChoice, details)
+          }
         />
       </GasTerminal>
 
