@@ -104,8 +104,8 @@ export function ShopBasketView({
 
                   {/* Unavailable stamp if item is out of stock */}
                   {item.unavailable && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-white/95 border border-[#F30B0B] px-1.5 py-0.5 rounded-[2px] shadow-xs rotate-[-8deg] z-20 pointer-events-none">
-                      <span className="text-[7.5px] text-[#F30B0B] font-bold tracking-wider uppercase">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-white/95 border border-[#FF2222] px-1.5 py-0.5 rounded-[2px] shadow-xs rotate-[-8deg] z-20 pointer-events-none">
+                      <span className="text-[7.5px] text-[#FF2222] font-bold tracking-wider uppercase">
                         ITEM UNAVAILABLE
                       </span>
                     </div>
@@ -139,8 +139,8 @@ export function ShopBasketView({
               whileTap={{ scale: 0.95 }}
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-6 z-30 pointer-events-auto cursor-pointer group"
             >
-              <div className="border-[2px] border-[#F30B0B] bg-white/95 px-3 py-1.5 rounded-[3px] shadow-[0_2px_10px_rgba(243,11,11,0.15)] flex items-center justify-center">
-                <span className="text-[12px] sm:text-[13px] font-bold text-[#F30B0B] tracking-wider uppercase whitespace-nowrap drop-shadow-[0_0_2px_rgba(243,11,11,0.3)]">
+              <div className="border-[2px] border-[#FF2222] bg-white/95 px-3 py-1.5 rounded-[3px] shadow-[0_2px_10px_rgba(255,34,34,0.15)] flex items-center justify-center">
+                <span className="text-[12px] sm:text-[13px] font-bold text-[#FF2222] tracking-wider uppercase whitespace-nowrap drop-shadow-[0_0_2px_rgba(255,34,34,0.3)]">
                   GO FOR A LIL&apos; MORE SHOPPING
                 </span>
               </div>

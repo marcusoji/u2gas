@@ -10,37 +10,13 @@ export interface WalkInOrderData {
   method: PaymentMethod;
   timestamp: string;
   orderId: string;
-  /** The server's own order number, when it differs from the display id. */
-  orderNumber?: string;
 }
-
-/** The drawer's words mapped to the Worker's payment methods. */
-export const WALKIN_METHOD_TO_API: Record<
-  PaymentMethod,
-  "cash" | "card_terminal" | "bank_transfer"
-> = {
-  CASH: "cash",
-  POS: "card_terminal",
-  "BANK TRANS": "bank_transfer",
-};
 
 interface WalkInPaymentDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   kg: number;
   ratePerKg?: number;
-  /** The customer's name and phone, for the order record. */
-  guestName: string;
-  guestPhone: string;
-  setGuestName: (v: string) => void;
-  setGuestPhone: (v: string) => void;
-  error?: string | null;
-  /**
-   * Places and pays the order. Resolves with the created order, or null when
-   * the attempt failed (the parent shows the error). This drawer never invents
-   * an order number.
-   */
-  onConfirm?: (method: PaymentMethod) => Promise<WalkInOrderData | null>;
   onSuccess?: (order: WalkInOrderData) => void;
 }
 
@@ -49,12 +25,6 @@ export default function WalkInPaymentDrawer({
   onOpenChange,
   kg,
   ratePerKg = 1000,
-  guestName,
-  guestPhone,
-  setGuestName,
-  setGuestPhone,
-  error,
-  onConfirm,
   onSuccess,
 }: WalkInPaymentDrawerProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(
@@ -70,18 +40,30 @@ export default function WalkInPaymentDrawer({
     setSelectedMethod(method);
   };
 
-  const handleContinueToPay = async () => {
+  const handleContinueToPay = () => {
     if (!selectedMethod || isProcessing) return;
 
     setIsProcessing(true);
-    const order = await onConfirm?.(selectedMethod);
-    setIsProcessing(false);
 
-    if (order) {
-      onSuccess?.(order);
+    // Simulate payment transaction
+    setTimeout(() => {
+      setIsProcessing(false);
+      const orderData: WalkInOrderData = {
+        kg,
+        totalNaira,
+        method: selectedMethod,
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        orderId: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
+      };
+
+      onSuccess?.(orderData);
       onOpenChange(false);
+      // Reset state for subsequent uses
       setSelectedMethod(null);
-    }
+    }, 1500);
   };
 
   const handleClose = () => {
@@ -141,35 +123,6 @@ export default function WalkInPaymentDrawer({
                 <span className="bg-brand-primary text-white text-[11px] px-3 py-0.5 rounded-full inline-flex items-center justify-center mb-2.5">
                   {formattedPrice}
                 </span>
-
-                {/* The order has to be traceable to a person, so a walk-in
-                    carries a name and phone even with no account. */}
-                <div className="w-full flex flex-col gap-2 mt-1 mb-1">
-                  <input
-                    type="text"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    placeholder="CUSTOMER NAME"
-                    className="w-full max-w-[260px] mx-auto rounded-full border border-dashed border-[#CCD0DC] px-4 py-2 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 outline-none focus:border-[#1317E4] uppercase"
-                  />
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    value={guestPhone}
-                    onChange={(e) => setGuestPhone(e.target.value)}
-                    placeholder="PHONE NUMBER"
-                    className="w-full max-w-[260px] mx-auto rounded-full border border-dashed border-[#CCD0DC] px-4 py-2 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 outline-none focus:border-[#1317E4] uppercase"
-                  />
-                </div>
-
-                {error && (
-                  <span
-                    role="alert"
-                    className="text-[10px] font-mono tracking-wider text-red-500 uppercase text-center mb-1"
-                  >
-                    {error}
-                  </span>
-                )}
 
                 {/* 'via:' label */}
                 <span className="text-[11px] text-neutral-400 mb-2 text-center">

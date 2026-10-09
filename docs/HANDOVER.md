@@ -2,26 +2,24 @@
 
 This is the short version for whoever picks this up next. The detailed rules
 live in [`AGENTS.md`](../AGENTS.md) at the repo root; read it before changing a
-screen. This file is the "get running in five minutes" plus what is and is not
-done.
+screen.
 
 ## Run it locally
 
-Every screen reads the Worker/Supabase APIs, so a local run wants both. Start
-the Worker, then point the web app at it:
+The frontend under `web/` is a carbon copy of the uploaded
+`U2gas_frontend-main.zip` and is a self-contained UI demo: it renders the
+`data.ts` fixtures and reads no API, so every screen is reachable with no Worker
+and no sign-in.
 
 ```bash
 git clone <repo> && cd u2gas
-cd worker && npm install && npm run dev      # http://127.0.0.1:8787
-cd ../web && npm install
-echo 'NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787/api' > .env.local
+cd web && npm install
 npm run dev
 ```
 
-Open `http://localhost:3000/`. With no Worker or Supabase reachable you can
-still open every route, but an API-backed screen shows its own empty/offline
-state rather than fixture data — there is no in-browser fixture layer any more.
-The real-API values are documented in `docs/ENVIRONMENT.md`.
+Open `http://localhost:3000/`. The Worker (`worker/`) and Supabase (`supabase/`)
+are the backend and remain in the repo, but nothing in the copied frontend calls
+them yet.
 
 ### Checks (run them before you commit)
 
@@ -29,45 +27,33 @@ The real-API values are documented in `docs/ENVIRONMENT.md`.
 cd web
 npx tsc --noEmit        # typecheck
 npm run lint            # ESLint, eslint-config-next
-npm run build           # static export into web/out
+npm run build           # next build
 ```
-
-The build is `output: "export"`, so it talks to no server at build time; a build
-without Supabase env values still succeeds, it just cannot sign anyone in.
 
 ## The one contract to keep
 
-The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design
-source.** There is no committed HTML snapshot of the screens and no generator.
-Two rules:
+The **uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
+`u2gass.vercel.app`) is the only UI source of record.** `web/` must stay a
+carbon copy of it: `diff -r` against the extracted reference must be empty.
 
-1. **To change a screen, change it in Figma first.** Re-read the frame through
-   the Figma MCP (the file's screens page is `MAIN SCREENS`, `256:14758`) and
-   update the app to match. Never change a screen without a matching live-file
-   change.
-2. **A value the file draws is drawn text, typos included** (`C0PYRIGHT`,
+1. **To change a screen, diff it against the reference and mirror the change
+   into `web/` verbatim** — same markup, same classes, same copy. Never restyle
+   a screen by eye.
+2. **A drawn value is drawn text, typos included** (`C0PYRIGHT`,
    `INSUFFICIENT- Please redude`, curly punctuation) — match it character for
-   character. Watch a leaf's `visible` flag: a node that is `visible: false` in
-   Figma must not be drawn, and one the file draws must not be omitted.
+   character.
 
 ## Adding a new page
 
-1. Draw it in Figma and get the frame's node id.
-2. Read the frame through the Figma MCP (file `v4xgWC0Q0wtSKmAff3EOzU`) to get
-   its structure, geometry and tokens.
-3. Add `app/(public)/<route>/page.tsx` — a thin server component exporting
-   `metadata` and rendering the interactive piece. Any component with state,
+1. Add the page to the reference, then copy it into `web/` (or, if it is a new
+   screen built from the reference's own language, keep the same primitives and
+   copy).
+2. Add `app/(public)/<route>/page.tsx` — a thin component. Anything with state,
    effects or handlers is `"use client"`.
-4. Build the screen from the existing primitives and view-model shapes
-   (`lib/adapters.ts`, `lib/receipts.ts`, `types/`). Bind live data through
-   `lib/api.ts` + `useAsync`; a fixture on a screen is unfinished wiring.
-5. Put a dynamic id in a query parameter (`/orders?id=…`), not the path — the
-   static export cannot pre-render unknown path segments. A `useSearchParams`
-   page needs a `Suspense` boundary or the build fails.
-6. Gate the route with `RequireRole` if it belongs to a role. Remember the gate
-   is convenience only; the Worker authorises every request.
-7. Run `npx tsc --noEmit`, `npm run lint` and `npm run build`, then compare the
-   running screen against the live frame.
+3. Build the screen from the existing primitives and the `data.ts` fixtures.
+   There is no API client, auth or Supabase layer in the copied frontend.
+4. Run `npx tsc --noEmit`, `npm run lint` and `npm run build`, then load the
+   route at 440px and compare it to `u2gass.vercel.app`.
 
 ## Fonts
 
@@ -75,24 +61,18 @@ The pixel face is Velvetyne's **Jgs** family (SIL OFL): `jgs7` is every
 heading/label/button and the LED readouts. It is self-hosted under
 `web/public/fonts/` and wired through `next/font/local` in `app/layout.tsx`.
 Barlow Semi Condensed is loaded from Google Fonts via `next/font/google` for
-caption strings. The faces are refreshed with `scripts/fetch-fonts.sh`, which
-pulls the upstream Jgs webfonts (or subsets a local `JGS_SRC` master) into
-`web/public/fonts/` — there is no bundled copy of the font repository.
+caption strings. The face is refreshed with `scripts/fetch-fonts.sh`, which
+pulls the upstream Jgs webfont (or subsets a local `JGS_SRC` master) into
+`web/public/fonts/`.
 
 ## Asset workflow (pictures the screens show)
 
-Pictures the screens show at runtime come from the Worker's media pipeline
-(`lib/media.ts` `mediaUrl`) or from `web/public/` (product fallbacks, icons,
-avatars). A picture the *design* embeds should be exported from the live Figma
-file into `web/public/` and referenced by path. Live things a route supplies at
-runtime (the camera feed, uploaded product photos, avatars) must not be stamped
-into a static file — the route paints them over the drawn placeholder.
+Pictures are the reference's own files under `web/public/` (`images/`, `icons/`,
+`shop/`). Keep them as the reference ships them.
 
 ## Still to do
 
-- Verify the driver and cashier queue/history flows against the Worker +
-  Supabase.
-- Confirm the admin screens (tank, sales history, staff) against the live
-  frames.
-- Full typecheck, lint and static build.
-- Deploy the static export to Cloudflare Pages and confirm.
+- Wire the UI to the Worker + Supabase. This is a deliberate, separate step —
+  the copied frontend is a fixture-only demo today.
+- Full typecheck, lint and build.
+- Deploy and confirm.

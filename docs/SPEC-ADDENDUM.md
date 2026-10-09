@@ -339,6 +339,6 @@ and is the only role permitted the compatibility override in §71.2.
 ## 76. PRECEDENCE
 
 Where this addendum conflicts with sections 1–70, this addendum wins, except on visual
-design — the Figma frames remain the visual source of truth in all cases, and any screen
+design — the uploaded frontend is the visual source of record in all cases, and any screen
 introduced here must be built from the tokens and components catalogued in the design system
 document rather than invented.

@@ -3,9 +3,10 @@
 The Worker's real surface: every type it returns, every endpoint, every enum and
 the rules that connect them. Written for whoever is wiring screens to data.
 
-The types here are the ones in `web/lib/api.ts`, which mirror what the
-Worker returns. Keep them honest — a wrong field name should be a compile error,
-not a blank space on a receipt at the depot counter.
+The types here mirror what the Worker returns. Keep them honest — a wrong field
+name should be a compile error, not a blank space on a receipt at the depot
+counter. The copied frontend (`web/`) has no client yet; when the UI is wired to
+this contract, the types land in a `lib/api.ts` that does not exist today.
 
 ---
 
@@ -933,65 +934,17 @@ Admin-editable, seeded in `0007`:
 
 ---
 
-## 10. Live Figma state — the file has been restructured
+## 10. UI source of record
 
-⚠️ **Read this before matching a screen.**
+The uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
+`u2gass.vercel.app`) is the only UI source; Figma is no longer a source and
+there is no committed HTML snapshot or generator. `web/` is a carbon copy of the
+uploaded app, and it ships no API client — the screens read the `data.ts`
+fixtures.
 
-The live U2-GAS file (`v4xgWC0Q0wtSKmAff3EOzU`) now has two pages:
-
-| Page | Node | Contents |
-|---|---|---|
-| `workshop` | `0:1` | Scratch |
-| **`MAIN SCREENS`** | **`256:14758`** | Every screen |
-
-The node ids are `256:*` and `369:*`. There is no committed snapshot of these
-frames and no generator — the app matches them by reading the live file through
-the Figma MCP, so a new frame or a moved node must be re-read from
-`MAIN SCREENS` before a screen is built.
-
-Frames on `MAIN SCREENS`, by role:
-
-**Customer**
-`PAYMENT SUCCESSFUL` `256:14759` · `PAYMENT failed` `256:14842` ·
-`order summary` `256:14922` / `256:15005` · `pay > delivery` `256:15088` ·
-`pay > walk in` `256:15178` / `256:15267` ·
-`insufficiant inventory` `256:15339` · `RECEIPT PRINTING` `256:15428` ·
-`history` `256:15501` / `256:15673` / `256:15765` ·
-`RECEIPT DISPLAY` `256:15860` · `LOG IN 3` `256:16099` / `LOG IN 4` `256:16164` ·
-`SHOP - SEARCH` `256:16225` / `256:16256` ·
-`SHOP - Single ITEM` `256:16287` / `256:16330` ·
-`CART - ITEM UNAVAILABLE` `256:16375` / `256:16479` / `256:16555` / `256:16677` / `256:16800` ·
-`HOME` `256:16922`
-
-**Cashier**
-`WALK-IN PAYMENT 2` `256:17908` · `WALK-IN INPUT` `256:18348` ·
-`WALK-IN PAY CONFIRM` `256:18411` / `256:18485` ·
-`SCAN SUCCESSFUL` `256:18248` · `SCAN FAIL` `256:18283` · `HOME` `256:18318`
-
-**Driver**
-`NOTIFS STATE 1` `256:17985` · `NOTIFS STATE 2` `256:18063` ·
-`NOTIFS STATE 1 (EXPANDED)` `256:18156` · `DELIVERY NOTIFS` `256:18561` ·
-`DRIVER SCAN SUCCESSFUL` `256:18660` · `DRIVER SCAN FAILED` `256:18694` ·
-`DRIVER PROFILE` `256:18728`
-
-**Admin**
-`DASHBOARD` × many — `256:16950`, `256:17111`, `256:17255`, `256:17469`,
-`256:17614`, `256:17666`, `256:17716`, `256:17817`, `369:558`, `369:659`,
-`369:1772`, `369:1283`, `369:2018`, `369:1529`
-
-**Dividers (not screens)**
-`DIVIDER` `256:16920` ("USER APP"), `256:18559` ("CASHIER APP"),
-`256:18923` / `256:18925` ("DRIVER APP")
-
-Also present: a `Keyboard/Default` **component set** `212:9799` — the on-screen
-keypad is a reusable component rather than a drawn group.
-
-**What this means for the frontend work:** the Next.js app (`web/`) rebuilds
-each screen from the live frame, so a frame that moves must be re-read before
-the matching component is changed. A drawn leaf is drawn text, including its
-typos (`C0PYRIGHT`, `INSUFFICIENT- Please redude`); match it character for
-character. A leaf the file marks `visible: false` must not be drawn, and one it
-draws must not be omitted.
+Wiring `web/` to this contract is a deliberate, separate step. When it happens,
+a drawn value is still drawn text, typos included (`C0PYRIGHT`,
+`INSUFFICIENT- Please redude`); match the reference character for character.
 
 ---
 

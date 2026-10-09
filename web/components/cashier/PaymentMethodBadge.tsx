@@ -29,11 +29,8 @@ export default function PaymentMethodBadge({
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={selected}
       className={cn(
         "w-18.75 h-17.25 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[24px] leading-[1.05] text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-all active:scale-95 cursor-pointer select-none",
-        selected &&
-          "border-solid border-[#1317E4] text-[#1317E4] ring-2 ring-[#1317E4]/30",
         defaultRotation,
         className,
       )}

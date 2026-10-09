@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import type { Product } from "@/types";
 import { paths } from "@/utils/paths";
 
@@ -31,10 +30,9 @@ export default function ShopCard({ item, onSelect, bgColor }: ShopCardProps) {
       style={{ backgroundColor: bgColor || item.bgColor }}
     >
       <div className="relative w-full h-full flex items-center justify-center">
-        <Image
+        <img
           src={item.image}
           alt={item.name || ""}
-          fill
           sizes="(max-width: 768px) 150px, 180px"
           className="object-contain p-1"
         />

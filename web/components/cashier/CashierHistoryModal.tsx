@@ -10,6 +10,7 @@ import type {
   CashierStatusTab,
   CashierPaymentFilter,
 } from "@/types";
+import { dummyCashierTransactions } from "@/data";
 
 export interface CashierHistoryModalProps {
   open: boolean;
@@ -20,20 +21,10 @@ export interface CashierHistoryModalProps {
 export default function CashierHistoryModal({
   open,
   onOpenChange,
-  transactions = [],
+  transactions = dummyCashierTransactions,
 }: CashierHistoryModalProps) {
   const [activeMode, setActiveMode] = useState<CashierStatusTab>("IN—PERSON");
   const [activeFilter, setActiveFilter] = useState<CashierPaymentFilter>("CASH");
-  const [showAll, setShowAll] = useState(false);
-
-  // SEE ALL lists every transaction the till has, across both modes and all
-  // payment filters; the filtered view is the default. Reset when closed so
-  // the sheet opens on the drawn state.
-  const [wasOpen, setWasOpen] = useState(open);
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (!open) setShowAll(false);
-  }
 
   const paymentFilters: CashierPaymentFilter[] = [
     "ALL",
@@ -42,16 +33,14 @@ export default function CashierHistoryModal({
     "TRANSFER",
   ];
 
-  const filteredTransactions = showAll
-    ? transactions
-    : transactions.filter((tx) => {
-        if (tx.mode !== activeMode) return false;
-        if (activeFilter === "ALL") return true;
-        if (activeFilter === "TRANSFER") {
-          return tx.paymentMethod === "TRANS" || tx.paymentMethod === "TRANSFER";
-        }
-        return tx.paymentMethod === activeFilter;
-      });
+  const filteredTransactions = transactions.filter((tx) => {
+    if (tx.mode !== activeMode) return false;
+    if (activeFilter === "ALL") return true;
+    if (activeFilter === "TRANSFER") {
+      return tx.paymentMethod === "TRANS" || tx.paymentMethod === "TRANSFER";
+    }
+    return tx.paymentMethod === activeFilter;
+  });
 
   return (
     <AnimatePresence>
@@ -156,7 +145,7 @@ export default function CashierHistoryModal({
 
                 {filteredTransactions.length === 0 && (
                   <div className="w-full py-10 text-center text-xs text-[#838EF8] font-bold uppercase tracking-wider font-mono">
-                    NO {showAll ? "MATCHING" : activeFilter} TRANSACTIONS
+                    NO {activeFilter} TRANSACTIONS
                   </div>
                 )}
               </div>
@@ -165,10 +154,9 @@ export default function CashierHistoryModal({
               <div className="flex items-center justify-center pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAll((v) => !v)}
                   className="text-[11px] font-bold tracking-wider uppercase text-[#838EF8] hover:text-[#1317E4] transition-colors cursor-pointer select-none"
                 >
-                  SEE {showAll ? "LESS" : "ALL"}
+                  SEE ALL
                 </button>
               </div>
             </div>

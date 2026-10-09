@@ -7,14 +7,12 @@ import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useAdminStaffStore } from "@/stores/adminStaffStore";
 import { paths } from "@/utils/paths";
-import { api } from "@/lib/api";
-import { useAsync } from "@/lib/hooks";
-import { toStaffCashierRecords, toStaffDriverRecords, filterStaffRecordsByPeriod } from "@/lib/adapters";
 import type {
   TimeFilter,
   DriverStatusTab,
   CashierStatusTab,
 } from "@/types/types";
+import { dummyStaffDriverRecords, dummyStaffCashierRecords } from "@/data";
 
 interface AdminStaffHistoryViewProps {
   onBack?: () => void;
@@ -29,8 +27,10 @@ export default function AdminStaffHistoryView({
   const selectedStaff =
     staffList.find((s) => s.id === selectedStaffId) || staffList[0];
 
-  // Determine role type (Driver or Cashier based on the drawn role label)
-  const isDriverRole = selectedStaff?.role?.toUpperCase().includes("DRIVER");
+  // Determine role type (Driver or Cashier based on email/role or state)
+  const isDriverRole =
+    selectedStaff?.role?.toUpperCase().includes("DRIVER") ||
+    selectedStaff?.email?.toUpperCase().includes("DRIVER");
 
   const [roleType, setRoleType] = useState<"DRIVER" | "CASHIER">(
     isDriverRole ? "DRIVER" : "CASHIER",
@@ -38,18 +38,6 @@ export default function AdminStaffHistoryView({
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("TODAY");
   const [driverTab, setDriverTab] = useState<DriverStatusTab>("COMPLETE");
   const [cashierTab, setCashierTab] = useState<CashierStatusTab>("IN—PERSON");
-  // SEE ALL widens the card from the drawn role/status tab to every record the
-  // person has in the chosen period. The tabbed view is the default.
-  const [showAll, setShowAll] = useState(false);
-
-  const { data, loading, error } = useAsync(
-    () =>
-      selectedStaff
-        ? api.admin.staffHistory(selectedStaff.id)
-        : Promise.resolve(null),
-    [selectedStaff?.id],
-    { enabled: Boolean(selectedStaff) },
-  );
 
   const handleBack = () => {
     if (onBack) {
@@ -61,21 +49,8 @@ export default function AdminStaffHistoryView({
 
   const staffDisplayName = selectedStaff?.firstName?.toUpperCase() || "SMITH";
 
-  const driverRecords = data
-    ? filterStaffRecordsByPeriod(toStaffDriverRecords(data), timeFilter)
-    : [];
-  const cashierRecords = data
-    ? filterStaffRecordsByPeriod(toStaffCashierRecords(data), timeFilter)
-    : [];
-
-  // The card draws one row style: driver-style (no badge) for a driver, and
-  // for a cashier on the ONLINE tab; badge style otherwise. SEE ALL only
-  // widens the set within that style — it does not change which style the
-  // person's role implies.
-  const driverStyleRows =
-    roleType === "DRIVER" ||
-    (roleType === "CASHIER" && cashierTab === "ONLINE");
-  const showDriverRows = showAll ? roleType === "DRIVER" : driverStyleRows;
+  const driverRecords = dummyStaffDriverRecords;
+  const cashierRecords = dummyStaffCashierRecords;
 
   return (
     <div className="w-full max-w-[420px] flex-1 flex flex-col items-center px-6 pt-4 pb-8 select-none min-h-[90vh]">
@@ -194,29 +169,40 @@ export default function AdminStaffHistoryView({
 
         {/* DASHED RECORD CARD CONTAINER */}
         <div className="w-full rounded-[24px] border-2 border-dashed border-[#C5CAE9] p-5 sm:p-6 flex flex-col gap-4 bg-white/50 shadow-xs max-w-[380px]">
-          {loading && (
-            <p className="text-center font-mono text-xs text-[#A4A6E8] py-8">
-              LOADING…
-            </p>
-          )}
-          {!loading && error && (
-            <p className="text-center font-mono text-xs text-[#D50000] py-8">
-              {error.message}
-            </p>
-          )}
-          {!loading &&
-            !error &&
-            (showDriverRows ? driverRecords : cashierRecords).length === 0 && (
-              <p className="text-center font-mono text-xs text-[#A4A6E8] py-8 uppercase">
-                No activity yet
-              </p>
-            )}
-          {!loading && !error && (showDriverRows ? driverRecords : cashierRecords).length > 0 ? (
-            showDriverRows ? (
-              // ONLINE / DRIVER GAS ORDERS (NO PAYMENT BADGES)
-              <div className="flex flex-col gap-4">
-                {driverRecords.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3.5 py-1">
+          {roleType === "DRIVER" ||
+          (roleType === "CASHIER" && cashierTab === "ONLINE") ? (
+            // ONLINE / DRIVER GAS ORDERS (NO PAYMENT BADGES)
+            <div className="flex flex-col gap-4">
+              {driverRecords.map((item) => (
+                <div key={item.id} className="flex items-center gap-3.5 py-1">
+                  <div className="relative w-[30px] h-[38px] shrink-0 flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.25)]">
+                    <Image
+                      src="/images/image1.png"
+                      alt="Gas Cylinder"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[20px] font-bold text-[#1317E4] leading-none font-[family-name:var(--font-barlow-semi-condensed)] tracking-tight">
+                      {item.title}
+                    </span>
+                    <span className="text-sm font-medium text-[#1317E4] mt-1 font-[family-name:var(--font-barlow-semi-condensed)]">
+                      {format(item.date, "HH:mm, yy/MM/dd")}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // IN-PERSON CASHIER TRANSACTIONS (WITH BADGES)
+            <div className="flex flex-col gap-4">
+              {cashierRecords.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-2 py-1"
+                >
+                  <div className="flex items-center gap-3.5">
                     <div className="relative w-[30px] h-[38px] shrink-0 flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.25)]">
                       <Image
                         src="/images/image1.png"
@@ -234,53 +220,23 @@ export default function AdminStaffHistoryView({
                       </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              // IN-PERSON CASHIER TRANSACTIONS (WITH BADGES)
-              <div className="flex flex-col gap-4">
-                {cashierRecords.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-2 py-1"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="relative w-[30px] h-[38px] shrink-0 flex items-center justify-center filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.25)]">
-                        <Image
-                          src="/images/image1.png"
-                          alt="Gas Cylinder"
-                          fill
-                          className="object-contain"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[20px] font-bold text-[#1317E4] leading-none font-[family-name:var(--font-barlow-semi-condensed)] tracking-tight">
-                          {item.title}
-                        </span>
-                        <span className="text-sm font-medium text-[#1317E4] mt-1 font-[family-name:var(--font-barlow-semi-condensed)]">
-                          {format(item.date, "HH:mm, yy/MM/dd")}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="border border-[#838EF8] text-[#838EF8] text-[9px] font-mono font-bold px-2 py-0.5 rounded-[4px] tracking-wider uppercase shrink-0">
-                      {item.paymentMethod}
-                    </div>
+                  <div className="border border-[#838EF8] text-[#838EF8] text-[9px] font-mono font-bold px-2 py-0.5 rounded-[4px] tracking-wider uppercase shrink-0">
+                    {item.paymentMethod}
                   </div>
-                ))}
-              </div>
-            )
-          ) : null}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* SEE ALL LINK */}
           <div className="flex items-center justify-center pt-2">
             <button
               type="button"
-              onClick={() => setShowAll((v) => !v)}
               style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
               className="text-[11px] font-bold tracking-wider uppercase text-[#838EF8] hover:text-[#1317E4] transition-colors cursor-pointer select-none"
             >
-              SEE {showAll ? "LESS" : "ALL"}
+              SEE ALL
             </button>
           </div>
         </div>

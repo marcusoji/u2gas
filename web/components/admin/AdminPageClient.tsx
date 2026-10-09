@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import AdminTankGauge from "./AdminTankGauge";
 import AdminUpdateModal from "./AdminUpdateModal";
 import AdminMenuModal from "./AdminMenuModal";
-import { api } from "@/lib/api";
-import { useAsync, useMutation } from "@/lib/hooks";
+import type { TankHistoryRecord } from "@/types";
+import { dummyTankHistory } from "@/data";
 import { useAdminTankStore } from "@/stores/adminTankStore";
 import { paths } from "@/utils/paths";
 
@@ -15,55 +15,22 @@ export default function AdminPageClient() {
   const router = useRouter();
   const [updateOpen, setUpdateOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const setTankData = useAdminTankStore((s) => s.setTankData);
-  const tons = useAdminTankStore((s) => s.tons);
+  const { level, setLevel } = useAdminTankStore();
 
-  // The level the server last confirmed. The modal moves the gauge in the store
-  // before it reports back, so the old value cannot be read from the store; the
-  // delta has to be measured against this baseline.
-  const baselineRef = useRef<number | null>(null);
+  const [, setHistoryRecords] =
+    useState<TankHistoryRecord[]>(dummyTankHistory);
 
-  const { data, reload } = useAsync(() => api.admin.stock(), []);
-  const saveEntry = useMutation(
-    (delta_kg: number, move: "addition" | "removal") =>
-      api.admin.addStock({
-        move,
-        amount_kg: Math.abs(delta_kg),
-        note: "Tank level set from the gauge",
-      }),
-  );
-
-  // Push the server's authoritative figures into the shared store the gauge
-  // and its readout both read. The store setter is external to React, so this
-  // is a side effect, not a render-time state update.
-  useEffect(() => {
-    if (!data) return;
-    const s = data.stock;
-    setTankData({
-      level: s.fill_percent,
-      tons: Number((s.available_kg / 1000).toFixed(1)),
-      daysLeft: s.days_remaining ?? undefined,
-    });
-    baselineRef.current = s.fill_percent;
-  }, [data, setTankData]);
-
-  // Persist what the operator set as a stock entry when the sheet closes. The
-  // modal moves the gauge on every tap, so committing per tap would write an
-  // entry for each press; the entry belongs to the adjustment, not the tap.
-  const commitTankChange = async () => {
-    const before = baselineRef.current;
-    const after = useAdminTankStore.getState().level;
-    if (before === null || after === before) return;
-    const capacityKg = data?.stock.total_received_kg || tons * 1000;
-    const delta_kg = ((after - before) / 100) * capacityKg;
-    baselineRef.current = after;
-    await saveEntry.run(delta_kg, delta_kg >= 0 ? "addition" : "removal");
-    reload();
-  };
-
-  const handleUpdateOpenChange = (isOpen: boolean) => {
-    setUpdateOpen(isOpen);
-    if (!isOpen) void commitTankChange();
+  const handleLevelUpdate = (newLevel: number) => {
+    setLevel(newLevel);
+    const newRecord: TankHistoryRecord = {
+      id: `REC-${Math.floor(9000 + Math.random() * 900)}`,
+      timestamp: "JUST NOW",
+      level: newLevel,
+      type: "MANUAL_UPDATE",
+      volumeLiters: Math.round((newLevel / 100) * 5000),
+      operator: "Admin",
+    };
+    setHistoryRecords((prev) => [newRecord, ...prev]);
   };
 
   return (
@@ -87,7 +54,8 @@ export default function AdminPageClient() {
 
           <AdminUpdateModal
             open={updateOpen}
-            onOpenChange={handleUpdateOpenChange}
+            onOpenChange={setUpdateOpen}
+            onLevelUpdate={handleLevelUpdate}
           />
         </div>
 

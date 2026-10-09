@@ -4,25 +4,23 @@ import { useMemo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Product } from "@/types";
+import { products } from "@/data";
 
 export type ShopProductDetailProps = {
   selectedProduct: Product;
-  /** The full catalogue, for the variant carousel and the other-items strip. */
-  catalogue: Product[];
   onSelectProduct: (product: Product) => void;
   onAddToCart: () => void;
 };
 
 export function ShopProductDetail({
   selectedProduct,
-  catalogue,
   onSelectProduct,
   onAddToCart,
 }: ShopProductDetailProps) {
   // Size variants for the currently selected product family (matched by name or image)
   const variants = useMemo(() => {
     if (!selectedProduct) return [];
-    const matched = catalogue.filter(
+    const matched = products.filter(
       (p) =>
         (selectedProduct.name &&
           p.name?.toLowerCase().trim() ===
@@ -30,7 +28,7 @@ export function ShopProductDetail({
         p.image === selectedProduct.image,
     );
     return matched.length > 0 ? matched : [selectedProduct];
-  }, [catalogue, selectedProduct]);
+  }, [selectedProduct?.name, selectedProduct?.image]);
 
   const activeIndex = useMemo(() => {
     if (!selectedProduct) return 0;
@@ -38,7 +36,7 @@ export function ShopProductDetail({
       (v) => v.product_id === selectedProduct.product_id,
     );
     return idx >= 0 ? idx : 0;
-  }, [variants, selectedProduct]);
+  }, [variants, selectedProduct?.product_id]);
 
   const prevVariant =
     variants.length > 1
@@ -64,14 +62,14 @@ export function ShopProductDetail({
       seenImages.add(selectedProduct.image);
     }
     const result: Product[] = [];
-    for (const p of catalogue) {
+    for (const p of products) {
       if (!seenImages.has(p.image)) {
         seenImages.add(p.image);
         result.push(p);
       }
     }
     return result.slice(0, 4);
-  }, [catalogue, selectedProduct]);
+  }, [selectedProduct?.image]);
 
   return (
     <motion.div

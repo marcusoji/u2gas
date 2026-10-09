@@ -1,4 +1,5 @@
 export type AppRole = "customer" | "staff" | "driver" | "admin";
+export type OrderChannel = "online" | "walk_in";
 export type OrderType = "gas" | "accessory" | "mixed";
 export type FulfillmentType = "pickup" | "delivery";
 
@@ -24,6 +25,14 @@ export type PaymentMethod =
   | "bank_transfer"
   | "opay";
 
+export type ReservationStatus =
+  | "reserved"
+  | "fulfilled"
+  | "released"
+  | "expired";
+
+export type QrStatus = "unscanned" | "scanned" | "expired" | "void";
+
 export type DeliveryStatus =
   | "assigned"
   | "en_route"
@@ -35,6 +44,9 @@ export type DeliveryStatus =
 export type DriverStatus = "available" | "busy" | "offline";
 export type StaffStatus = "active" | "suspended" | "removed";
 export type StockMove = "addition" | "removal" | "correction";
+export type ReservationKind = "gas" | "product";
+export type ImageOwner = "product" | "profile" | "bundle" | "stock_entry";
+export type CompatMatch = "equal" | "in_set" | "numeric_range";
 
 export type RefundStatus =
   | "pending"
@@ -77,6 +89,19 @@ export interface StaffMember {
   account_number: string | null;
   hired_at?: string;
   profile: Profile | null;
+}
+
+export interface AdminStaffProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  email: string;
+  bankName: string;
+  accountNumber: string;
+  avatarUrl: string;
+  isBlackPlaceholder?: boolean;
+  isOnline?: boolean;
 }
 
 export interface DriverProfile {
@@ -167,9 +192,6 @@ export interface CartItem {
   priceNaira: number;
   quantity: number;
   unavailable?: boolean;
-  /** Product or bundle. A bundle's id is sent as `bundle_id`, not
-   *  `product_id`, when the basket is checked out. */
-  kind?: "product" | "bundle";
 }
 
 export interface ReceiptItem {
@@ -435,19 +457,14 @@ export interface GasOrderDraft {
   display_value: string;
 }
 
+export type GasOrder = GasOrderDraft;
+
 export interface GasTerminalProps {
   initialValue?: string;
   ratePerKg?: number;
   stock?: GasStock;
   notifications?: Notification[];
   notificationCount?: number;
-  /**
-   * The depot's remaining gas, in kg. When the typed amount exceeds it the
-   * terminal shows the INSUFFICIENT board and PAY goes inert, rather than
-   * letting the customer reach the payment sheet for an order the Worker is
-   * going to refuse.
-   */
-  availableKg?: number;
   onNotificationClick?: () => void;
   onProfileClick?: () => void;
   onPay?: (orderDraft: GasOrderDraft) => void | Promise<void>;
@@ -456,6 +473,48 @@ export interface GasTerminalProps {
   status?: "idle" | "processing" | "success" | "failed";
   onDismissStatus?: () => void;
   children?: React.ReactNode;
+}
+
+export interface TerminalKeyProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+export interface TerminalKeyboardProps {
+  onKeyPress: (key: string) => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+export interface TankHistoryRecord {
+  id: string;
+  timestamp: string;
+  level: number;
+  type: "REFILL" | "DISPENSE" | "AUDIT" | "MANUAL_UPDATE";
+  volumeLiters: number;
+  operator: string;
+}
+
+export interface SalesHistoryItem {
+  id: string;
+  type: "LPG" | "PMS" | "AGO";
+  method: "POS" | "CASH" | "TRANSFER";
+  amount?: number;
+  liters?: number;
+  timestamp?: string;
+}
+
+export interface GasHistoryRecord {
+  id: string;
+  dayLabel: string;
+  amountTons: number;
+  actionType: "ADDITION" | "REMOVAL";
+  operatorName: string;
+  month: string;
+  qrCode?: string;
+  dateStr?: string;
 }
 
 export type TimeFilter = "TODAY" | "THIS MONTH" | "MAY" | "JUNE";

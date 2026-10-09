@@ -4,12 +4,8 @@ import React, { useState } from "react";
 import Image from "next/image";
 import TerminalScreenBox from "@/components/terminal-screen-box";
 import { TerminalKeyboard } from "@/app/(public)/terminal-keyboard";
-import WalkInPaymentDrawer, {
-  WalkInOrderData,
-  WALKIN_METHOD_TO_API,
-} from "./WalkInPaymentDrawer";
+import WalkInPaymentDrawer, { WalkInOrderData } from "./WalkInPaymentDrawer";
 import { deleteKeypadDigit, appendKeypadDigit } from "@/helpers/functions";
-import { api, ApiError, newIdempotencyKey } from "@/lib/api";
 
 interface CashierTerminalProps {
   initialValue?: string;
@@ -31,69 +27,9 @@ export default function CashierTerminal({
   const [displayValue, setDisplayValue] = useState<string>(initialValue);
   const [hasStartedTyping, setHasStartedTyping] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [guestName, setGuestName] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   // Parse current numerical KG value
   const parsedKg = parseInt(displayValue.replace(/[^0-9]/g, ""), 10) || 1;
-
-  /**
-   * Create the walk-in order and take payment in it.
-   *
-   * The order is created first so the gas is reserved before money changes
-   * hands; the payment is then recorded against it. If the second call fails
-   * the order is still real and unpaid, which is a state the cashier can see in
-   * the UNPAID queue and finish — the reverse order would take cash for gas
-   * that is no longer there.
-   */
-  const handleConfirmWalkIn = async (
-    method: keyof typeof WALKIN_METHOD_TO_API,
-  ): Promise<WalkInOrderData | null> => {
-    setError(null);
-    const name = guestName.trim();
-    const phone = guestPhone.trim();
-    if (!name || !phone) {
-      setError("ENTER THE CUSTOMER'S NAME AND PHONE");
-      return null;
-    }
-
-    try {
-      const created = await api.staff.walkIn(
-        {
-          kg: parsedKg,
-          lines: [],
-          guest_name: name,
-          guest_phone: phone,
-          fulfillment: "pickup",
-        },
-        newIdempotencyKey(),
-      );
-
-      const paid = await api.staff.recordPayment(
-        {
-          order_id: created.order.order_id,
-          method: WALKIN_METHOD_TO_API[method],
-        },
-        newIdempotencyKey(),
-      );
-
-      return {
-        kg: parsedKg,
-        totalNaira: Math.round(created.order.total_kobo / 100),
-        method,
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        orderId: created.order.order_id,
-        orderNumber: paid.order_number ?? created.order.order_number,
-      };
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : "COULDN'T COMPLETE THE SALE");
-      return null;
-    }
-  };
 
   const handleKeyPress = (key: string) => {
     if (key === "PAY") {
@@ -154,12 +90,6 @@ export default function CashierTerminal({
           onOpenChange={setDrawerOpen}
           kg={parsedKg}
           ratePerKg={ratePerKg}
-          guestName={guestName}
-          guestPhone={guestPhone}
-          setGuestName={setGuestName}
-          setGuestPhone={setGuestPhone}
-          error={error}
-          onConfirm={handleConfirmWalkIn}
           onSuccess={handleOrderSuccess}
         />
       </div>

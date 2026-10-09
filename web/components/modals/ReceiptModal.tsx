@@ -4,10 +4,10 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ReceiptItem, ReceiptModalProps, HistoryReceipt } from "@/types";
+import { dummyReceiptItems } from "@/data";
 import { ReceiptCard } from "@/components/receipt/ReceiptCard";
 
 import { paths } from "@/utils/paths";
-import { useAuthStore } from "@/stores/authStore";
 
 export type { ReceiptItem, ReceiptModalProps };
 
@@ -28,18 +28,13 @@ export function ReceiptModal({
       .toLocaleDateString("en-US", { day: "2-digit", month: "short" })
       .toUpperCase();
 
-  // Never a sample receipt: an empty order shows nothing rather than another
-  // customer's items.
-  const displayItems: ReceiptItem[] = items ?? [];
-
-  const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
+  const displayItems: ReceiptItem[] =
+    items && items.length > 0 ? items : dummyReceiptItems;
 
   const handleKeep = () => {
     onKeep?.();
     onOpenChange(false);
-    // A guest is invited to sign in to keep the receipt; a signed-in customer
-    // already has it in HISTORY, so the button just closes.
-    if (!isLoggedIn) router.push(paths.login);
+    router.push(paths.login);
   };
 
   const handleScreenshot = () => {
@@ -130,7 +125,7 @@ export function ReceiptModal({
 
             {/* OR Subtext */}
             <span className="text-[10px] text-white/60 uppercase my-1.5">
-              0R
+              OR
             </span>
 
             {/* KEEP Button */}

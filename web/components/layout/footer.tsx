@@ -6,7 +6,7 @@ export function Footer() {
         <span className="text-[#28292a] font-bold">2</span>
       </div>
       <p className="text-[14px] text-[#838EF8] uppercase tracking-widest text-center select-none">
-        C0PYRIGHT 2026 U2 OIL AND GAS LTD.
+        COPYRIGHT 2026 U2 OIL AND GAS LTD.
       </p>
     </footer>
   );

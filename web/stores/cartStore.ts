@@ -42,9 +42,6 @@ export const useCartStore = create<CartState>()(
             priceNaira: product.priceNaira || 8500,
             quantity: 1,
             unavailable: product.unavailable || false,
-            // The drawn basket keeps a bundle's kind so checkout can send its
-            // id as `bundle_id`; a plain product has none and defaults.
-            kind: (product as { kind?: "product" | "bundle" }).kind ?? "product",
           };
           set({ items: [...get().items, newItem] });
         }

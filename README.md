@@ -4,7 +4,7 @@ Gas and accessories depot platform for U2 Oil and Gas. Four apps on one
 deployment: customer, cashier, driver, admin.
 
 ```
-web/                 Next.js 16 app (static export → Cloudflare Pages)
+web/                 Next.js 16 app (carbon copy of the uploaded frontend)
 worker/              Cloudflare Workers API (Hono)
 supabase/
   migrations/        Schema, functions, RLS, seed
@@ -92,28 +92,21 @@ cd web && npm install && npm run dev
 
 Full setup is in `docs/DEPLOYMENT.md`. Keys are in `docs/ENVIRONMENT.md`.
 
-## Seeing the UI without an API
+## Seeing the UI
 
-Every screen fetches from the Worker or Supabase, so there is no in-browser
-fixture build: the Vite-era mock layer went with the old frontend. A screen
-with no reachable API renders its own empty/offline state (the terminal ticker
-goes dark, lists read `NO … FOUND`) rather than invented data. To see real
-screens, run the Worker and point the app at it:
+The frontend under `web/` is a carbon copy of the uploaded
+`U2gas_frontend-main.zip` and is a self-contained UI demo: it renders the
+`data.ts` fixtures and reads no API, so every screen is reachable with no Worker
+and no sign-in.
 
 ```
-cd worker && npm install && npm run dev
-cd web && npm install
-# web/.env.local: NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787/api
-npm run dev
+cd web && npm install && npm run dev
 ```
 
-The build is a static export (`output: "export"`), so the emitted `out/`
-directory is plain files Cloudflare Pages serves directly. Point a build at a
-real API with `NEXT_PUBLIC_API_BASE`, `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `NEXT_PUBLIC_EMBEDDED_API=true` is a
-preview-only build that contacts no API: it skips Supabase sign-in and drops the
-API origin from the CSP, so every API-backed screen shows its no-data state.
-There is no fixture layer behind it.
+`worker/` (the Cloudflare Workers API) and `supabase/` (schema, functions, RLS)
+remain in the repo as the backend. Nothing in the copied frontend calls them
+yet — wiring the UI to the backend is a deliberate, separate step, not part of
+keeping the carbon copy.
 
 ## Testing
 
@@ -128,32 +121,30 @@ never contends with itself. Run it before every release.
 
 ## Before the first deploy
 
-The build is a static export. `cd web && npm run build` writes `web/out/`, which
-is what Cloudflare Pages serves. The design's typefaces and halftone imagery are
-self-hosted under `web/public/fonts/` and `web/public/`; export any missing face
-from the Figma file into those directories so nothing falls back. See
-`docs/DEPLOYMENT.md` §5.
+`cd web && npm run build` compiles the app. The typefaces are self-hosted under
+`web/public/fonts/`; the uploaded frontend ships jgs7, and Barlow Semi Condensed
+comes from Google Fonts at build time. See `docs/DEPLOYMENT.md` §5.
 
-## Design source
+## UI source
 
-The **live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design
-source.** There is no committed HTML snapshot of the screens and no generator;
-matching the design means reading the live file (page `MAIN SCREENS`,
-`256:14758`) through the Figma MCP and changing the app to match. Change the
-file first, then bring the change into the app.
+The **uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
+`u2gass.vercel.app`) is the only UI source.** There is no committed HTML
+snapshot of the screens and no generator, and Figma is no longer a source:
+`web/` is kept a carbon copy of the uploaded app. When it changes, mirror the
+change into `web/` verbatim.
 
 ## Documentation
 
 | File | What it is |
 |---|---|
 | `docs/ARCHITECTURE.md` | How the pieces fit, and where each rule is enforced |
-| `docs/HANDOVER.md` | Getting the dev server running with no API, adding a page, the asset workflow, and what is left to match Figma |
+| `docs/HANDOVER.md` | Getting the dev server running, adding a page, the asset workflow |
 | `docs/SETUP-CHECKLIST.md` | Accounts, credentials and details needed to set the system up, in order |
-| `docs/FRONTEND-API-CONTRACT.md` | Every backend model, endpoint, enum and error code the frontend binds to |
+| `docs/FRONTEND-API-CONTRACT.md` | Every backend model, endpoint, enum and error code the backend exposes |
 | `docs/DEPLOY-NO-CLI.md` | Step-by-step deployment using only web dashboards |
 | `docs/PRODUCTION-READINESS.md` | What was fixed, what remains, the verdict |
 | `docs/ENVIRONMENT.md` | Every variable, where it comes from, what rotating costs |
-| `docs/DESIGN-SYSTEM.md` | Tokens and components taken from the Figma frames |
+| `docs/DESIGN-SYSTEM.md` | Tokens and components taken from the uploaded frontend |
 | `docs/SCREEN-GAP-ANALYSIS.md` | Which screens existed, which were missing |
 
 ## Status

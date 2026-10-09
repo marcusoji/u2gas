@@ -1,7 +1,7 @@
 # U2GAS — Screen gap analysis
 
-The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source.
-Below is what exists, what's missing against the functional spec, and how each
+The uploaded frontend (`U2gas_frontend-main.zip`) is the UI source of record for
+what exists; Figma is no longer a source. Below is what the reference renders, what's missing against the functional spec, and how each
 missing screen should be built from the existing language.
 
 Legend: ✅ designed · ⚠️ designed but incomplete · ❌ missing

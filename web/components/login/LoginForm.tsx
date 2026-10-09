@@ -2,75 +2,48 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuthStore } from "@/stores/authStore";
 import { ArrowLeft } from "lucide-react";
 import { LoginKeypad } from "./LoginKeypad";
 import { SocialAuth } from "./SocialAuth";
 import EmailLoginForm from "./EmailLoginForm";
 import { paths } from "@/utils/paths";
-import { signInWithEmail, signInWithProvider, safeNext } from "@/lib/supabase";
-import { EMBEDDED_API } from "@/lib/env";
 
 export default function LoginForm() {
   const router = useRouter();
-  const params = useSearchParams();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Only an internal path survives, so login cannot be turned into an open
-  // redirect by a crafted `?next=`.
-  const next = safeNext(params.get("next"));
+  const login = useAuthStore((state) => state.login);
 
   const handleTerminalKeyPress = (key: string) => {
-    if (!showEmailLogin) return;
-    if (key === "x" || key === "X") {
-      setEmail((prev) => prev.slice(0, -1));
-    } else if (key === "PAY") {
-      void handleEmailSubmit();
-    } else if (/^[0-9]$/.test(key)) {
-      setEmail((prev) => prev + key);
+    if (showEmailLogin) {
+      if (key === "x" || key === "X") {
+        setEmail((prev) => prev.slice(0, -1));
+      } else if (key === "PAY") {
+        handleEmailSubmit();
+      } else if (/^[0-9]$/.test(key)) {
+        setEmail((prev) => prev + key);
+      }
     }
   };
 
-  const handleEmailSubmit = async (e?: React.FormEvent) => {
+  const handleEmailSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const finalEmail = email.trim();
-    if (!finalEmail || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(finalEmail)) {
-      setError("ENTER A VALID EMAIL");
-      return;
-    }
-    setError(null);
+    const finalEmail = email.trim() || "example@gmail.com";
     setIsSubmitting(true);
-
-    if (EMBEDDED_API) {
-      router.push(paths.home);
-      return;
-    }
-
-    const { error: err } = await signInWithEmail(finalEmail, next ?? undefined);
-    setIsSubmitting(false);
-    if (err) {
-      setError(err.message.toUpperCase());
-      return;
-    }
-    setSent(true);
+    login({ email: finalEmail });
+    setTimeout(() => {
+      setIsSubmitting(false);
+      router.push(`${paths.home}?logged_in=true`);
+    }, 300);
   };
 
-  const handleQuickAuth = async (provider: "google" | "apple") => {
-    setError(null);
-    setIsSubmitting(true);
-    if (EMBEDDED_API) {
-      router.push(paths.home);
-      return;
-    }
-    const { error: err } = await signInWithProvider(provider, next ?? undefined);
-    setIsSubmitting(false);
-    if (err) setError(err.message.toUpperCase());
-    // On success the browser is already navigating to the provider.
+  const handleQuickAuth = () => {
+    login({ email: "user@u2gas.com" });
+    router.push(`${paths.home}?logged_in=true`);
   };
 
   return (
@@ -89,36 +62,11 @@ export default function LoginForm() {
           CONVINIENT
         </motion.h1>
 
-        {error && (
-          <p
-            role="alert"
-            className="mt-4 text-[11px] font-mono tracking-wider text-red-500 uppercase text-center"
-          >
-            {error}
-          </p>
-        )}
-
         <AnimatePresence mode="wait">
-          {sent ? (
-            <motion.div
-              key="sent"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mt-8 text-center flex flex-col items-center gap-2"
-            >
-              <p className="text-[13px] font-mono tracking-wider text-[#1317E4] uppercase">
-                CHECK YOUR MAIL
-              </p>
-              <p className="text-[11px] font-mono text-[#838EF8] uppercase tracking-wide">
-                We sent a sign-in link to {email}
-              </p>
-            </motion.div>
-          ) : !showEmailLogin ? (
+          {!showEmailLogin ? (
             <SocialAuth
               onOpenEmailLogin={() => setShowEmailLogin(true)}
               onQuickAuth={handleQuickAuth}
-              disabled={isSubmitting}
             />
           ) : (
             <EmailLoginForm
@@ -131,7 +79,7 @@ export default function LoginForm() {
           )}
         </AnimatePresence>
 
-        {!showEmailLogin && !sent && (
+        {!showEmailLogin && (
           <div className="mt-8 text-center">
             <Link
               href={paths.home}

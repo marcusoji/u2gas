@@ -2,13 +2,14 @@
 # Fetch the self-hosted face the app uses. Run from the repo root:
 #   bash scripts/fetch-fonts.sh
 #
-# jgs7 and jgs5 are self-hosted: app/layout.tsx wires both through
-# `next/font/local` from web/public/fonts/. jgs7 is the pixel face; jgs5 is the
-# LED face the readouts and tickers use. Barlow Semi Condensed is loaded from
-# Google Fonts at build time by `next/font/google`, so it needs no file here.
+# jgs7 is self-hosted: app/layout.tsx wires it through `next/font/local` from
+# web/public/fonts/, and app/globals.css also declares it as a @font-face. It is
+# the only face the uploaded frontend ships. Barlow Semi Condensed is loaded
+# from Google Fonts at build time by `next/font/google`, so it needs no file
+# here.
 #
-# Both are Adél Faure's Jgs (Velvetyne, SIL OFL 1.1). Set JGS_SRC=/path/to/jgs.ttf
-# to subset a local master; otherwise it pulls the upstream webfonts.
+# jgs7 is Adél Faure's Jgs (Velvetyne, SIL OFL 1.1). Set JGS_SRC=/path/to/jgs7.ttf
+# to subset a local master; otherwise it pulls the upstream webfont.
 set -euo pipefail
 DEST="$(cd "$(dirname "$0")/.." && pwd)/web/public/fonts"
 mkdir -p "$DEST"
@@ -27,22 +28,15 @@ subset() {
     "$(stat -c%s "$DEST/$face.woff2")" "$(stat -c%s "$DEST/$face.woff")"
 }
 
-echo "jgs7 + jgs5 (Adél Faure / Velvetyne, SIL OFL 1.1)"
+echo "jgs7 (Adél Faure / Velvetyne, SIL OFL 1.1)"
 if [ -n "${JGS_SRC:-}" ]; then
   subset jgs7 "$JGS_SRC"
-  if [ -n "${JGS5_SRC:-}" ]; then
-    subset jgs5 "$JGS5_SRC"
-  else
-    echo "  jgs5: set JGS5_SRC=/path/to/jgs5.ttf to subset it too"
-  fi
 else
   TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
-  for face in jgs7 jgs5; do
-    curl -fsSL -o "$TMP/$face.woff2" \
-      "https://gitlab.com/velvetyne/jgs/-/raw/main/web-specimen/webfonts/$face.woff2" \
-      || { echo "  Download from https://velvetyne.fr/fonts/jgs-font then: JGS_SRC=jgs7.ttf $0"; exit 1; }
-    subset "$face" "$TMP/$face.woff2"
-  done
+  curl -fsSL -o "$TMP/jgs7.woff2" \
+    "https://gitlab.com/velvetyne/jgs/-/raw/main/web-specimen/webfonts/jgs7.woff2" \
+    || { echo "  Download from https://velvetyne.fr/fonts/jgs-font then: JGS_SRC=jgs7.ttf $0"; exit 1; }
+  subset jgs7 "$TMP/jgs7.woff2"
 fi
 curl -fsSL -o "$DEST/OFL.txt" "https://gitlab.com/velvetyne/jgs/-/raw/main/LICENSE" || true
 echo "Done. Commit web/public/fonts/."

@@ -1,17 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import type { Product } from "@/types";
+import { products } from "@/data";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
 import FullScreenView from "@/components/ui/FullScreenView";
-import { Loading, ScreenNotice } from "@/components/screen-notice";
-import { api, ApiError, newIdempotencyKey } from "@/lib/api";
-import { saveGuestToken, savePendingReference } from "@/lib/payment-return";
-import { useAsync } from "@/lib/hooks";
-import { toViewProduct } from "@/lib/adapters";
-import type { DeliveryDetails } from "@/components/checkout/DeliveryDetailsForm";
 import { paths } from "@/utils/paths";
 import {
   ShopBasketView,
@@ -30,15 +25,6 @@ export type ShopModalProps = {
 };
 
 export type ViewMode = "grid" | "detail" | "basket";
-
-/** The basket's payment words mapped to the Worker's methods. */
-const METHOD_TO_API: Record<string, "monnify" | "cash" | "bank_transfer"> = {
-  "BANK\nTRANS": "bank_transfer",
-  BANK: "bank_transfer",
-  CARD: "monnify",
-  OPAY: "monnify",
-  CASH: "cash",
-};
 
 export function ShopModal({
   open,
@@ -63,19 +49,7 @@ export function ShopModal({
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "processing" | "success"
   >("idle");
-  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // The catalogue, live. Only fetched while the sheet is open — a closed sheet
-  // should not spend a request.
-  const shop = useAsync(() => api.shop(), [], { enabled: open });
-  const products: Product[] = useMemo(
-    () =>
-      (shop.data?.items ?? []).map(
-        (i) => toViewProduct(i) as unknown as Product,
-      ),
-    [shop.data],
-  );
 
   // Cart Store
   const cartItems = useCartStore((state) => state.items);
@@ -84,15 +58,8 @@ export function ShopModal({
 
   const activeInitial = initialProduct ?? initialItem;
 
-  // Sync the sheet's view with the initial product, and clear transient state
-  // when it closes. Done during render (guarded) rather than in an effect so
-  // the detail view is correct on the opening commit, with no extra render.
-  const syncKey = `${open}|${
-    activeInitial?.product_id ?? activeInitial?.image ?? ""
-  }|${products.length}`;
-  const [syncedKey, setSyncedKey] = useState(syncKey);
-  if (syncKey !== syncedKey) {
-    setSyncedKey(syncKey);
+  // Sync initial item/product
+  useEffect(() => {
     if (open) {
       if (activeInitial) {
         const found =
@@ -112,9 +79,20 @@ export function ShopModal({
       setShowPayment(false);
       setIsProcessing(false);
       setPaymentStatus("idle");
-      setError(null);
     }
-  }
+  }, [open, activeInitial]);
+
+  // Payment processing timer (2.4s)
+  useEffect(() => {
+    if (isProcessing) {
+      const timer = setTimeout(() => {
+        setIsProcessing(false);
+        setPaymentStatus("success");
+      }, 2400);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isProcessing]);
 
   useEffect(() => {
     if (isSearchOpen && inputRef.current) {
@@ -144,78 +122,10 @@ export function ShopModal({
     setViewMode("basket");
   };
 
-  /**
-   * Place the basket, then hand off to the gateway.
-   *
-   * The order is created server-side, which is where stock is reserved and the
-   * price is recomputed — never from the cart's own numbers, which a client can
-   * edit.
-   */
-  const handleSelectPayment = async (
-    method: string,
-    details?: DeliveryDetails,
-  ) => {
+  const handleSelectPayment = (method: string) => {
     setSelectedPaymentMethod(method);
-    setError(null);
     setIsProcessing(true);
     setPaymentStatus("processing");
-
-    const apiMethod = METHOD_TO_API[method] ?? "monnify";
-    const isDelivery = checkoutMode === "delivery";
-
-    try {
-      // A bundle's id belongs in `bundle_id`; sending it as `product_id` would
-      // fail the product foreign key. The cart keeps the drawn kind so the
-      // right field is chosen here, not guessed from the id's shape.
-      const lines = cartItems.map((item) => ({
-        kind: item.kind ?? "product",
-        ...(item.kind === "bundle"
-          ? { bundle_id: item.id }
-          : { product_id: item.id }),
-        quantity: item.quantity,
-      }));
-
-      const created = await api.createCartOrder(
-        {
-          lines,
-          fulfillment: isDelivery ? "delivery" : "pickup",
-          zone_id: isDelivery ? details?.zone_id : undefined,
-          address: isDelivery ? details?.address : undefined,
-          guest_name: details?.guest_name,
-          guest_phone: details?.guest_phone,
-        },
-        newIdempotencyKey(),
-      );
-
-      if (created.guest_token) {
-        saveGuestToken(created.order.order_id, created.guest_token);
-      }
-
-      // Cash on collection settles at the counter, so there is nothing to
-      // redirect to; the order is placed and the stock reserved.
-      if (apiMethod === "cash") {
-        setPaymentStatus("success");
-        setIsProcessing(false);
-        return;
-      }
-
-      const init = await api.payInit(created.order.order_id);
-      if (init.authorization_url) {
-        // Monnify returns only the order id, so the reference the verify step
-        // needs is remembered here before we leave the page.
-        savePendingReference(created.order.order_id, init.reference);
-        window.location.href = init.authorization_url;
-        return;
-      }
-      setPaymentStatus("success");
-      setIsProcessing(false);
-    } catch (e) {
-      setPaymentStatus("idle");
-      setIsProcessing(false);
-      setError(
-        e instanceof ApiError ? e.message : "WE COULDN'T PLACE THAT ORDER",
-      );
-    }
   };
 
   const handleDismissSuccess = () => {
@@ -257,56 +167,40 @@ export function ShopModal({
       contentClassName="pt-2 pb-12 w-full max-w-105"
     >
       <div className="w-full flex-1 flex flex-col items-center">
-        {error && (
-          <p
-            role="alert"
-            className="w-full text-center text-[11px] font-mono tracking-wider text-red-500 uppercase mb-2"
-          >
-            {error}
-          </p>
-        )}
-
-        {shop.loading && products.length === 0 ? (
-          <Loading label="LOADING ACCESSORIES…" />
-        ) : shop.error ? (
-          <ScreenNotice tone="error">{shop.error.message}</ScreenNotice>
-        ) : (
-          <AnimatePresence mode="wait">
-            {viewMode === "basket" ? (
-              <ShopBasketView
-                onGoShopping={() => setViewMode("grid")}
-                onCheckout={() => {
-                  setShowPayment(true);
-                  onCheckout?.(cartItems);
-                }}
-              />
-            ) : selectedProduct && viewMode === "detail" ? (
-              <ShopProductDetail
-                selectedProduct={selectedProduct}
-                catalogue={products}
-                onSelectProduct={setSelectedProduct}
-                onAddToCart={handleAddToCart}
-              />
-            ) : (
-              <ShopGridView
-                products={products}
-                onSelectProduct={(item) => {
-                  setSelectedProduct(item);
-                  setViewMode("detail");
-                }}
-                isSearchOpen={isSearchOpen}
-                setIsSearchOpen={setIsSearchOpen}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onCloseSearch={handleCloseSearch}
-                inputRef={inputRef}
-              />
-            )}
-          </AnimatePresence>
-        )}
+        <AnimatePresence mode="wait">
+          {viewMode === "basket" ? (
+            <ShopBasketView
+              onGoShopping={() => setViewMode("grid")}
+              onCheckout={() => {
+                setShowPayment(true);
+                onCheckout?.(cartItems);
+              }}
+            />
+          ) : selectedProduct && viewMode === "detail" ? (
+            <ShopProductDetail
+              selectedProduct={selectedProduct}
+              onSelectProduct={setSelectedProduct}
+              onAddToCart={handleAddToCart}
+            />
+          ) : (
+            <ShopGridView
+              products={products}
+              onSelectProduct={(item) => {
+                setSelectedProduct(item);
+                setViewMode("detail");
+              }}
+              isSearchOpen={isSearchOpen}
+              setIsSearchOpen={setIsSearchOpen}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onCloseSearch={handleCloseSearch}
+              inputRef={inputRef}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Floating Checkout & Payment Options Overlay */}
+      {/* Floating Checkout & Payment Options Overlay (Group B: Stays as payment drawer) */}
       <ShopPaymentOverlay
         showPayment={showPayment}
         onClosePayment={() => setShowPayment(false)}

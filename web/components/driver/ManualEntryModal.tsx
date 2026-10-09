@@ -7,15 +7,12 @@ export interface ManualEntryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (orderId: string) => void;
-  /** A refusal from the server for the last code, shown instead of a local one. */
-  serverError?: string | null;
 }
 
 export default function ManualEntryModal({
   open,
   onOpenChange,
   onConfirm,
-  serverError,
 }: ManualEntryModalProps) {
   const [orderCode, setOrderCode] = useState("");
   const [error, setError] = useState("");
@@ -64,9 +61,9 @@ export default function ManualEntryModal({
           />
         </div>
 
-        {(error || serverError) && (
+        {error && (
           <span className="text-[11px] font-mono text-red-500 tracking-wider">
-            {error || serverError}
+            {error}
           </span>
         )}
 

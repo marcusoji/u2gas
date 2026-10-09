@@ -238,48 +238,34 @@ It is what CORS is pinned to.
 
 ## 5. Cloudflare Pages
 
-One command does both halves (API then app), with the preconditions checked
-first:
+`bash scripts/deploy-cloudflare.sh` deploys the API and then builds the
+frontend. It does not deploy the frontend: `web/` is a carbon copy of the
+uploaded `U2gas_frontend-main.zip`, a plain Next.js 16 app with no static
+export, so Pages needs a Next adapter (e.g. `@opennextjs/cloudflare`) that is
+not installed yet. The script stops with that step called out; add the adapter
+and a `wrangler pages deploy <output>` invocation when the UI is wired to the
+Worker.
+
+By hand, the API half is:
 
 ```bash
-bash scripts/deploy-cloudflare.sh        # set PAGES_PROJECT / PAGES_BRANCH to override
-```
-
-By hand, if you prefer:
-
-```bash
-cd web
+cd worker
 npm install
-npm run build
-npx wrangler pages deploy out --project-name u2gas
+npx wrangler deploy --env production
 ```
 
-The app is a Next.js static export (`output: "export"`), so the build writes
-`web/out/`. On Pages: framework preset **Next.js (Static HTML Export)**, root
-directory `web`, build command `npm run build`, output directory `out`.
-
-The build also writes `web/out/_headers` (`web/scripts/build-headers.mjs`): the CSP,
-HSTS, `Referrer-Policy: no-referrer`, Permissions-Policy, immutable caching for
-`/_next/static` and `/fonts`, and `no-store` on `/orders/*`. The CSP names the
-API and Supabase origins from the same `NEXT_PUBLIC_*` values the app was built
-with, so a non-embedded build with no `NEXT_PUBLIC_API_ORIGIN` fails on purpose
-rather than shipping a policy that blocks every call.
-
-Set the `NEXT_PUBLIC_*` variables (see `docs/ENVIRONMENT.md`) — they are public
-by design and compiled into the bundle, so nothing secret may go here.
-
-Because every route is a directory with its own `index.html`
-(`trailingSlash: true`), a refresh on `/admin/products/` resolves without a
-redirect rule. Ids live in query parameters, not paths, so there is no dynamic
-route for the CDN to 404.
+The frontend builds with `npm run build` and runs with `next start` (or any Node
+host). It is a self-contained UI demo — it reads no API — so a deploy does not
+need the `NEXT_PUBLIC_*` variables, a CSP header file or the API origin. When
+the UI is wired to the Worker, that wiring (and its headers) comes back as a
+separate step.
 
 ### Fonts and images
 
 The pixel face (`jgs7`) is self-hosted at `web/public/fonts/jgs7.woff2` and
 `jgs7.woff` and wired through `next/font/local`. Product and state imagery is
-under `web/public/images/` and `web/public/shop/`. Export any face or picture
-the live Figma file uses that is not yet present, so nothing falls back — the
-live file (`v4xgWC0Q0wtSKmAff3EOzU`) is the only design source.
+under `web/public/images/` and `web/public/shop/`, exactly as the uploaded
+frontend ships it.
 
 ---
 
@@ -327,20 +313,21 @@ Work down this list in order. Each step depends on the one above it.
 - [ ] Staff lookup for `a,b)` returns nothing rather than erroring
 - [ ] Submitting the same order twice does not reserve the stock twice
 - [ ] An order paid one second after its hold lapsed is NOT swept
-- [ ] The static export loads from `web/out/` with no console error on all four role apps
+- [ ] The frontend loads with no console error on all four role apps
 
 ---
 
 ## Running locally
 
 ```bash
-# API
+# API (optional — the copied frontend reads no API)
 cd worker && npm install && npm run dev        # 127.0.0.1:8787
 
 # Web
-cd web && cp .env.example .env && npm install && npm run dev   # localhost:3000
+cd web && npm install && npm run dev           # localhost:3000
 ```
 
-Point `.env` at a Supabase project with the migrations applied. There is no
-offline mock — the whole system is transactional logic living in Postgres, and
-stubbing that out would test nothing worth testing.
+The frontend under `web/` is a carbon copy of the uploaded
+`U2gas_frontend-main.zip` and renders the `data.ts` fixtures, so it needs no
+backend to show every screen. Wiring it to the Worker + Supabase is a separate
+step; until then the Worker is only needed if you are working on the API itself.

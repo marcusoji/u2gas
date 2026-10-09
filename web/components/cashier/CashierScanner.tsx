@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import ManualEntryModal from "@/components/driver/ManualEntryModal";
-import { api, ApiError } from "@/lib/api";
 
 export interface CashierScanResultData {
   orderId: string;
@@ -22,93 +21,19 @@ export default function CashierScanner() {
   );
   const [scannedResult, setScannedResult] =
     useState<CashierScanResultData | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
 
-  const stopScanner = useCallback(async () => {
-    if (qrScannerRef.current) {
-      try {
-        if (qrScannerRef.current.isScanning) {
-          await qrScannerRef.current.stop();
-        }
-      } catch {
-        // Safe ignore
-      }
-    }
-  }, []);
-
-  /**
-   * Redeem the scanned token with the server.
-   *
-   * A QR is a claim, not a proof: the client must not decide that a scan was
-   * good. `staff/scan` is the only thing that can mark the order collected, and
-   * it is the server that rejects a token that is wrong, expired or already
-   * redeemed — the same token scanned twice is the double-collection the route
-   * exists to stop.
-   */
-  const handleScanFailure = useCallback(
-    (text?: string) => {
-      void stopScanner();
-      setIsScanning(false);
-      setScanStatus("failed");
-      setScannedResult({
-        orderId: text?.trim() || "ORD-INVALID",
-        customer: "Unrecognized Order",
-        itemTitle: "Verification Failed",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      });
-    },
-    [stopScanner],
-  );
-
-  const verify = useCallback(
-    async (token: string) => {
-      void stopScanner();
-      setIsScanning(false);
-      try {
-        const res = await api.staff.scan(token);
-        setScanStatus("success");
-        setScannedResult({
-          orderId: res.order_number,
-          customer: "Verified",
-          itemTitle: "Order collected",
-          timestamp: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        });
-      } catch (e) {
-        handleScanFailure(token);
-        setScanError(
-          e instanceof ApiError ? e.message : "COULDN'T VERIFY THAT CODE",
-        );
-      }
-    },
-    [stopScanner, handleScanFailure],
-  );
-
-  const handleScanSuccess = useCallback(
-    (text: string) => {
-      void verify(text.trim());
-    },
-    [verify],
-  );
-
-  // Initialize and stop the camera. The mount/unmount path owns the scanner;
-  // `isScanning`/`scannedResult` only decide whether it should be running.
+  // Initialize and stop scanner
   useEffect(() => {
     let isMounted = true;
 
     if (isScanning && !scannedResult) {
+      setCameraError(null);
       const scannerId = "cashier-qr-reader";
 
       // Small delay to ensure DOM element is mounted
       const timer = setTimeout(async () => {
-        setCameraError(null);
         try {
           if (!qrScannerRef.current) {
             qrScannerRef.current = new Html5Qrcode(scannerId, {
@@ -147,26 +72,78 @@ export default function CashierScanner() {
       return () => {
         isMounted = false;
         clearTimeout(timer);
-        void stopScanner();
+        stopScanner();
       };
+    } else {
+      stopScanner();
     }
 
-    void stopScanner();
     return () => {
       isMounted = false;
-      void stopScanner();
+      stopScanner();
     };
-  }, [isScanning, scannedResult, handleScanSuccess, stopScanner]);
+  }, [isScanning, scannedResult]);
+
+  const stopScanner = async () => {
+    if (qrScannerRef.current) {
+      try {
+        if (qrScannerRef.current.isScanning) {
+          await qrScannerRef.current.stop();
+        }
+      } catch {
+        // Safe ignore
+      }
+    }
+  };
+
+  const handleScanSuccess = (text: string) => {
+    stopScanner();
+    setIsScanning(false);
+    setScanStatus("success");
+    setScannedResult({
+      orderId: text.trim() || "ORD-89421",
+      customer: "Verified Customer",
+      itemTitle: "12.5kg Cooking Gas Cylinder",
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  };
+
+  const handleScanFailure = (text?: string) => {
+    stopScanner();
+    setIsScanning(false);
+    setScanStatus("failed");
+    setScannedResult({
+      orderId: text?.trim() || "ORD-INVALID",
+      customer: "Unrecognized Order",
+      itemTitle: "Verification Failed",
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+  };
 
   const handleManualConfirm = (code: string) => {
-    void verify(code.trim().toUpperCase());
+    const clean = code.trim().toUpperCase();
+    if (
+      clean.includes("FAIL") ||
+      clean.includes("ERR") ||
+      clean.includes("INVALID") ||
+      clean === "ORD-00000"
+    ) {
+      handleScanFailure(clean);
+    } else {
+      handleScanSuccess(clean);
+    }
   };
 
   const handleReset = () => {
     setScannedResult(null);
     setScanStatus("idle");
     setCameraError(null);
-    setScanError(null);
     setIsScanning(false);
   };
 
@@ -227,18 +204,22 @@ export default function CashierScanner() {
                       : "CAMERA UNAVAILABLE"}
                   </p>
                   <p className="text-[9px] text-neutral-400 uppercase mb-3">
-                    Use the pen to enter the order number instead
+                    Test verification with simulation modes or manual entry
                   </p>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsManualModalOpen(true);
-                        setIsScanning(false);
-                      }}
+                      onClick={() => handleScanSuccess("ORD-89421")}
                       className="px-3 py-1.5 rounded-full bg-[#1317E4] text-white text-[10px] uppercase tracking-wider cursor-pointer active:scale-95"
                     >
-                      Enter Order Number
+                      Simulate Success
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleScanFailure("ORD-INVALID")}
+                      className="px-3 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] uppercase tracking-wider cursor-pointer active:scale-95"
+                    >
+                      Simulate Fail
                     </button>
                   </div>
                 </div>
@@ -345,12 +326,6 @@ export default function CashierScanner() {
                   className="object-contain drop-shadow-[0_16px_36px_rgba(0,0,0,0.45)] pointer-events-none"
                 />
               </motion.div>
-
-              {scanError && (
-                <p className="relative z-30 mt-4 text-[11px] font-mono tracking-wider text-white uppercase text-center max-w-[280px]">
-                  {scanError}
-                </p>
-              )}
             </div>
           </motion.div>
         )}

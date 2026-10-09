@@ -150,9 +150,11 @@ Replace every placeholder.
 `NEXT_PUBLIC_API_BASE` · `NEXT_PUBLIC_API_ORIGIN` · `NEXT_PUBLIC_SUPABASE_URL` ·
 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` · `NEXT_PUBLIC_MEDIA_BASE`
 
-The Next.js build inlines every `NEXT_PUBLIC_*` value at build time
-(`web/lib/env.ts`). `NEXT_PUBLIC_API_ORIGIN` is used for the security headers
-and media fallbacks; set it so a real deployment pins the API origin.
+The Next.js build inlines every `NEXT_PUBLIC_*` value at build time. The copied
+frontend under `web/` reads none of them yet — it renders `data.ts` fixtures —
+so set these when the UI is wired to the Worker. `NEXT_PUBLIC_API_ORIGIN` is
+used for the security headers and media fallbacks; set it so a real deployment
+pins the API origin.
 
 ### Edge Function secrets
 
@@ -255,11 +257,12 @@ cp worker/.dev.vars.example    worker/.dev.vars   # local `wrangler dev` only
    bash scripts/deploy-cloudflare.sh
    ```
    The script refuses to run while a placeholder remains in
-   `worker/wrangler.toml`, and the app build refuses to write `out/_headers`
-   while `NEXT_PUBLIC_API_ORIGIN`, `NEXT_PUBLIC_SUPABASE_URL` or the publishable
-   key still reads a placeholder. Both guards are intentional: a placeholder
-   origin produces a CSP the browser blocks, which reads as a network fault
-   rather than missing config.
+   `worker/wrangler.toml`. When the UI is wired to the Worker, the app build
+   also refuses to write `out/_headers` while `NEXT_PUBLIC_API_ORIGIN`,
+   `NEXT_PUBLIC_SUPABASE_URL` or the publishable key still reads a placeholder.
+   Both guards are intentional: a placeholder origin produces a CSP the browser
+   blocks, which reads as a network fault rather than missing config. (The
+   copied frontend ships no such build step today; it is a fixture-only demo.)
 
 ### After it is live
 

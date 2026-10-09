@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import type { HistoryModalProps } from "@/types";
+import { dummyHistoryReceipts, HISTORY_MONTHS } from "@/data";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
 import FullScreenView from "@/components/ui/FullScreenView";
@@ -10,34 +11,13 @@ import { ReceiptCard } from "@/components/receipt/ReceiptCard";
 export function HistoryModal({
   open,
   onOpenChange,
-  receipts = [],
+  receipts = dummyHistoryReceipts,
 }: HistoryModalProps) {
-  // The month strip is built from the months the customer actually has, so it
-  // never offers a month that cannot be opened.
-  const months = useMemo(() => {
-    const seen: string[] = [];
-    for (const r of receipts) {
-      const m = r.month.toUpperCase();
-      if (!seen.includes(m)) seen.push(m);
-    }
-    if (seen.length === 0) {
-      const now = new Date().toLocaleDateString("en-US", {
-        month: "long",
-      });
-      seen.push(now.toUpperCase());
-    }
-    return seen;
-  }, [receipts]);
-
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  const activeMonth =
-    selectedMonth && months.includes(selectedMonth)
-      ? selectedMonth
-      : months[0];
+  const [selectedMonth, setSelectedMonth] = useState<string>("MARCH");
 
   // Filter receipts by selected month
   const filteredReceipts = receipts.filter(
-    (r) => r.month.toUpperCase() === activeMonth,
+    (r) => r.month.toUpperCase() === selectedMonth.toUpperCase(),
   );
 
   const logout = useAuthStore((state) => state.logout);
@@ -64,8 +44,8 @@ export function HistoryModal({
     >
       {/* Month Filter Tabs (Flexbox) */}
       <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-2 mb-4 w-full justify-start sm:justify-center touch-pan-x">
-        {months.map((month) => {
-          const isActive = month === activeMonth;
+        {HISTORY_MONTHS.map((month) => {
+          const isActive = month === selectedMonth;
           const hasReceipts = receipts.some(
             (r) => r.month.toUpperCase() === month.toUpperCase(),
           );
@@ -105,7 +85,7 @@ export function HistoryModal({
         ) : (
           <div className="w-full py-20 flex flex-col items-center justify-center text-center">
             <p className="text-[16px] text-[#1317E4] font-mono font-bold tracking-wider uppercase mb-1">
-              NO RECEIPTS IN {activeMonth}
+              NO RECEIPTS IN {selectedMonth}
             </p>
             <span className="text-[12px] text-[#838EF8] font-mono uppercase">
               Refill orders will show here

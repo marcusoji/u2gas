@@ -1,44 +1,36 @@
-# Frontend Figma parity
+# Frontend parity
 
 ## Source of truth
 
-The live U2-GAS Figma file (`v4xgWC0Q0wtSKmAff3EOzU`) is the **only** design
-source. There is no committed HTML snapshot of the screens and no generator. Its
-screens live on the page `MAIN SCREENS` (`256:14758`); the other page,
-`workshop`, is scratch.
+The uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
+`u2gass.vercel.app`) is the **only** UI source. There is no committed HTML
+snapshot of the screens and no generator, and Figma is no longer a source.
 
-To match a screen, read its frame through the Figma MCP and rebuild it in the
-Next.js app (`web/`). Never change a screen without a matching change in the
-file, and never reintroduce a committed HTML snapshot or a markup generator —
-the live file is the only design source.
+`web/` is kept a carbon copy of the uploaded app. To match a screen, diff it
+against the reference and mirror the change into `web/` verbatim — same markup,
+same classes, same copy. Never restyle a screen by eye and never reintroduce a
+committed HTML snapshot or a markup generator.
 
 ## Current implementation rule
 
-- A route is a thin `app/(public)/…/page.tsx` server component over a
-  `"use client"` view component in `web/components/`.
-- Screens are built from Tailwind components using the tokens in
-  `docs/DESIGN-SYSTEM.md`; the design's geometry (440px frames, the pixel face,
-  the terminal chrome) is reproduced, not approximated with a second stylesheet.
-- Live records are rendered with React row templates derived from the drawn
-  measurements. A drawn sample string must never be treated as a variable-length
-  list.
-- Data comes from `lib/api.ts` (Worker) and Supabase through `lib/adapters.ts` /
-  `lib/receipts.ts`. A fixture left on a screen is unfinished wiring.
+- `web/` is the uploaded frontend, copied file for file. Do not add, remove or
+  restructure files to "improve" it.
+- Screens are the reference's own Tailwind components. Keep the tokens in
+  `app/globals.css` and the reference's geometry as they are.
+- The uploaded frontend is a self-contained UI demo: screens read the fixtures
+  in `web/data.ts`, and there is no API, auth or Supabase client in `web/`.
 
 ## Non-negotiable constraints
 
-- Preserve API calls, authentication, authorization, reservation/hold logic,
-  payment verification, QR logic and server-side security.
+- `web/` must stay a carbon copy: `diff -r` against the extracted
+  `U2gas_frontend-main` must be empty.
+- Do not reintroduce a Worker/Supabase client into a screen the reference
+  renders from a fixture. Wiring the UI to the backend is a separate step.
 - Do not replace functional controls with decorative markup.
-- Do not approximate the file's geometry with new CSS when the frame gives an
-  exact measurement.
-- Do not claim parity until the route has rendered the corresponding frame and
-  its dynamic data has been exercised against the API.
 
 ## Verification
 
-There is no automated parity gate. Verify by reading the live frame through the
-Figma MCP and comparing the running app against it: structure, geometry and
-computed tokens (font, colour, weight, tracking, radius, opacity, transform),
-plus each leaf's `visible` flag. Compare element boxes, not full-page
-screenshots. Then `npx tsc --noEmit`, `npm run lint` and `npm run build`.
+There is no automated parity gate. Verify by diffing `web/` against the extracted
+reference zip (file set and bytes), then `npx tsc --noEmit`, `npm run lint` and
+`npm run build`. To check rendering, load the app at 440px and compare it to
+`u2gass.vercel.app`.

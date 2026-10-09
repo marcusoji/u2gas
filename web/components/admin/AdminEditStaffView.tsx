@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, X, Camera } from "lucide-react";
@@ -13,22 +13,6 @@ interface AdminEditStaffViewProps {
   onDone?: () => void;
 }
 
-/** The drawn ROLE labels mapped back to the roles the Worker accepts. */
-const ROLE_VALUE: Record<string, "staff" | "admin" | "driver"> = {
-  CASHIER: "staff",
-  STAFF: "staff",
-  ADMIN: "admin",
-  DRIVER: "driver",
-};
-
-interface Draft {
-  firstName: string;
-  lastName: string;
-  role: string;
-  bankName: string;
-  accountNumber: string;
-}
-
 export default function AdminEditStaffView({
   onBack,
   onDone,
@@ -38,48 +22,16 @@ export default function AdminEditStaffView({
     staffList,
     selectedStaffId,
     setSelectedStaffId,
-    addStaff,
     updateStaff,
     removeStaff,
-    load,
-    loaded,
-    saving,
   } = useAdminStaffStore();
-
-  useEffect(() => {
-    if (!loaded) void load();
-  }, [loaded, load]);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState<string>("");
-  const [notice, setNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const activeStaff =
     staffList.find((s) => s.id === selectedStaffId) || staffList[0];
-
-  // A local draft so typing does not fire a request per keystroke; SAVE commits
-  // it. Re-seeded whenever the selected person (or a reload) changes, using the
-  // render-time reset pattern rather than an effect.
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [seededFor, setSeededFor] = useState<string | null>(null);
-  const seedKey = activeStaff
-    ? `${activeStaff.id}:${activeStaff.firstName}:${activeStaff.lastName}:${activeStaff.bankName}:${activeStaff.accountNumber}`
-    : "";
-  if (seedKey !== seededFor) {
-    setSeededFor(seedKey);
-    setDraft(
-      activeStaff
-        ? {
-            firstName: activeStaff.firstName,
-            lastName: activeStaff.lastName,
-            role: activeStaff.role,
-            bankName: activeStaff.bankName,
-            accountNumber: activeStaff.accountNumber,
-          }
-        : null,
-    );
-  }
 
   const handleBack = () => {
     if (onBack) {
@@ -99,7 +51,6 @@ export default function AdminEditStaffView({
 
   const handleOpenAddModal = () => {
     setNewAvatarUrl("");
-    setNotice(null);
     setIsAddModalOpen(true);
   };
 
@@ -111,49 +62,13 @@ export default function AdminEditStaffView({
     }
   };
 
-  const handleSubmitAddStaff = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitAddStaff = (e: React.FormEvent) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const firstName = String(form.get("firstName") ?? "").trim();
-    const lastName = String(form.get("lastName") ?? "").trim();
-    const email = String(form.get("role") ?? "").trim();
-    const roleRaw = String(form.get("roleSelect") ?? "").trim();
-    const bankName = String(form.get("bankName") ?? "").trim();
-    const accountNumber = String(form.get("accountNumber") ?? "").trim();
-
-    const err = await addStaff({
-      email,
-      display_name: `${firstName} ${lastName}`.trim(),
-      role: ROLE_VALUE[roleRaw] ?? "staff",
-      bank_name: bankName || undefined,
-      account_number: /^[0-9]{10}$/.test(accountNumber)
-        ? accountNumber
-        : undefined,
-    });
-    if (err) {
-      setNotice(err.message);
-      return;
-    }
-    setIsAddModalOpen(false);
   };
 
-  const handleSave = async () => {
-    if (!activeStaff || !draft) return;
-    const err = await updateStaff(activeStaff.id, {
-      display_name: `${draft.firstName} ${draft.lastName}`.trim(),
-      role: ROLE_VALUE[draft.role.toUpperCase()] ?? "staff",
-      bank_name: draft.bankName || null,
-      account_number: /^[0-9]{10}$/.test(draft.accountNumber)
-        ? draft.accountNumber
-        : null,
-    });
-    setNotice(err ? err.message : "SAVED");
-  };
-
-  const handleRemoveStaff = async () => {
+  const handleRemoveStaff = () => {
     if (!activeStaff) return;
-    const err = await removeStaff(activeStaff.id);
-    if (err) setNotice(err.message);
+    removeStaff(activeStaff.id);
   };
 
   return (
@@ -285,27 +200,11 @@ export default function AdminEditStaffView({
                     className="border border-dashed border-[#838EF8] px-3.5 py-0.5 rounded-[8px] inline-flex items-center justify-center max-w-full"
                   >
                     <input
-                      type="email"
+                      type="text"
                       name="role"
-                      required
                       placeholder="EXAMPLE@GMAIL.COM"
                       className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[15px] font-bold tracking-wider uppercase outline-none leading-tight w-[200px]"
                     />
-                  </div>
-                  <div
-                    style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
-                    className="mt-2 border border-dashed border-[#838EF8] px-3 py-0.5 rounded-[8px] inline-flex items-center justify-center"
-                  >
-                    <select
-                      name="roleSelect"
-                      defaultValue="CASHIER"
-                      aria-label="Role"
-                      className="bg-transparent text-center text-[#1317E4] text-[13px] font-bold tracking-wider uppercase outline-none leading-tight cursor-pointer"
-                    >
-                      <option value="CASHIER">CASHIER</option>
-                      <option value="ADMIN">ADMIN</option>
-                      <option value="DRIVER">DRIVER</option>
-                    </select>
                   </div>
                 </div>
 
@@ -458,15 +357,15 @@ export default function AdminEditStaffView({
                 <span className="text-[20px] select-none text-[#1317E4]">[</span>
                 <input
                   type="text"
-                  value={draft?.firstName ?? ""}
+                  value={activeStaff.firstName}
                   onChange={(e) =>
-                    setDraft((d) =>
-                      d ? { ...d, firstName: e.target.value.toUpperCase() } : d,
-                    )
+                    updateStaff(activeStaff.id, {
+                      firstName: e.target.value.toUpperCase(),
+                    })
                   }
                   placeholder="EMPTY"
                   style={{
-                    width: `${Math.max((draft?.firstName || "EMPTY").length, 3) + 1}ch`,
+                    width: `${Math.max((activeStaff.firstName || "EMPTY").length, 3) + 1}ch`,
                   }}
                   className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[20px] font-bold uppercase tracking-widest outline-none px-1"
                 />
@@ -489,15 +388,15 @@ export default function AdminEditStaffView({
                 <span className="text-[20px] select-none text-[#1317E4]">[</span>
                 <input
                   type="text"
-                  value={draft?.lastName ?? ""}
+                  value={activeStaff.lastName}
                   onChange={(e) =>
-                    setDraft((d) =>
-                      d ? { ...d, lastName: e.target.value.toUpperCase() } : d,
-                    )
+                    updateStaff(activeStaff.id, {
+                      lastName: e.target.value,
+                    })
                   }
                   placeholder="EMPTY"
                   style={{
-                    width: `${Math.max((draft?.lastName || "EMPTY").length, 3) + 1}ch`,
+                    width: `${Math.max((activeStaff.lastName || "EMPTY").length, 3) + 1}ch`,
                   }}
                   className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[20px] font-bold tracking-widest outline-none px-1"
                 />
@@ -517,18 +416,22 @@ export default function AdminEditStaffView({
                 style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
                 className="border border-dashed border-[#838EF8] px-4 py-0.5 rounded-[10px] inline-flex items-center justify-center"
               >
-                <select
-                  value={draft?.role ?? "CASHIER"}
+                <input
+                  type="text"
+                  value={activeStaff.role || activeStaff.email || ""}
                   onChange={(e) =>
-                    setDraft((d) => (d ? { ...d, role: e.target.value } : d))
+                    updateStaff(activeStaff.id, {
+                      role: e.target.value.toUpperCase(),
+                      email: e.target.value.toUpperCase(),
+                    })
                   }
-                  aria-label="Role"
-                  className="bg-transparent text-center text-[#1317E4] text-[20px] font-bold tracking-wider uppercase outline-none leading-tight cursor-pointer"
-                >
-                  <option value="CASHIER">CASHIER</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="DRIVER">DRIVER</option>
-                </select>
+                  placeholder="EXAMPLE@GMAIL.COM"
+                  style={{
+                    width: `${Math.max((activeStaff.role || activeStaff.email || "EXAMPLE@GMAIL.COM").length, 8) + 1}ch`,
+                    maxWidth: "280px",
+                  }}
+                  className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[20px] font-bold tracking-wider uppercase outline-none leading-tight"
+                />
               </div>
             </div>
 
@@ -547,15 +450,15 @@ export default function AdminEditStaffView({
                 <div className="border border-dashed border-[#838EF8] px-3.5 py-0.5 rounded-[10px] inline-flex items-center justify-center">
                   <input
                     type="text"
-                    value={draft?.bankName ?? ""}
+                    value={activeStaff.bankName}
                     onChange={(e) =>
-                      setDraft((d) =>
-                        d ? { ...d, bankName: e.target.value.toUpperCase() } : d,
-                      )
+                      updateStaff(activeStaff.id, {
+                        bankName: e.target.value.toUpperCase(),
+                      })
                     }
                     placeholder="OPAY"
                     style={{
-                      width: `${Math.max((draft?.bankName || "OPAY").length, 4) + 1}ch`,
+                      width: `${Math.max((activeStaff.bankName || "OPAY").length, 4) + 1}ch`,
                     }}
                     className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[20px] font-bold tracking-wider uppercase outline-none leading-tight"
                   />
@@ -564,18 +467,15 @@ export default function AdminEditStaffView({
                 <div className="border border-dashed border-[#838EF8] px-3.5 py-0.5 rounded-[10px] inline-flex items-center justify-center">
                   <input
                     type="text"
-                    inputMode="numeric"
-                    value={draft?.accountNumber ?? ""}
+                    value={activeStaff.accountNumber}
                     onChange={(e) =>
-                      setDraft((d) =>
-                        d
-                          ? { ...d, accountNumber: e.target.value.replace(/\D/g, "") }
-                          : d,
-                      )
+                      updateStaff(activeStaff.id, {
+                        accountNumber: e.target.value,
+                      })
                     }
                     placeholder="9137307797"
                     style={{
-                      width: `${Math.max((draft?.accountNumber || "9137307797").length, 10) + 1}ch`,
+                      width: `${Math.max((activeStaff.accountNumber || "9137307797").length, 10) + 1}ch`,
                     }}
                     className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[20px] font-bold tracking-wider outline-none leading-tight"
                   />
@@ -585,26 +485,11 @@ export default function AdminEditStaffView({
           </div>
         )}
 
-        {notice && (
-          <p className="font-mono text-[11px] font-bold tracking-wider uppercase text-center text-[#1317E4] bg-[#ECEEFE] px-4 py-1.5 rounded-full">
-            {notice}
-          </p>
-        )}
-
-        <div className="mt-2 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !activeStaff}
-            className="bg-[#1317E4] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(19,23,228,0.32)] hover:bg-[#0f12c5] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            SAVE
-          </button>
+        <div className="mt-2 flex justify-center">
           <button
             type="button"
             onClick={handleRemoveStaff}
-            disabled={saving || !activeStaff}
-            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer"
           >
             REMOVE STAFF
           </button>

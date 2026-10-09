@@ -1,15 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { ShopModal } from "@/components/modals/ShopModal";
+import { products } from "@/data";
 import type { Product } from "@/types";
-import { api } from "@/lib/api";
-import { useAsync } from "@/lib/hooks";
-import { toViewProduct } from "@/lib/adapters";
 import { paths } from "@/utils/paths";
 
 export default function ShopPage() {
@@ -19,17 +17,6 @@ export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // The catalogue is server-side; search is filtered here so typing stays
-  // instant, and the full list is small enough to hold.
-  const shop = useAsync(() => api.shop(), []);
-  const products: Product[] = useMemo(
-    () =>
-      (shop.data?.items ?? []).map(
-        (i) => toViewProduct(i) as unknown as Product,
-      ),
-    [shop.data],
-  );
 
   const filteredItems = products.filter((item) =>
     (item.name || "").toLowerCase().includes(searchQuery.toLowerCase().trim()),

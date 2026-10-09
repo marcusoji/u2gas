@@ -4,15 +4,10 @@ import { motion } from "framer-motion";
 
 export interface SocialAuthProps {
   onOpenEmailLogin: () => void;
-  onQuickAuth: (provider: "google" | "apple") => void;
-  disabled?: boolean;
+  onQuickAuth: () => void;
 }
 
-export function SocialAuth({
-  onOpenEmailLogin,
-  onQuickAuth,
-  disabled = false,
-}: SocialAuthProps) {
+export function SocialAuth({ onOpenEmailLogin, onQuickAuth }: SocialAuthProps) {
   return (
     <motion.div
       key="initial-view"
@@ -48,10 +43,9 @@ export function SocialAuth({
         {/* Blue Circle Button */}
         <button
           type="button"
-          onClick={() => onQuickAuth("google")}
-          disabled={disabled}
-          aria-label="Sign in with Google"
-          className="size-15 sm:size-16 rounded-full bg-[#1317E4] flex items-center justify-center shadow-[0_6px_20px_rgba(19,23,228,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+          onClick={onQuickAuth}
+          aria-label="Sign up with Account"
+          className="size-15 sm:size-16 rounded-full bg-[#1317E4] flex items-center justify-center shadow-[0_6px_20px_rgba(19,23,228,0.4)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
           <span className="text-[26px] text-white select-none translate-y-[-1px]">
             A
@@ -61,10 +55,9 @@ export function SocialAuth({
         {/* Black Circle Button */}
         <button
           type="button"
-          onClick={() => onQuickAuth("apple")}
-          disabled={disabled}
-          aria-label="Sign in with Apple"
-          className="size-15 sm:size-16 rounded-full bg-black flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+          onClick={onQuickAuth}
+          aria-label="Sign up with Apple or Alternative"
+          className="size-15 sm:size-16 rounded-full bg-black flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer"
         >
           <span className="text-[26px] text-white select-none translate-y-[-1px]">
             A

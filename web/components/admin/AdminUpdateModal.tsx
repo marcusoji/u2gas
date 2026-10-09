@@ -9,12 +9,14 @@ interface AdminUpdateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentLevel?: number;
+  onLevelUpdate?: (newLevel: number) => void;
   totalCapacityTons?: number;
 }
 
 export default function AdminUpdateModal({
   open,
   onOpenChange,
+  onLevelUpdate,
 }: AdminUpdateModalProps) {
   const {
     unit,
@@ -40,6 +42,20 @@ export default function AdminUpdateModal({
       document.documentElement.style.overflow = originalHtmlOverflow;
     };
   }, [open]);
+
+  const handleDecrement = () => {
+    decrement();
+    if (onLevelUpdate) {
+      onLevelUpdate(useAdminTankStore.getState().level);
+    }
+  };
+
+  const handleIncrement = () => {
+    increment();
+    if (onLevelUpdate) {
+      onLevelUpdate(useAdminTankStore.getState().level);
+    }
+  };
 
   // Format digits to two digits: e.g. "00", "01", "06", "40"
   const displayDigits =
@@ -108,7 +124,7 @@ export default function AdminUpdateModal({
               {/* Red Minus Button */}
               <button
                 type="button"
-                onClick={decrement}
+                onClick={handleDecrement}
                 aria-label="Decrease amount"
                 className="w-15 h-15 rounded-full bg-[#E00000] flex items-center justify-center shadow-[0_6px_20px_rgba(224,0,0,0.35)] active:scale-90 hover:bg-[#c80000] transition-all cursor-pointer"
               >
@@ -118,7 +134,7 @@ export default function AdminUpdateModal({
               {/* Blue Plus Button */}
               <button
                 type="button"
-                onClick={increment}
+                onClick={handleIncrement}
                 aria-label="Increase amount"
                 className="w-15 h-15 rounded-full bg-[#1317E4] flex items-center justify-center shadow-[0_6px_20px_rgba(19,23,228,0.4)] active:scale-90 hover:bg-[#0f12c5] transition-all cursor-pointer"
               >

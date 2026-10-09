@@ -1,12 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GasTerminalProps } from "@/types";
-import MarqueeSlider from "@/components/ui/ClientMarquee";
+import MarqueeSlider from "@abundiko/react-marquee";
 import LedSign from "../../components/sign-box";
 import TerminalScreenBox from "@/components/terminal-screen-box";
 import { TerminalKeyboard } from "./terminal-keyboard";
+import { useAuthStore } from "@/stores/authStore";
 import Navbar from "@/components/layout/Navbar";
 import {
   getEffectiveRates,
@@ -20,7 +22,6 @@ export default function GasTerminal({
   initialValue = "1KG",
   ratePerKg = 1400,
   stock,
-  availableKg,
   notifications,
   notificationCount = 3,
   onNotificationClick,
@@ -34,15 +35,13 @@ export default function GasTerminal({
 }: GasTerminalProps) {
   const [displayValue, setDisplayValue] = useState<string>(initialValue);
   const [hasStartedTyping, setHasStartedTyping] = useState<boolean>(false);
-  // Reset the readout when the parent hands down a new value. Adjusting state
-  // during render (guarded) is the React-recommended alternative to an effect
-  // for "derive from a changed prop" — no extra commit, no flash.
-  const [lastInitial, setLastInitial] = useState(initialValue);
-  if (initialValue !== lastInitial) {
-    setLastInitial(initialValue);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
     setDisplayValue(initialValue);
     setHasStartedTyping(false);
-  }
+  }, [initialValue]);
 
   // Close success/failed status on click anywhere outside or on Escape key & lock background scroll
   useEffect(() => {
@@ -94,21 +93,8 @@ export default function GasTerminal({
     onChange?.(nextValue);
   };
 
-  // The typed amount against what the depot actually holds. `undefined` means
-  // the depot figure is not known yet (still loading, or a guest preview), so
-  // no early refusal is shown — the server still enforces it in the
-  // reservation transaction.
-  const typedKg = displayValue.replace(/[^0-9]/g, "");
-  const requestedKg = parseInt(typedKg, 10) || 0;
-  const looksShort =
-    availableKg !== undefined && requestedKg > availableKg;
-
   const handleKeyPress = (key: string) => {
     if (key === "PAY") {
-      // 1:175 is the terminal at input time: the shortfall board replaces HOME
-      // as soon as the amount exceeds the depot, so the same keypad under the
-      // reader's finger corrects it. PAY is inert until the amount comes down.
-      if (looksShort) return;
       onPay?.(
         calculateGasOrder(displayValue, effectiveRateNaira, effectiveRateKobo),
       );
@@ -125,6 +111,8 @@ export default function GasTerminal({
     setHasStartedTyping(true);
     updateDisplay(appendKeypadDigit(displayValue, key, isFirst));
   };
+
+  const rateTickerText = `Today's Rate: 1kg : ₦${effectiveRateNaira.toLocaleString()} • `;
 
   return (
     <div
@@ -150,14 +138,8 @@ export default function GasTerminal({
                   className="h-full flex items-center gap-8"
                   pauseOnHover
                 >
-                  <TickerItem
-                    rate={effectiveRateNaira}
-                    warningKg={looksShort ? availableKg : undefined}
-                  />
-                  <TickerItem
-                    rate={effectiveRateNaira}
-                    warningKg={looksShort ? availableKg : undefined}
-                  />
+                  <TickerItem rate={effectiveRateNaira} />
+                  <TickerItem rate={effectiveRateNaira} />
                 </MarqueeSlider>
               </div>
             </LedSign>
@@ -255,17 +237,10 @@ export default function GasTerminal({
   );
 }
 
-function TickerItem({
-  rate,
-  warningKg,
-}: {
-  rate: number;
-  warningKg?: number;
-}) {
+function TickerItem({ rate }: { rate: number }) {
   return (
-    <span className="inline-flex items-center text-[54px] leading-none font-bold tracking-wider font-led px-4 select-none text-[#FF0303] whitespace-nowrap drop-shadow-[0_0_14px_rgba(255,3,3,0.9)]">
-      {warningKg !== undefined && <span>ONLY {warningKg}KG LEFT &middot; </span>}
-      <span>Today&rsquo;s Rate: 1kg at&nbsp;</span>
+    <span className="inline-flex items-center text-[54px] leading-none font-bold tracking-wider px-4 select-none text-[#FF2222] whitespace-nowrap drop-shadow-[0_0_14px_rgba(255,30,30,0.9)]">
+      <span>Today&apos;s Rate: 1kg :&nbsp;</span>
       <span className="relative inline-flex items-center justify-center mr-0.5">
         <span>N</span>
         {/* <span className="absolute inset-x-0 top-[37%] h-1 bg-[#FF2222] pointer-events-none drop-shadow-[0_0_6px_rgba(255,30,30,0.9)]" />

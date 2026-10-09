@@ -1,8 +1,11 @@
 # U2GAS — Production Readiness Report
 
 Covers the hardening pass across all 56 parts of the brief. The Worker and
-Supabase work in this report carries directly into the current app; where a row
-names a frontend file, it is the file that decision now lives in.
+Supabase work in this report carries directly into the current app. The
+frontend was subsequently replaced wholesale by the uploaded
+`U2gas_frontend-main.zip` (a carbon copy now lives in `web/`), so rows below
+that name a frontend file are **historical** — they record what the earlier
+frontend did, not what ships today.
 
 ---
 
@@ -176,9 +179,10 @@ at all. It does not substitute for running the code.
   for the pixel face. It ships at `web/public/fonts/jgs7.woff2`, wired through
   `next/font/local`; Barlow Semi Condensed is pulled by `next/font/google` at
   build time. `scripts/fetch-fonts.sh` refreshes jgs7 from upstream.
-- ~~Halftone scanner glyphs~~ **Done.** Supplied from Figma and installed. The
-  exports were JPEG, which cannot carry alpha, so the transparency was
-  reconstructed by corner flood-fill before encoding to lossless WebP.
+- ~~Halftone scanner glyphs~~ **Done** in the earlier frontend. Supplied as
+  pictures and installed; the exports were JPEG, which cannot carry alpha, so
+  the transparency was reconstructed by corner flood-fill before encoding to
+  lossless WebP. The uploaded frontend now ships its own `web/public/images/`.
 - **Gateway refunds need activation.** Monnify's Refund service is off by
   default; until `integration-support@monnify.com` enables it, cancelling a
   paid order moves it to

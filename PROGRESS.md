@@ -139,12 +139,12 @@ All four suites pass against a local PostgreSQL 17 (see "Verification status").
       Monnify, Workers, Pages, Hostinger to Cloudflare DNS
 - [x] `docs/ENVIRONMENT.md` — every key, where it comes from, what breaks
       without it, and what rotating it costs
-- [x] `AGENTS.md` — the Next.js architecture and the live-Figma-only design rule
-- [x] `docs/HANDOVER.md` — running with no API, adding a page, the asset
+- [x] `AGENTS.md` — the Next.js architecture and the uploaded-frontend carbon-copy rule
+- [x] `docs/HANDOVER.md` — running the UI demo, adding a page, the asset
       workflow
 
 ### Deployment
-- [ ] Cloudflare Pages (static export) and Workers configuration
+- [ ] Cloudflare Pages and Workers configuration
 - [ ] Supabase project setup, storage buckets and policies
 - [ ] Resend SMTP wiring through Supabase Auth
 - [ ] Hostinger to Cloudflare DNS instructions
@@ -168,13 +168,14 @@ domain that never answers). The ordered steps are in
    If the intent was customers adding three compatible items to the cart in one
    action, the schema still supports it but `publish_bundle` needs replacing
    with a customer-facing suggestion endpoint.
-2. **Frontend framework.** Next.js 16 with a static export, matching the
-   uploaded app and Cloudflare Pages. The design file is the only design source.
+2. **Frontend framework.** Next.js 16, matching the uploaded frontend
+   (`U2gas_frontend-main.zip`) and Cloudflare Pages. `web/` is a carbon copy of
+   that app; it is the only UI source.
 5. **Fonts.** The pixel face is `web/public/fonts/jgs7.woff2` wired through
    `next/font/local`; Barlow Semi Condensed comes from `next/font/google`.
-   Export any further face the Figma file uses from the live file.
+   jgs7 is the only face the uploaded frontend ships.
 6. **Halftone assets.** The scanner success and failure pictures live in
-   `web/public/images/`. Export any the file uses from the live file.
+   `web/public/images/`, as the uploaded frontend ships them.
 3. **Background removal.** The design needs transparent cut-outs. Doing this
    automatically needs a model the Worker cannot run. Assumption for now:
    admins upload pre-cut PNGs, and the pipeline preserves alpha rather than
@@ -500,4 +501,34 @@ Every item was checked at runtime, not read off the diff.
   embedded production build writes `web/out/_headers` with an unchanged CSP
   (`connect-src 'self'`); a non-embedded build still refuses a placeholder
   origin on purpose.
+
+## Phase 26 — Uploaded frontend is the carbon copy; Figma is no longer a source (9 Oct 2026)
+
+The direction changed: the operator uploaded a frontend
+(`U2gas_frontend-main.zip`, deployed at `u2gass.vercel.app`) and asked for
+`web/` to be a carbon copy of it, **ignoring Figma**. The previous pass had made
+the live Figma file the sole design source; this pass reverses that and strips
+the Figma/HTML-snapshot framing from the docs.
+
+- **`web/` is now a byte-for-byte copy of the uploaded frontend.** 142 files
+  copied, 47 old web-only files removed (the extra admin routes such as
+  `admin/audit`, `admin/bundles`, `admin/reports`, `auth/callback`,
+  `orders/verify`, and the `lib/` API layer). `diff -r` against the extracted
+  reference is clean apart from build artifacts and git-ignored `.env*`.
+- **The uploaded frontend is a fixture-only UI demo.** It renders `web/data.ts`
+  and has no `lib/api.ts`, `lib/supabase.ts` or env module. Wiring it to the
+  Worker + Supabase is a deliberate, separate step — not part of the carbon
+  copy.
+- **Docs retargeted.** `AGENTS.md`, `README.md`, `docs/HANDOVER.md`,
+  `docs/DESIGN-SYSTEM.md`, `docs/FRONTEND-API-CONTRACT.md`,
+  `docs/FRONTEND-PARITY-IMPLEMENTATION-PLAN.md`, `docs/SCREEN-GAP-ANALYSIS.md`,
+  `docs/SPEC-ADDENDUM.md` and `docs/DEPLOYMENT.md` now name the uploaded
+  frontend as the UI source of record. The stale `docs/FRONTEND-PARITY-STATUS.md`
+  (which catalogued the replaced app's API wiring) was removed.
+- **No `.html` files remain** anywhere in the tree, and the Figma page/node ids
+  (`256:14758`, `256:*`, `369:*`, `720:*`, `675:*`) are recorded as retired.
+
+The `worker/` and `supabase/` backend is untouched and still the system's
+backend; the frontend simply does not call it yet.
+
 

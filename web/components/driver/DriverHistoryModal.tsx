@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import type { DriverDeliveryOrder, DriverDeliveryStatusTab } from "@/types";
+import { dummyDriverDeliveryOrders } from "@/data";
 
 export interface DriverHistoryModalProps {
   open: boolean;
@@ -17,28 +18,16 @@ export interface DriverHistoryModalProps {
 export default function DriverHistoryModal({
   open,
   onOpenChange,
-  orders = [],
+  orders = dummyDriverDeliveryOrders,
   onScanOrder,
 }: DriverHistoryModalProps) {
   const [activeTab, setActiveTab] =
     useState<DriverDeliveryStatusTab>("COMPLETED");
-  const [showAll, setShowAll] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(
-    orders[0]?.id ?? null,
+    orders[0]?.id || "ddo-1",
   );
 
-  // SEE ALL drops the status tab and lists every delivery the driver has; the
-  // tabbed view is the default. Reset when the sheet closes so it opens on the
-  // drawn tabbed state.
-  const [wasOpen, setWasOpen] = useState(open);
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (!open) setShowAll(false);
-  }
-
-  const filteredOrders = showAll
-    ? orders
-    : orders.filter((order) => order.status === activeTab);
+  const filteredOrders = orders.filter((order) => order.status === activeTab);
 
   const handleToggleExpand = (id: string) => {
     setExpandedOrderId((prev) => (prev === id ? null : id));
@@ -185,7 +174,7 @@ export default function DriverHistoryModal({
 
                 {filteredOrders.length === 0 && (
                   <div className="w-full py-8 text-center text-xs text-[#838EF8] font-bold uppercase tracking-wider">
-                    {showAll ? "NO DELIVERIES FOUND" : `NO ${activeTab} DELIVERIES FOUND`}
+                    NO {activeTab} DELIVERIES FOUND
                   </div>
                 )}
               </div>
@@ -194,10 +183,9 @@ export default function DriverHistoryModal({
               <div className="flex items-center justify-center pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAll((v) => !v)}
                   className="text-[11px] font-bold tracking-wider uppercase text-[#838EF8] hover:text-[#1317E4] transition-colors cursor-pointer select-none"
                 >
-                  SEE {showAll ? "LESS" : "ALL"}
+                  SEE ALL
                 </button>
               </div>
             </div>

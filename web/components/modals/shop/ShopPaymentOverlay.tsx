@@ -1,14 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/stores/cartStore";
 import { cn } from "@/lib/utils";
 import TerminalScreenBox from "@/components/terminal-screen-box";
-import DeliveryDetailsForm, {
-  type DeliveryDetails,
-} from "@/components/checkout/DeliveryDetailsForm";
 
 export type ShopPaymentOverlayProps = {
   showPayment: boolean;
@@ -16,7 +12,7 @@ export type ShopPaymentOverlayProps = {
   checkoutMode: "delivery" | "walk-in";
   setCheckoutMode: (mode: "delivery" | "walk-in") => void;
   selectedPaymentMethod: string | null;
-  onSelectPayment: (method: string, details?: DeliveryDetails) => void;
+  onSelectPayment: (method: string) => void;
   isProcessing: boolean;
   paymentStatus: "idle" | "processing" | "success";
   onDismissSuccess: () => void;
@@ -35,17 +31,6 @@ export function ShopPaymentOverlay({
 }: ShopPaymentOverlayProps) {
   const getTotalItems = useCartStore((state) => state.getTotalItems);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
-  const [delivery, setDelivery] = useState<DeliveryDetails | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const select = (method: string) => {
-    if (checkoutMode === "delivery" && !delivery) {
-      setFormError("CONFIRM YOUR DELIVERY ADDRESS FIRST");
-      return;
-    }
-    setFormError(null);
-    onSelectPayment(method, delivery ?? undefined);
-  };
 
   return (
     <>
@@ -171,31 +156,21 @@ export function ShopPaymentOverlay({
                       </button>
                     </div>
 
-                    {/* Map Preview + delivery address for Delivery Mode */}
+                    {/* Map Preview for Delivery Mode */}
                     {checkoutMode === "delivery" && (
-                      <div className="w-full flex flex-col items-center gap-3">
-                        <div className="w-full h-28 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
-                          <Image
-                            src="/images/map.jpg"
-                            alt="Delivery map"
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        <DeliveryDetailsForm
-                          onConfirmed={(details) => {
-                            setDelivery(details);
-                            setFormError(null);
-                          }}
+                      <div className="w-full h-28 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
+                        <Image
+                          src="/images/map.jpg"
+                          alt="Delivery map"
+                          fill
+                          className="object-cover"
                         />
-                        {formError && (
-                          <p
-                            role="alert"
-                            className="text-[10px] font-mono tracking-wider text-red-500 uppercase text-center"
-                          >
-                            {formError}
-                          </p>
-                        )}
+                        <button
+                          type="button"
+                          className="relative z-10 bg-brand-primary text-white text-[11px] px-5 py-2.5 rounded-[10px] cursor-pointer shadow-md hover:bg-blue-700 transition-colors"
+                        >
+                          CONFIRM DELIVERY ADDRESS
+                        </button>
                       </div>
                     )}
 
@@ -209,21 +184,21 @@ export function ShopPaymentOverlay({
                       <div className="flex justify-center items-start gap-4 w-full pt-2 pb-4">
                         <button
                           type="button"
-                          onClick={() => select("BANK\nTRANS")}
+                          onClick={() => onSelectPayment("BANK\nTRANS")}
                           className="w-18 h-16 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[13px] leading-tight text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:border-brand-primary hover:text-brand-primary transition-all active:scale-95 cursor-pointer -rotate-[13deg]"
                         >
                           {"BANK\nTRANS"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => select("CARD")}
+                          onClick={() => onSelectPayment("CARD")}
                           className="w-18 h-16 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[13px] leading-tight text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:border-brand-primary hover:text-brand-primary transition-all active:scale-95 cursor-pointer rotate-[13deg] translate-y-7"
                         >
                           CARD
                         </button>
                         <button
                           type="button"
-                          onClick={() => select("OPAY")}
+                          onClick={() => onSelectPayment("OPAY")}
                           className="w-18 h-16 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[13px] leading-tight text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:border-brand-primary hover:text-brand-primary transition-all active:scale-95 cursor-pointer rotate-[8deg]"
                         >
                           OPAY
@@ -234,14 +209,14 @@ export function ShopPaymentOverlay({
                         <div className="flex gap-5 justify-center items-center">
                           <button
                             type="button"
-                            onClick={() => select("BANK\nTRANS")}
+                            onClick={() => onSelectPayment("BANK\nTRANS")}
                             className="w-18 h-16 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[13px] leading-tight text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:border-brand-primary hover:text-brand-primary transition-all active:scale-95 cursor-pointer -rotate-6"
                           >
                             {"BANK\nTRANS"}
                           </button>
                           <button
                             type="button"
-                            onClick={() => select("OPAY")}
+                            onClick={() => onSelectPayment("OPAY")}
                             className="w-18 h-16 rounded-[18px] border border-dashed border-[#D1D5DB] bg-white flex items-center justify-center font-medium text-[13px] leading-tight text-black text-center whitespace-pre-line shadow-[0_8px_20px_rgba(0,0,0,0.08)] hover:border-brand-primary hover:text-brand-primary transition-all active:scale-95 cursor-pointer rotate-6"
                           >
                             OPAY
@@ -250,7 +225,7 @@ export function ShopPaymentOverlay({
                         <p className="text-[#B5B5B5] text-xs">OR</p>
                         <button
                           type="button"
-                          onClick={() => select("DEPOT")}
+                          onClick={() => onSelectPayment("DEPOT")}
                           className="border border-dashed border-[#B0B0B0] bg-white rounded-full px-8 py-3 text-xs tracking-wider text-black shadow-[0_4px_14px_rgba(0,0,0,0.04)] hover:bg-neutral-50 active:scale-95 transition-all cursor-pointer"
                         >
                           PAY IN THE DEPOT
@@ -288,11 +263,9 @@ export function ShopPaymentOverlay({
                 }}
                 className="relative w-66.5 h-88.5 max-w-full aspect-266/354 flex items-center justify-center -mb-6"
               >
-                <Image
+                <img
                   src="/images/success.png"
                   alt="Success"
-                  width={266}
-                  height={354}
                   className="object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.45)] pointer-events-none"
                 />
               </motion.div>
