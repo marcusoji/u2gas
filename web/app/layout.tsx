@@ -12,6 +12,15 @@ const jgs7 = localFont({
   display: "swap",
 });
 
+// The LED readouts and tickers are set in jgs5, a companion face to jgs7 —
+// same advances, different glyphs. The live file uses it on every readout, so
+// mapping the LED token to jgs7 rendered the wrong glyphs at the right widths.
+const jgs5 = localFont({
+  src: "../public/fonts/jgs5.woff2",
+  variable: "--font-jgs5",
+  display: "swap",
+});
+
 const barlowSemiCondensed = Barlow_Semi_Condensed({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800", "900"],
@@ -32,7 +41,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full antialiased", jgs7.variable, barlowSemiCondensed.variable)}
+      className={cn("h-full antialiased", jgs7.variable, jgs5.variable, barlowSemiCondensed.variable)}
     >
       <body
         suppressHydrationWarning

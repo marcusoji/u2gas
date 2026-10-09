@@ -12,7 +12,7 @@
 > | `--blue-soft` | `#BFC0F3` | **`#797BF4`** (button border) |
 > | tracking | `+0.04em` | **`-0.04em`** (`-0.08em` on display) |
 > | terminal caption | pixel face | **Barlow Condensed SemiBold 14px** |
-> | LED readouts | jgs7 | **jgs5** — a different font, not yet in the repo |
+> | LED readouts | jgs7 | **jgs5** — shipped in `web/public/fonts` |
 >
 > Frames are **440 wide**, not 340. Buttons are 344x64 with a 64px radius, not
 > pill-shaped. The keypad is 211 wide with a 32px column gap and 10px row gap;
@@ -594,10 +594,9 @@ elements, zero differences.
 **Fonts.** The pages now load Inter and Barlow Condensed / Semi Condensed from
 Google Fonts, which closes those two gaps whenever the viewer is online;
 `scripts/fetch-fonts.sh` vendors them for an offline build. jgs5 (the LED
-face) is declared and used, falling back to jgs7 until `jgs5.woff2` is placed
-in `web/public/fonts` — it is Velvetyne's Jgs family, SIL OFL, the same family
-as the bundled jgs7. It could not be downloaded here (no network on the build
-machine, and no verifiable direct file URL).
+face) is Velvetyne's Jgs family, SIL OFL, the same family as the bundled jgs7;
+`jgs5.woff2` / `jgs5.woff` ship in `web/public/fonts` and `--font-led` names
+the face first, so readouts render jgs5.
 
 **Glass.** Figma's GLASS effect (radius 35, refraction 1, depth 49, light
 -45deg, intensity 0.8, dispersion 0.95) has no browser equivalent: refraction
@@ -609,7 +608,7 @@ for dispersion. Close, not exact.
 
 **Verification.** 979 elements across 63 screens: **931 (95%) within 1px, none
 more than 50px out.** The remaining differences are text boxes whose centre
-matches but whose width differs while jgs5 is missing.
+matches but whose width differs.
 
 ## Artboard order
 

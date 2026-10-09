@@ -30,7 +30,12 @@ export default function AdminMenuModal({
   onUpdateHistoryClick,
 }: AdminMenuModalProps) {
   const router = useRouter();
-  const { staffList } = useAdminStaffStore();
+  const { staffList, load, loaded } = useAdminStaffStore();
+
+  useEffect(() => {
+    if (!loaded) void load();
+  }, [loaded, load]);
+
   const [view, setView] = useState<"menu" | "sales-history">(initialView);
   // Re-seed the view each time the sheet opens. Adjusting state during render is
   // the React-recommended replacement for the old reset effect.

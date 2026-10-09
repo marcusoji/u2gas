@@ -46,7 +46,7 @@ refuses to build if a `sb_secret_` / `service_role` key is configured.
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the `sb_publishable_` key, never the secret key |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | optional. Legacy name for the same public key, accepted as a fallback so an older deployment keeps working. Set the publishable key on anything new. |
 | `NEXT_PUBLIC_MEDIA_BASE` | `https://<ref>.supabase.co/storage/v1/object/public/public-media` |
-| `NEXT_PUBLIC_EMBEDDED_API` | `true` runs the whole UI from in-browser fixtures, contacting no API. Omit for a real deployment. |
+| `NEXT_PUBLIC_EMBEDDED_API` | `true` builds a preview that contacts no API: no Supabase sign-in, and `'self'`-only CSP. There is no fixture layer - API-backed screens show their no-data state. Omit for a real deployment. |
 
 ## Supabase Edge Functions
 

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, X } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { dummyUserProfile } from "@/data";
 
 export interface AddAddressModalProps {
   open: boolean;
@@ -19,9 +18,9 @@ export default function AddAddressModal({
   onAddressSaved,
   initialAddress,
 }: AddAddressModalProps) {
-  const user = useAuthStore((state) => state.user) || dummyUserProfile;
+  const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
-  const seed = initialAddress ?? user.address ?? "";
+  const seed = initialAddress ?? user?.address ?? "";
   const [addressInput, setAddressInput] = useState(seed);
   // Re-seed when the sheet opens or the stored address changes, during render.
   const [seedKey, setSeedKey] = useState(`${open}|${seed}`);

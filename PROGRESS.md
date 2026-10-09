@@ -99,8 +99,9 @@ Updated as each piece lands. Anything not ticked has not been written yet.
 - [x] Cashier — scan, queue, walk-in, collect, lookup, shift
 - [x] Driver — drops, drop, doorstep scan, profile
 - [x] Admin — tank, products, bundles, orders, people, settings, reports
-- [ ] Remove the remaining `data.ts` fixtures (cashier history, admin gas/staff
-      history, admin staff store, add-address) and read the API throughout
+- [x] Removed `web/data.ts`; every screen reads the API (`lib/api.ts` +
+      `useAsync`). The admin staff roster/add/edit/remove, staff history, cashier
+      history and gas history screens are wired to the Worker/Supabase.
 
 ### Docs
 - [x] `README.md` — the one architectural idea and how to run it

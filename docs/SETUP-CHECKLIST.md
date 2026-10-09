@@ -187,16 +187,17 @@ security tests, the twenty payment tests, and finally the switch to live keys.
 
 ## G. The minimum to see it running
 
-No accounts needed. The whole UI runs from in-browser fixtures — no Supabase,
-no Cloudflare, no keys, no sign-in.
+Every screen reads the Worker/Supabase APIs, so there is no fixture-only run.
+Start the Worker and point the web app at it:
 
 ```bash
-cd web
-npm install
-NEXT_PUBLIC_EMBEDDED_API=true npm run dev
+cd worker && npm install && npm run dev      # http://127.0.0.1:8787
+cd ../web && npm install
+echo 'NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787/api' > .env.local
+npm run dev
 ```
 
-The accounts above are only needed for real data.
+The accounts above are what make the data real.
 
 ---
 

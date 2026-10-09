@@ -130,7 +130,7 @@ export function ReceiptModal({
 
             {/* OR Subtext */}
             <span className="text-[10px] text-white/60 uppercase my-1.5">
-              OR
+              0R
             </span>
 
             {/* KEEP Button */}

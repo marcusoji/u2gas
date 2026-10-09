@@ -1,8 +1,10 @@
 # U2 GAS — real sandbox verification
 
 This project is a Next.js 16 frontend (`web/`, static export) over a Cloudflare
-Worker (`worker/`) and Supabase (`supabase/`). Do not replace the build system
-or mock the frontend for this verification beyond the documented embedded mode.
+Worker (`worker/`) and Supabase (`supabase/`). Do not replace the build system,
+and do not introduce a mock or fixture layer for this verification: every screen
+reads the real APIs, so an unreachable backend shows the screen's own empty
+state.
 
 ## Frontend
 
@@ -12,7 +14,7 @@ npm install
 npm run lint
 npx tsc --noEmit
 npm run build          # static export into web/out
-NEXT_PUBLIC_EMBEDDED_API=true npm run dev
+npm run dev            # point .env.local at the Worker for real data
 ```
 
 `next dev` serves the app (port 3000 by default). For the exported files,

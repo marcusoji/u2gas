@@ -40,11 +40,11 @@ export function ShopHeader({ viewMode, onBack }: ShopHeaderProps) {
                 axis="-x"
                 className="h-full flex items-center"
               >
-                <span className="inline-flex items-center text-[10px] leading-none font-bold tracking-wider px-1 select-none text-[#FF2222] whitespace-nowrap drop-shadow-[0_0_4px_rgba(255,30,30,0.9)]">
-                  Today&apos;s Rate: 1kg : ₦1,400 •&nbsp;
+                <span className="inline-flex items-center text-[10px] leading-none font-bold tracking-wider font-led px-1 select-none text-[#FF0303] whitespace-nowrap drop-shadow-[0_0_4px_rgba(255,3,3,0.9)]">
+                  Today&rsquo;s Rate: 1kg at ₦1,400 •&nbsp;
                 </span>
-                <span className="inline-flex items-center text-[10px] leading-none font-bold tracking-wider px-1 select-none text-[#FF2222] whitespace-nowrap drop-shadow-[0_0_4px_rgba(255,30,30,0.9)]">
-                  Today&apos;s Rate: 1kg : ₦1,400 •&nbsp;
+                <span className="inline-flex items-center text-[10px] leading-none font-bold tracking-wider font-led px-1 select-none text-[#FF0303] whitespace-nowrap drop-shadow-[0_0_4px_rgba(255,3,3,0.9)]">
+                  Today&rsquo;s Rate: 1kg at ₦1,400 •&nbsp;
                 </span>
               </MarqueeSlider>
             </div>

@@ -68,7 +68,7 @@ if (!embedded && !apiOrigin) {
     "\n[headers] NEXT_PUBLIC_API_ORIGIN is unset. The CSP names the API origin\n" +
       "explicitly, so a non-embedded build cannot be shipped without it.\n" +
       "Set it in web/.env (see .env.example), or build with\n" +
-      "NEXT_PUBLIC_EMBEDDED_API=true for a fixture-only preview.\n",
+      "NEXT_PUBLIC_EMBEDDED_API=true for an API-free preview.\n",
   );
   process.exit(1);
 }

@@ -16,6 +16,13 @@ import type {
 } from "./types";
 import { mediaUrl, productFallback } from "./media";
 import { koboToNaira } from "@/helpers/functions";
+import type { StaffActivity } from "@/lib/types";
+import type {
+  AdminSalesHistoryItem,
+  TimeFilter,
+  StaffDriverRecord,
+  StaffCashierRecord,
+} from "@/types/types";
 
 /* ---------------------------------------------------------------------------
    Adapters.
@@ -147,6 +154,8 @@ export interface ViewAdminStaff {
   avatarUrl: string;
   status: string;
   live?: boolean;
+  /** A drawn grid slot with no person behind it keeps the file's black plate. */
+  isBlackPlaceholder?: boolean;
 }
 
 /** The database's `staff` role is the design's CASHIER. */
@@ -234,6 +243,8 @@ export interface ViewStockEntry {
   operator: string;
   date: Date;
   month: string;
+  /** The day, ordinal — "23rd". The history card leads with it. */
+  day: string;
 }
 
 const MONTHS = [
@@ -243,6 +254,12 @@ const MONTHS = [
 
 export function monthName(date: Date): string {
   return MONTHS[date.getUTCMonth()] ?? "";
+}
+
+function ordinal(n: number): string {
+  const rem100 = n % 100;
+  if (rem100 >= 11 && rem100 <= 13) return `${n}th`;
+  return `${n}${["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
 }
 
 export function toViewStockEntry(e: StockEntry): ViewStockEntry {
@@ -255,6 +272,7 @@ export function toViewStockEntry(e: StockEntry): ViewStockEntry {
     operator: e.admin?.display_name ?? "—",
     date,
     month: monthName(date),
+    day: ordinal(date.getUTCDate()),
   };
 }
 
@@ -268,6 +286,83 @@ export const PAYMENT_MEDIUM: Record<string, string> = {
   opay: "TRANS",
   monnify: "TRANS",
 };
+
+/**
+ * LPG at ~0.51 kg/L, so a kilogram is ~1.96 litres. The till records kilograms
+ * (the order stores `gas_amount_kg`); the sales drawing is labelled in litres.
+ * This is the one place the two units meet.
+ */
+const LPG_LITERS_PER_KG = 1.96;
+
+function naira(kobo: number): string {
+  return Math.round(kobo / 100).toLocaleString("en-US");
+}
+
+export function toSalesItem(o: AdminOrder): AdminSalesHistoryItem {
+  const kg = Number(o.gas_amount_kg ?? 0);
+  const method = PAYMENT_MEDIUM[o.payment?.[0]?.method ?? ""] ?? "CASH";
+  return {
+    id: o.order_id,
+    title: `₦${naira(o.total_kobo)} ~ ${kg}kg`,
+    date: new Date(o.created_at),
+    paymentMethod: method === "POS" ? "POS" : method === "TRANS" ? "TRANS" : "CASH",
+  };
+}
+
+/** The period buckets the sales-history tabs name, resolved against today. */
+export function salesPeriodOrders(
+  orders: AdminOrder[],
+  period: TimeFilter,
+): AdminOrder[] {
+  const now = new Date();
+  return orders.filter((o) => {
+    const d = new Date(o.created_at);
+    if (period === "TODAY") return d.toDateString() === now.toDateString();
+    if (period === "THIS MONTH")
+      return (
+        d.getUTCFullYear() === now.getUTCFullYear() &&
+        d.getUTCMonth() === now.getUTCMonth()
+      );
+    // MAY / JUNE name a month in the current year.
+    return d.getUTCFullYear() === now.getUTCFullYear() && monthName(d) === period;
+  });
+}
+
+export function salesHistoryFor(orders: AdminOrder[], period: TimeFilter) {
+  const inPeriod = salesPeriodOrders(orders, period);
+  const liters = inPeriod.reduce(
+    (sum, o) => sum + Number(o.gas_amount_kg ?? 0) * LPG_LITERS_PER_KG,
+    0,
+  );
+  return {
+    // The drawing separates thousands with a dot: 10.345 L.
+    totalLiters: Math.round(liters).toLocaleString("de-DE"),
+    items: inPeriod.map(toSalesItem),
+  };
+}
+
+/** A driver's STAFF HISTORY rows — one per drop, with the order as the title. */
+export function toStaffDriverRecords(a: StaffActivity): StaffDriverRecord[] {
+  return (a.deliveries ?? []).map((d) => ({
+    id: d.delivery_id,
+    title: d.order?.order_number ?? d.delivery_address,
+    date: new Date(d.delivered_at ?? d.assigned_at),
+  }));
+}
+
+/** A cashier's STAFF HISTORY rows — one per sale, with the method badge. */
+export function toStaffCashierRecords(a: StaffActivity): StaffCashierRecord[] {
+  return (a.sales ?? []).map((s) => {
+    const method = PAYMENT_MEDIUM[s.method] ?? "CASH";
+    return {
+      id: s.payment_id,
+      title: s.order?.order_number ?? `₦${naira(s.amount_kobo)}`,
+      date: new Date(s.paid_at ?? Date.now()),
+      paymentMethod:
+        method === "POS" ? "POS" : method === "TRANS" ? "TRANS" : "CASH",
+    };
+  });
+}
 
 export function toViewRefund(r: Refund) {
   return {

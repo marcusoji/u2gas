@@ -35,9 +35,10 @@ Root scripts (`package.json`) proxy into `web/`:
   `adminStaffStore`, `adminTankStore`). `components/providers.tsx` keeps the
   session-backed `AuthProvider` in step with `authStore`; only that bridge knows
   both.
-- `web/data.ts` — dummy fixtures. **Being removed**: screens should read the
-  Worker/Supabase APIs through `lib/api.ts`; a fixture on a screen is unfinished
-  wiring, not a design decision.
+
+There is no `web/data.ts`. The dummy fixtures were removed: every screen reads
+the Worker/Supabase APIs through `lib/api.ts`, and a fixture on a screen would be
+unfinished wiring, not a design decision.
 
 ## Static export, and why ids are query parameters
 
@@ -75,8 +76,9 @@ secret here: the Supabase **publishable** key is public by design, and the modul
 throws at build time if a `sb_secret_` / `service_role` key reaches the browser
 bundle. A missing key is non-fatal (a CI build without secrets must still
 produce output); sign-in then fails with a network error. `EMBEDDED_API`
-(`NEXT_PUBLIC_EMBEDDED_API=true`) swaps the network layer for in-browser
-fixtures so a screen is reachable with no backend.
+(`NEXT_PUBLIC_EMBEDDED_API=true`) marks a preview build that contacts no API:
+it short-circuits Supabase sign-in and drops the API origin from the CSP, so
+API-backed screens render their no-data state. There is no fixture layer.
 
 ## Data flow
 
@@ -100,9 +102,11 @@ backend field rename breaks one file and no screen ever restyles the design.
 
 Self-hosted under `web/public/fonts/`, wired through `next/font/local` in
 `app/layout.tsx` and declared in `app/globals.css`. jgs7 is the pixel face — the
-brand, used for every text style (`--font-sans`/`--font-mono`/`--font-heading`/
-`--font-led` all resolve to it). Barlow Semi Condensed is loaded from Google
-Fonts via `next/font/google` (`--font-barlow`) for caption strings.
+brand, used for every text style (`--font-sans`/`--font-mono`/`--font-heading`).
+jgs5 is the LED face the readouts and tickers draw (`--font-led`); both ship as
+`woff2`/`woff` and `scripts/fetch-fonts.sh` refreshes them. Barlow Semi
+Condensed is loaded from Google Fonts via `next/font/google` (`--font-barlow`)
+for caption strings.
 
 ## Conventions that bite
 

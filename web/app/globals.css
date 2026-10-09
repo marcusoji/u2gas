@@ -26,7 +26,7 @@
   --font-heading: var(--font-jgs7), "jgs7", monospace;
   --font-pixel: var(--font-jgs7), "jgs7", monospace;
   --font-jgs7: var(--font-jgs7), "jgs7", monospace;
-  --font-led: var(--font-jgs7), "jgs7", monospace;
+  --font-led: var(--font-jgs5), "jgs5", var(--font-jgs7), "jgs7", monospace;
   --font-caption: var(--font-jgs7), "jgs7", monospace;
   --font-barlow: var(--font-barlow-semi-condensed), "Barlow Semi Condensed", sans-serif;
   --color-primary: var(--primary);

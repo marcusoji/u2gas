@@ -25,9 +25,9 @@ Short answer: **partially.** Here is the exact state, so nothing is overclaimed.
 
 ## Not done
 
-- The remaining `data.ts` fixtures still feed some screens (cashier history,
-  admin gas/staff history, the admin staff store, add-address). These must read
-  the API.
+- The `data.ts` fixtures have been removed; the cashier history, admin
+  gas/staff history, the admin staff store and add-address all read the API.
+  Verify each against the Worker + Supabase.
 - Driver and cashier queue/history flows are wired but not yet verified against
   the Worker + Supabase.
 - The admin screens (tank, sales history, staff) are not yet confirmed against

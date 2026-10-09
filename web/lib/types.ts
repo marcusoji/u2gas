@@ -344,6 +344,12 @@ export interface AdminOrder {
   guest_name?: string | null;
   guest_phone?: string | null;
   profile?: { display_name: string | null; phone?: string | null } | null;
+  payment?: {
+    method: string;
+    amount_kobo: number;
+    status: string;
+    paid_at: string | null;
+  }[] | null;
   delivery?: {
     status: string;
     driver_id?: string | null;
@@ -358,6 +364,37 @@ export interface AdminDriver {
   vehicle_info?: string | null;
   completed_deliveries?: number;
   profile?: { display_name: string | null; avatar_asset?: ImageRef | null } | null;
+}
+
+export interface StaffSale {
+  payment_id: string;
+  method: string;
+  amount_kobo: number;
+  status: string;
+  paid_at: string | null;
+  order?: {
+    order_number: string;
+    total_kobo: number;
+    gas_amount_kg: number | null;
+  } | null;
+}
+
+export interface StaffDelivery {
+  delivery_id: string;
+  status: string;
+  delivery_address: string;
+  assigned_at: string;
+  delivered_at: string | null;
+  failure_reason: string | null;
+  order?: { order_number: string; total_kobo: number } | null;
+}
+
+/** `/admin/staff/:id/history` — a cashier's sales or a driver's drops. */
+export interface StaffActivity {
+  ok: true;
+  role: "staff" | "driver" | "admin";
+  sales?: StaffSale[];
+  deliveries?: StaffDelivery[];
 }
 
 export interface AdminStaff {

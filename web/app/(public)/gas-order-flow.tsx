@@ -2,17 +2,35 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import GasTerminal from "./gas-terminal";
-import PaymentModal from "@/components/home/PaymentModal";
-import { ReceiptModal } from "@/components/modals/ReceiptModal";
-import { HistoryModal } from "@/components/modals/HistoryModal";
-import { ProfileModal } from "@/components/modals/ProfileModal";
 import { useAuthStore } from "@/stores/authStore";
 import { api, ApiError, newIdempotencyKey } from "@/lib/api";
 import { useAsync } from "@/lib/hooks";
 import { toHomeView } from "@/lib/adapters";
 import { toHistoryReceipt } from "@/lib/receipts";
 import type { GasOrderDraft, HistoryReceipt, ReceiptItem } from "@/types";
+
+/**
+ * The four sheets are interaction-only: none of them paints until a click, so
+ * they are split out of the entry chunk. The home terminal is the landing route
+ * and must stay light — a visitor should not download the receipt, history and
+ * profile sheets before touching anything.
+ */
+const PaymentModal = dynamic(() => import("@/components/home/PaymentModal"), {
+  ssr: false,
+});
+const ReceiptModal = dynamic(
+  () => import("@/components/modals/ReceiptModal").then((m) => m.ReceiptModal),
+  { ssr: false },
+);
+const HistoryModal = dynamic(
+  () => import("@/components/modals/HistoryModal").then((m) => m.HistoryModal),
+  { ssr: false },
+);
+const ProfileModal = dynamic(() => import("@/components/modals/ProfileModal"), {
+  ssr: false,
+});
 
 /** Which payment route the customer chose in the sheet. */
 type PaymentChoice = "BANK" | "OPAY" | "DEPOT" | "CARD";

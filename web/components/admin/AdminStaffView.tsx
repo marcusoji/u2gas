@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Copy, Check } from "lucide-react";
@@ -23,7 +23,16 @@ export default function AdminStaffView({
     selectedStaffId,
     setSelectedStaffId,
     removeStaff,
+    load,
+    loading,
+    loaded,
+    error,
+    saving,
   } = useAdminStaffStore();
+
+  useEffect(() => {
+    if (!loaded) void load();
+  }, [loaded, load]);
 
   const [copied, setCopied] = useState(false);
 
@@ -69,6 +78,20 @@ export default function AdminStaffView({
       </div>
 
       <div className="w-full flex flex-col items-center gap-7 my-auto py-3">
+        {loading && !loaded && (
+          <p className="font-mono text-xs text-[#A4A6E8] py-10">LOADING…</p>
+        )}
+        {error && (
+          <p className="font-mono text-xs text-[#D50000] py-2 text-center">
+            {error.message}
+          </p>
+        )}
+        {loaded && !error && staffList.length === 0 && (
+          <p className="font-mono text-xs text-[#A4A6E8] py-10 uppercase text-center">
+            No staff yet — add one with EDIT STAFF
+          </p>
+        )}
+        {staffList.length > 0 && (
         <div className="flex flex-col items-center w-full">
           <div className="flex items-center justify-center gap-3 sm:gap-4 overflow-x-auto max-w-full py-1 no-scrollbar">
             {staffList.slice(0, 4).map((staff) => {
@@ -124,6 +147,7 @@ export default function AdminStaffView({
           </div>
         </div>
 
+        )}
         <AnimatePresence mode="wait">
           {selectedStaff && (
             <motion.div
@@ -229,7 +253,8 @@ export default function AdminStaffView({
                 removeStaff(selectedStaff.id);
               }
             }}
-            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer"
+            disabled={saving}
+            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             REMOVE STAFF
           </button>

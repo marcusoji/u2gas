@@ -10,7 +10,6 @@ import type {
   CashierStatusTab,
   CashierPaymentFilter,
 } from "@/types";
-import { dummyCashierTransactions } from "@/data";
 
 export interface CashierHistoryModalProps {
   open: boolean;
@@ -21,7 +20,7 @@ export interface CashierHistoryModalProps {
 export default function CashierHistoryModal({
   open,
   onOpenChange,
-  transactions = dummyCashierTransactions,
+  transactions = [],
 }: CashierHistoryModalProps) {
   const [activeMode, setActiveMode] = useState<CashierStatusTab>("IN—PERSON");
   const [activeFilter, setActiveFilter] = useState<CashierPaymentFilter>("CASH");

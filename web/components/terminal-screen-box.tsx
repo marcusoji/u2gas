@@ -49,7 +49,7 @@ export default function TerminalScreenBox({
           "w-full h-full rounded-[6px] border shadow-[inset_0_2px_6px_rgba(0,0,0,0.95)] flex items-center justify-center relative overflow-hidden",
           isGreen
             ? "bg-[#050b05] border-[#030803]"
-            : "bg-[#140808] border-[#0a0808]",
+            : "bg-[#1E0E0E] border-[#0a0808]",
         )}
       >
         {/* Screen Glass Glare */}
@@ -70,10 +70,10 @@ export default function TerminalScreenBox({
                   <span
                     key={i}
                     className={cn(
-                      "uppercase select-none whitespace-nowrap text-[25px] font-bold tracking-wider",
+                      "uppercase select-none whitespace-nowrap text-[25px] font-bold tracking-wider font-led",
                       isGreen
-                        ? "text-[#00FF44] drop-shadow-[0_0_12px_rgba(0,255,68,0.95)] drop-shadow-[0_0_4px_#00FF44]"
-                        : "text-[#FF1B1B] drop-shadow-[0_0_12px_rgba(255,27,27,0.95)] drop-shadow-[0_0_4px_#FF1B1B]",
+                        ? "text-[#03FF31] drop-shadow-[0_0_12px_rgba(3,255,49,0.95)] drop-shadow-[0_0_4px_#00FF44]"
+                        : "text-[#FF0303] drop-shadow-[0_0_12px_rgba(255,3,3,0.95)] drop-shadow-[0_0_4px_#FF1B1B]",
                       textClassName,
                     )}
                   >
@@ -86,11 +86,11 @@ export default function TerminalScreenBox({
           /* Static Digital Text */
           <span
             className={cn(
-              "uppercase select-none font-bold",
+              "uppercase select-none font-bold font-led",
               defaultTextSize,
               isGreen
-                ? "text-[#00FF44] drop-shadow-[0_0_12px_rgba(0,255,68,0.95)] drop-shadow-[0_0_4px_#00FF44]"
-                : "text-[#FF1B1B] drop-shadow-[0_0_12px_rgba(255,27,27,0.95)] drop-shadow-[0_0_4px_#FF1B1B]",
+                ? "text-[#03FF31] drop-shadow-[0_0_12px_rgba(3,255,49,0.95)] drop-shadow-[0_0_4px_#00FF44]"
+                : "text-[#FF0303] drop-shadow-[0_0_12px_rgba(255,3,3,0.95)] drop-shadow-[0_0_4px_#FF1B1B]",
               textClassName,
             )}
           >

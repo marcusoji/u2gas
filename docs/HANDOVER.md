@@ -5,21 +5,23 @@ live in [`AGENTS.md`](../AGENTS.md) at the repo root; read it before changing a
 screen. This file is the "get running in five minutes" plus what is and is not
 done.
 
-## Run it with no API keys at all
+## Run it locally
 
-Nothing in the dev flow needs a backend, a Supabase project, a Worker, or a
-sign-in. Turn on the embedded (in-browser fixtures) mode and run the dev server:
+Every screen reads the Worker/Supabase APIs, so a local run wants both. Start
+the Worker, then point the web app at it:
 
 ```bash
 git clone <repo> && cd u2gas
-cd web && npm install
-NEXT_PUBLIC_EMBEDDED_API=true npm run dev
+cd worker && npm install && npm run dev      # http://127.0.0.1:8787
+cd ../web && npm install
+echo 'NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787/api' > .env.local
+npm run dev
 ```
 
-Open `http://localhost:3000/`. Every screen is reachable from the fixtures, and
-the app answers as whichever role you sign in as — the role gate a real
-deployment authorises on the server. The real-API values, if you need them, are
-documented in `docs/ENVIRONMENT.md`.
+Open `http://localhost:3000/`. With no Worker or Supabase reachable you can
+still open every route, but an API-backed screen shows its own empty/offline
+state rather than fixture data — there is no in-browser fixture layer any more.
+The real-API values are documented in `docs/ENVIRONMENT.md`.
 
 ### Checks (run them before you commit)
 
@@ -58,7 +60,7 @@ Two rules:
    effects or handlers is `"use client"`.
 4. Build the screen from the existing primitives and view-model shapes
    (`lib/adapters.ts`, `lib/receipts.ts`, `types/`). Bind live data through
-   `lib/api.ts` + `useAsync`; do not leave a fixture from `data.ts` on screen.
+   `lib/api.ts` + `useAsync`; a fixture on a screen is unfinished wiring.
 5. Put a dynamic id in a query parameter (`/orders?id=…`), not the path — the
    static export cannot pre-render unknown path segments. A `useSearchParams`
    page needs a `Suspense` boundary or the build fails.
@@ -87,8 +89,6 @@ into a static file — the route paints them over the drawn placeholder.
 
 ## Still to do
 
-- Remove the remaining `data.ts` fixtures from screens that should read the API
-  (cashier history, admin gas/staff history, admin staff store, add-address).
 - Verify the driver and cashier queue/history flows against the Worker +
   Supabase.
 - Confirm the admin screens (tank, sales history, staff) against the live

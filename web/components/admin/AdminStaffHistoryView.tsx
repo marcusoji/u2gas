@@ -7,12 +7,14 @@ import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useAdminStaffStore } from "@/stores/adminStaffStore";
 import { paths } from "@/utils/paths";
+import { api } from "@/lib/api";
+import { useAsync } from "@/lib/hooks";
+import { toStaffCashierRecords, toStaffDriverRecords } from "@/lib/adapters";
 import type {
   TimeFilter,
   DriverStatusTab,
   CashierStatusTab,
 } from "@/types/types";
-import { dummyStaffDriverRecords, dummyStaffCashierRecords } from "@/data";
 
 interface AdminStaffHistoryViewProps {
   onBack?: () => void;
@@ -27,10 +29,8 @@ export default function AdminStaffHistoryView({
   const selectedStaff =
     staffList.find((s) => s.id === selectedStaffId) || staffList[0];
 
-  // Determine role type (Driver or Cashier based on email/role or state)
-  const isDriverRole =
-    selectedStaff?.role?.toUpperCase().includes("DRIVER") ||
-    selectedStaff?.email?.toUpperCase().includes("DRIVER");
+  // Determine role type (Driver or Cashier based on the drawn role label)
+  const isDriverRole = selectedStaff?.role?.toUpperCase().includes("DRIVER");
 
   const [roleType, setRoleType] = useState<"DRIVER" | "CASHIER">(
     isDriverRole ? "DRIVER" : "CASHIER",
@@ -38,6 +38,15 @@ export default function AdminStaffHistoryView({
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("TODAY");
   const [driverTab, setDriverTab] = useState<DriverStatusTab>("COMPLETE");
   const [cashierTab, setCashierTab] = useState<CashierStatusTab>("IN—PERSON");
+
+  const { data, loading, error } = useAsync(
+    () =>
+      selectedStaff
+        ? api.admin.staffHistory(selectedStaff.id)
+        : Promise.resolve(null),
+    [selectedStaff?.id],
+    { enabled: Boolean(selectedStaff) },
+  );
 
   const handleBack = () => {
     if (onBack) {
@@ -49,8 +58,8 @@ export default function AdminStaffHistoryView({
 
   const staffDisplayName = selectedStaff?.firstName?.toUpperCase() || "SMITH";
 
-  const driverRecords = dummyStaffDriverRecords;
-  const cashierRecords = dummyStaffCashierRecords;
+  const driverRecords = data ? toStaffDriverRecords(data) : [];
+  const cashierRecords = data ? toStaffCashierRecords(data) : [];
 
   return (
     <div className="w-full max-w-[420px] flex-1 flex flex-col items-center px-6 pt-4 pb-8 select-none min-h-[90vh]">
@@ -169,8 +178,25 @@ export default function AdminStaffHistoryView({
 
         {/* DASHED RECORD CARD CONTAINER */}
         <div className="w-full rounded-[24px] border-2 border-dashed border-[#C5CAE9] p-5 sm:p-6 flex flex-col gap-4 bg-white/50 shadow-xs max-w-[380px]">
-          {roleType === "DRIVER" ||
-          (roleType === "CASHIER" && cashierTab === "ONLINE") ? (
+          {loading && (
+            <p className="text-center font-mono text-xs text-[#A4A6E8] py-8">
+              LOADING…
+            </p>
+          )}
+          {!loading && error && (
+            <p className="text-center font-mono text-xs text-[#D50000] py-8">
+              {error.message}
+            </p>
+          )}
+          {!loading && !error && driverRecords.length === 0 && cashierRecords.length === 0 && (
+            <p className="text-center font-mono text-xs text-[#A4A6E8] py-8 uppercase">
+              No activity yet
+            </p>
+          )}
+          {!loading &&
+          !error &&
+          (roleType === "DRIVER" ||
+          (roleType === "CASHIER" && cashierTab === "ONLINE")) ? (
             // ONLINE / DRIVER GAS ORDERS (NO PAYMENT BADGES)
             <div className="flex flex-col gap-4">
               {driverRecords.map((item) => (

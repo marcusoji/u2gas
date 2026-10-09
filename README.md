@@ -91,23 +91,28 @@ cd web && npm install && npm run dev
 
 Full setup is in `docs/DEPLOYMENT.md`. Keys are in `docs/ENVIRONMENT.md`.
 
-## Seeing the UI without a backend
+## Seeing the UI without an API
 
-The app can be built and served entirely from in-browser fixtures — no Supabase
-project, no Worker, no network. Useful for design review and for looking at a
-role you are not signed in as. Set `NEXT_PUBLIC_EMBEDDED_API=true` and run:
+Every screen fetches from the Worker or Supabase, so there is no in-browser
+fixture build: the Vite-era mock layer went with the old frontend. A screen
+with no reachable API renders its own empty/offline state (the terminal ticker
+goes dark, lists read `NO … FOUND`) rather than invented data. To see real
+screens, run the Worker and point the app at it:
 
 ```
-cd web
-npm install
-NEXT_PUBLIC_EMBEDDED_API=true npm run dev
+cd worker && npm install && npm run dev
+cd web && npm install
+# web/.env.local: NEXT_PUBLIC_API_BASE=http://127.0.0.1:8787/api
+npm run dev
 ```
 
 The build is a static export (`output: "export"`), so the emitted `out/`
 directory is plain files Cloudflare Pages serves directly. Point a build at a
 real API with `NEXT_PUBLIC_API_BASE`, `NEXT_PUBLIC_SUPABASE_URL` and
-`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; with `NEXT_PUBLIC_EMBEDDED_API` unset
-the mock layer is inert and the app talks to the real API.
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `NEXT_PUBLIC_EMBEDDED_API=true` is a
+preview-only build that contacts no API: it skips Supabase sign-in and drops the
+API origin from the CSP, so every API-backed screen shows its no-data state.
+There is no fixture layer behind it.
 
 ## Testing
 

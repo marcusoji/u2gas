@@ -77,7 +77,7 @@ export function Navbar({
           className="w-4 h-auto"
         />
         {notificationCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#22C55E] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#1FCD12] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
             {notificationCount}
           </span>
         )}

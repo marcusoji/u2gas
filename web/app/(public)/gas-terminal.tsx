@@ -237,8 +237,8 @@ export default function GasTerminal({
 
 function TickerItem({ rate }: { rate: number }) {
   return (
-    <span className="inline-flex items-center text-[54px] leading-none font-bold tracking-wider px-4 select-none text-[#FF2222] whitespace-nowrap drop-shadow-[0_0_14px_rgba(255,30,30,0.9)]">
-      <span>Today&apos;s Rate: 1kg :&nbsp;</span>
+    <span className="inline-flex items-center text-[54px] leading-none font-bold tracking-wider font-led px-4 select-none text-[#FF0303] whitespace-nowrap drop-shadow-[0_0_14px_rgba(255,3,3,0.9)]">
+      <span>Today&rsquo;s Rate: 1kg at&nbsp;</span>
       <span className="relative inline-flex items-center justify-center mr-0.5">
         <span>N</span>
         {/* <span className="absolute inset-x-0 top-[37%] h-1 bg-[#FF2222] pointer-events-none drop-shadow-[0_0_6px_rgba(255,30,30,0.9)]" />

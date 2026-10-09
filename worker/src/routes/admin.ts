@@ -334,7 +334,8 @@ admin.get("/orders", async (c) => {
       order_id, order_number, channel, order_type, status, payment_status,
       fulfillment_type, total_kobo, gas_amount_kg, created_at,
       guest_name, guest_phone,
-      profile:user_id ( display_name, phone )
+      profile:user_id ( display_name, phone ),
+      payment:payment ( method, amount_kobo, status, paid_at )
     `)
     .order("created_at", { ascending: false })
     .limit(Number(c.req.query("limit") ?? 100));
@@ -646,10 +647,64 @@ admin.get("/staff", async (c) =>
     c.get("admin").from("staff_member")
       .select(`
         staff_id, status, bank_name, account_number, hired_at,
-        profile:profile_id ( profile_id, display_name, role, phone,
+        profile:profile_id ( profile_id, display_name, email, role, phone,
                              avatar_asset ( base_path ) )
       `)
       .neq("status", "removed")) }));
+
+/**
+ * One staff member's recent activity, for the STAFF HISTORY screen.
+ *
+ * A cashier's history is the sales they rang up (payments attributed to their
+ * staff_id); a driver's is the drops assigned to them. Both are the person's
+ * own rows, joined here rather than fetched by the client so a large history
+ * does not need N round-trips.
+ */
+admin.get("/staff/:id/history", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("admin");
+
+  // A driver row is addressed by driver_id, a till member by staff_id. Resolve
+  // which one this id is so the screen can show the right list without the
+  // client having to know the difference.
+  const staffRow = await select<any>(
+    db.from("staff_member").select("staff_id, profile:profile_id ( display_name, role )")
+      .eq("staff_id", id).maybeSingle(),
+  );
+  const driverRow = staffRow
+    ? null
+    : await select<any>(
+        db.from("driver").select("driver_id, profile:profile_id ( display_name, role )")
+          .eq("driver_id", id).maybeSingle(),
+      );
+
+  if (!staffRow && !driverRow) throw appError("NOT_FOUND");
+
+  const role = (staffRow?.profile?.role ?? driverRow?.profile?.role) as
+    | "staff" | "admin" | "driver";
+
+  if (role === "driver") {
+    const drops = await select<any[]>(
+      db.from("delivery")
+        .select(`delivery_id, status, delivery_address, assigned_at, delivered_at,
+                 failure_reason, order:order_id ( order_number, total_kobo )`)
+        .eq("driver_id", driverRow?.driver_id ?? id)
+        .order("assigned_at", { ascending: false })
+        .limit(100),
+    );
+    return c.json({ ok: true, role: "driver", deliveries: drops });
+  }
+
+  const sales = await select<any[]>(
+    db.from("payment")
+      .select(`payment_id, method, amount_kobo, status, paid_at,
+               order:order_id ( order_number, total_kobo, gas_amount_kg )`)
+      .eq("recorded_by_staff_id", staffRow?.staff_id ?? id)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  );
+  return c.json({ ok: true, role: "staff", sales });
+});
 
 admin.get("/drivers", async (c) =>
   c.json({ ok: true, drivers: await select<any[]>(
@@ -703,6 +758,52 @@ admin.delete("/staff/:id", async (c) => {
     p_staff_id: c.req.param("id"),
   });
   return c.json({ ok: true, ...result });
+});
+
+/**
+ * Edit a roster entry's details (1:2803 STAFF LAYOUT 2 DETAILS).
+ *
+ * The drawn edit screen lets an admin change a name, a role and the bank
+ * fields. The role is the access grant, so it goes through the same
+ * `admin_add_staff` upsert the ADD control uses — that keeps the one place
+ * that writes a role, and its last-admin and account-exists checks, in force.
+ * The bank fields are a plain staff_member update.
+ */
+admin.patch("/staff/:id", async (c) => {
+  const body = z.object({
+    display_name: z.string().min(1).max(120).optional(),
+    role: z.enum(["staff", "admin", "driver"]).optional(),
+    bank_name: z.string().max(120).nullable().optional(),
+    account_number: z.string().regex(/^[0-9]{10}$/).nullable().optional(),
+  }).safeParse(await c.req.json());
+  if (!body.success) throw appError("VALIDATION_FAILED");
+
+  const db = c.get("admin");
+  const staffRow = await select<any>(
+    db.from("staff_member")
+      .select("staff_id, profile:profile_id ( profile_id, email, display_name )")
+      .eq("staff_id", c.req.param("id")).maybeSingle(),
+  );
+  if (!staffRow) throw appError("NOT_FOUND");
+
+  // Role or name changes go through the upsert so role rules still apply.
+  if (body.data.role || body.data.display_name) {
+    await rpc<any>(db, "admin_add_staff", {
+      p_actor: c.get("caller")!.profileId,
+      p_email: staffRow.profile?.email,
+      p_name: body.data.display_name ?? staffRow.profile?.display_name ?? "",
+      p_role: body.data.role ?? staffRow.profile?.role ?? "staff",
+      p_bank: body.data.bank_name ?? null,
+      p_account: body.data.account_number ?? null,
+    });
+  } else if (body.data.bank_name !== undefined || body.data.account_number !== undefined) {
+    await db.from("staff_member").update({
+      bank_name: body.data.bank_name ?? null,
+      account_number: body.data.account_number ?? null,
+    }).eq("staff_id", c.req.param("id"));
+  }
+
+  return c.json({ ok: true });
 });
 
 admin.get("/settings", async (c) =>

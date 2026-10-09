@@ -433,8 +433,19 @@ export const api = {
       bank_name?: string;
       account_number?: string;
     }) => post<{ staff_id: string; created: boolean }>("/admin/staff", body),
+    updateStaff: (
+      staffId: string,
+      body: {
+        display_name?: string;
+        role?: "staff" | "admin" | "driver";
+        bank_name?: string | null;
+        account_number?: string | null;
+      },
+    ) => patch<{ ok: true }>(`/admin/staff/${staffId}`, body),
     removeStaff: (staffId: string) =>
       del<{ staff_id: string; status: string }>(`/admin/staff/${staffId}`),
+    staffHistory: (staffId: string) =>
+      get<import("./types").StaffActivity>(`/admin/staff/${staffId}/history`),
 
     drivers: () =>
       get<{ drivers: import("./types").DriverProfile[] }>("/admin/drivers"),
