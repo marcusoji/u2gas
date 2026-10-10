@@ -36,3 +36,15 @@ export const env = {
 
 /** True when the app has enough configuration to reach the backend at all. */
 export const isConfigured = Boolean(env.supabaseUrl && env.supabaseKey);
+
+// A Supabase secret/service-role key in a NEXT_PUBLIC_ variable is compiled into
+// the browser bundle and is total compromise: it bypasses RLS for anyone who
+// opens devtools. Refuse to build rather than ship one. The publishable/anon key
+// is the only key that belongs here. (Part 5)
+if (env.supabaseKey.startsWith("sb_secret_") || /service_role/.test(env.supabaseKey)) {
+  throw new Error(
+    "A Supabase secret key is set as NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. " +
+      "Everything NEXT_PUBLIC_ ships to the browser. Use the publishable key " +
+      "(sb_publishable_…) and keep the secret key in the Worker's secrets.",
+  );
+}

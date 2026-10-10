@@ -6,12 +6,12 @@
 # Preconditions, checked below with a clear message rather than a traceback:
 #   * `wrangler login` has been run, or CLOUDFLARE_API_TOKEN is exported.
 #   * worker/wrangler.toml has no YOUR-DOMAIN / YOUR-KV-ID placeholders left.
+#   * web/.env.production has the real NEXT_PUBLIC_* values (the app is compiled
+#     with them and scripts/build-headers.mjs composes the CSP from them).
 #
-# The frontend under web/ is a carbon copy of the uploaded
-# U2gas_frontend-main.zip: a plain Next.js app with no static export. Deploying
-# it to Pages needs a Next-on-Pages adapter, which is not installed yet, so this
-# script deploys the Worker and then stops with the app step called out. Fill in
-# the Pages half once the adapter is chosen.
+# The frontend under web/ is a static export: every route prerenders, so
+# `next build` writes a plain `out/` asset directory (plus `out/_headers`) that
+# `wrangler pages deploy` ships directly. No Next adapter is involved.
 #
 # The Pages project is created (or updated) by `wrangler pages deploy`. Set
 # PAGES_PROJECT to override the name; it defaults to the Worker name's prefix.
@@ -39,6 +39,10 @@ if grep -nE "YOUR-DOMAIN|YOUR-KV-ID|YOUR-PRODUCTION-KV-ID" worker/wrangler.toml 
   fail "worker/wrangler.toml still has placeholders — fill them before deploying."
 fi
 
+if [ ! -f web/.env.production ]; then
+  fail "web/.env.production is missing. Copy web/.env.production.example and fill it in."
+fi
+
 # --- Deploy the API ---------------------------------------------------------
 
 echo "==> Deploying Worker (env production)"
@@ -46,19 +50,19 @@ echo "==> Deploying Worker (env production)"
 
 # --- The app ----------------------------------------------------------------
 
-echo "==> Building the frontend"
+echo "==> Building the frontend (static export → web/out)"
 ( cd web && npm install --no-audit --no-fund && npm run build )
 
+[ -f web/out/_headers ] || fail "web/out/_headers was not generated — the build did not complete."
+
+echo "==> Deploying the frontend to Cloudflare Pages (project '$PAGES_PROJECT')"
+# Run from worker/ so it uses the installed wrangler rather than fetching one.
+( cd worker && npx wrangler pages deploy ../web/out \
+  --project-name "$PAGES_PROJECT" \
+  --branch "$PAGES_BRANCH" )
+
 echo
-echo "Worker deployed. The frontend built, but this script does not deploy it:"
-echo "web/ is a carbon copy of the uploaded U2gas_frontend-main.zip, a plain"
-echo "Next.js app with no static export, so Pages needs a Next adapter"
-echo "(e.g. @opennextjs/cloudflare) that is not installed yet."
-echo
-echo "When the adapter is chosen and the UI is wired to the Worker, deploy with:"
-echo "  npx wrangler pages deploy <build-output> --project-name $PAGES_PROJECT --branch $PAGES_BRANCH"
-echo
-echo "Then, in the Cloudflare dashboard:"
+echo "Worker and Pages are deployed. Then, in the Cloudflare dashboard:"
 echo "  * Pages project '$PAGES_PROJECT' → Custom domains → add the apex and www."
 echo "  * DNS: CNAME @ and www → $PAGES_PROJECT.pages.dev, CNAME api → the Worker."
 echo "  * SSL/TLS mode: Full (strict)."

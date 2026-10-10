@@ -230,6 +230,95 @@ begin
 end $$;
 
 -- ----------------------------------------------------------------------------
+-- 7b. The initialize-then-webhook flow: a pending payment row is settled, not
+--     mistaken for a replay
+--
+-- POST /payments/initialize inserts the payment row as `pending` before the
+-- customer goes to Monnify. The webhook's confirm_payment resolves that same
+-- (provider, reference) row. The old guard matched on existence alone, so it
+-- returned already_processed without touching the order: the webhook marked the
+-- event processed and the customer's order stayed pending with money taken.
+-- ----------------------------------------------------------------------------
+do $$
+declare v_order uuid; r jsonb; v_status text; v_paid text;
+begin
+  insert into "order" (depot_id, guest_phone, order_type, gas_amount_kg,
+                       rate_at_purchase, gas_subtotal_kobo, total_kobo, fulfillment_type)
+  values ('00000000-0000-0000-0000-00000000d001','+2348000000507','gas',
+          5, 140000, 700000, 700000, 'pickup')
+  returning order_id into v_order;
+
+  perform reserve_gas(v_order, '00000000-0000-0000-0000-00000000d001', 5, now() + interval '30 min');
+
+  -- What initialize leaves behind: a pending row for the reference.
+  insert into payment (order_id, provider, provider_reference, amount_kobo, method, status)
+  values (v_order, 'monnify', 'init_then_webhook_ref', 700000, 'monnify', 'pending');
+
+  r := confirm_payment(v_order, 'monnify', 'init_then_webhook_ref', 700000, 'monnify');
+
+  perform t_assert('pending row is settled, not replayed',
+                   (r->>'already_processed')::boolean = false, r::text);
+  perform t_assert('the order is confirmed, not left pending',
+                   (select status = 'confirmed' from "order" where order_id = v_order));
+  perform t_assert('the order is paid',
+                   (select payment_status = 'paid' from "order" where order_id = v_order));
+  perform t_assert('exactly one payment row, settled in place',
+                   (select count(*) from payment where order_id = v_order) = 1);
+  perform t_assert('the payment row is paid with a timestamp',
+                   (select status = 'paid' and paid_at is not null
+                      from payment where order_id = v_order));
+
+  -- A genuine duplicate delivery after settlement is still a no-op.
+  r := confirm_payment(v_order, 'monnify', 'init_then_webhook_ref', 700000, 'monnify');
+  perform t_assert('a repeat delivery after settlement is a replay',
+                   (r->>'already_processed')::boolean = true, r::text);
+  perform t_assert('still exactly one payment row',
+                   (select count(*) from payment where order_id = v_order) = 1);
+
+  perform cancel_order(v_order, null, 'test cleanup');
+  perform t_drop_order(v_order);
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- 7c. An orphaned payment against a pending initialize row still refunds
+--
+-- The orphan branch used to insert a fresh paid row, which collides with the
+-- (provider, reference) unique index when initialize already created one.
+-- ----------------------------------------------------------------------------
+do $$
+declare v_o uuid; r jsonb; v_refunds integer;
+begin
+  insert into "order" (depot_id, guest_phone, order_type, gas_amount_kg,
+                       rate_at_purchase, gas_subtotal_kobo, total_kobo,
+                       fulfillment_type, status)
+  values ('00000000-0000-0000-0000-00000000d001','+2348000000508','gas',
+          1, 140000, 140000, 140000, 'pickup', 'expired')
+  returning order_id into v_o;
+
+  -- initialize had already created the pending row for this reference.
+  insert into payment (order_id, provider, provider_reference, amount_kobo, method, status)
+  values (v_o, 'monnify', 'orphan_pending_ref', 140000, 'monnify', 'pending');
+
+  r := confirm_payment(v_o, 'monnify', 'orphan_pending_ref', 140000, 'monnify');
+
+  perform t_assert('the payment is recorded as orphaned', (r->>'orphaned')::boolean, r::text);
+  perform t_assert('the pending row was settled, not duplicated',
+                   (select count(*) from payment where order_id = v_o) = 1);
+  perform t_assert('a refund record exists', r->>'refund_id' is not null, r::text);
+  perform t_assert('exactly one refund was raised',
+                   (select count(*) from refund where order_id = v_o) = 1);
+
+  -- Repeat delivery must not raise a second claim on the same money.
+  r := confirm_payment(v_o, 'monnify', 'orphan_pending_ref', 140000, 'monnify');
+  perform t_assert('a repeat orphan delivery is a replay',
+                   (r->>'already_processed')::boolean, r::text);
+  perform t_assert('still exactly one refund',
+                   (select count(*) from refund where order_id = v_o) = 1);
+
+  perform t_drop_order(v_o);
+end $$;
+
+-- ----------------------------------------------------------------------------
 -- 8. A QR cannot be redeemed twice
 -- ----------------------------------------------------------------------------
 do $$
