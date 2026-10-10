@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { hmacSha512Hex, timingSafeEqual, sha256Hex, guestTokenHash,
          generateGuestToken, generateQrToken } from "../src/lib/crypto";
 import { AppError, fromDbError, appError, errorBody } from "../src/lib/errors";
+import { mayAccessOrder } from "../src/lib/authz";
 
 /**
  * Worker tests (Item 16).
@@ -173,6 +174,82 @@ describe("payment verification ownership", () => {
   it("refuses an anonymous caller on someone's account order", () => {
     expect(mayVerify({
       ...base, callerProfileId: null, guestTokenMatches: true,
+    })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Order access — who may read, mint a QR for, or cancel an order
+// ---------------------------------------------------------------------------
+
+describe("order access", () => {
+  const guestOrder = {
+    callerProfileId: null as string | null,
+    callerRole: null,
+    orderUserId: null as string | null,
+    guestTokenMatches: false,
+  };
+
+  it("allows a guest holding the token for that order", () => {
+    expect(mayAccessOrder({ ...guestOrder, guestTokenMatches: true })).toBe(true);
+  });
+
+  it("refuses a guest with no or the wrong token", () => {
+    expect(mayAccessOrder(guestOrder)).toBe(false);
+  });
+
+  it("allows the owner of an account order", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-a", callerRole: "customer",
+      orderUserId: "profile-a",
+    })).toBe(true);
+  });
+
+  it("refuses a different signed-in customer on someone's account order", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-b", callerRole: "customer",
+      orderUserId: "profile-a", guestTokenMatches: true,
+    })).toBe(false);
+  });
+
+  // The regression: being signed in is not ownership. A customer with no
+  // relation to a guest order used to be allowed through and could cancel it.
+  it("refuses a signed-in customer on a guest order", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-b", callerRole: "customer",
+      orderUserId: null, guestTokenMatches: false,
+    })).toBe(false);
+  });
+
+  it("refuses a signed-in customer on a guest order even with the wrong token", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-b", callerRole: "customer",
+      orderUserId: null, guestTokenMatches: false,
+    })).toBe(false);
+  });
+
+  it("lets the guest who signed in afterwards still reach their order", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-b", callerRole: "customer",
+      orderUserId: null, guestTokenMatches: true,
+    })).toBe(true);
+  });
+
+  it("lets staff and admin act on any order at the counter", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-s", callerRole: "staff",
+      orderUserId: "profile-a",
+    })).toBe(true);
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-a", callerRole: "admin",
+      orderUserId: null,
+    })).toBe(true);
+  });
+
+  it("does not let a driver act on an order they do not own", () => {
+    expect(mayAccessOrder({
+      ...guestOrder, callerProfileId: "profile-d", callerRole: "driver",
+      orderUserId: "profile-a",
     })).toBe(false);
   });
 });

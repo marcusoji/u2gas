@@ -16,7 +16,11 @@ export default function LoginForm() {
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [linkSent, setLinkSent] = useState(false);
   const login = useAuthStore((state) => state.login);
+  const requestMagicLink = useAuthStore((state) => state.requestMagicLink);
+  const isConfigured = useAuthStore((state) => state.isConfigured);
 
   const handleTerminalKeyPress = (key: string) => {
     if (showEmailLogin) {
@@ -30,18 +34,47 @@ export default function LoginForm() {
     }
   };
 
-  const handleEmailSubmit = (e?: React.FormEvent) => {
+  const handleEmailSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const finalEmail = email.trim() || "example@gmail.com";
+    setError(null);
+
+    // Without Supabase configured there is nothing to sign in against, so the
+    // preview keeps its drawn demo behaviour. With it, the email is the real
+    // account path — a passwordless magic link, exactly as the Worker docs.
+    if (!isConfigured) {
+      const finalEmail = email.trim() || "example@gmail.com";
+      setIsSubmitting(true);
+      login({ email: finalEmail });
+      setTimeout(() => {
+        setIsSubmitting(false);
+        router.push(`${paths.home}?logged_in=true`);
+      }, 300);
+      return;
+    }
+
+    const address = email.trim();
+    if (!address) return;
     setIsSubmitting(true);
-    login({ email: finalEmail });
-    setTimeout(() => {
+    try {
+      await requestMagicLink(address);
+      setLinkSent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "COULD NOT SEND THE LINK");
+    } finally {
       setIsSubmitting(false);
-      router.push(`${paths.home}?logged_in=true`);
-    }, 300);
+    }
   };
 
   const handleQuickAuth = () => {
+    // The blue/black circle buttons are "sign up with Google/Apple". Without
+    // Supabase (demo preview) they keep the drawn shortcut to the terminal.
+    // With it, sending the browser to a provider we have not configured would
+    // just error, so they open the email path instead — a working control
+    // rather than a dead one.
+    if (isConfigured) {
+      setShowEmailLogin(true);
+      return;
+    }
     login({ email: "user@u2gas.com" });
     router.push(`${paths.home}?logged_in=true`);
   };
@@ -75,6 +108,8 @@ export default function LoginForm() {
               onSubmit={handleEmailSubmit}
               onBack={() => setShowEmailLogin(false)}
               isSubmitting={isSubmitting}
+              linkSent={linkSent}
+              error={error}
             />
           )}
         </AnimatePresence>

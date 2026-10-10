@@ -30,6 +30,7 @@ export default function ProfileModal({
   const storeUser = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const updateUser = useAuthStore((state) => state.updateUser);
+  const saveProfile = useAuthStore((state) => state.saveProfile);
 
   const [isEditing, setIsEditing] = useState(initialEditMode);
 
@@ -58,7 +59,13 @@ export default function ProfileModal({
     if (onSave) {
       await onSave(data);
     } else {
+      // Persist names to `/me` before mirroring them locally. `address` is not
+      // one of the three fields `/me` accepts; it lives with saved addresses.
       updateUser(data);
+      await saveProfile({
+        first_name: data.firstName,
+        last_name: data.lastName,
+      });
     }
 
     setIsEditing(false);

@@ -10,6 +10,7 @@ import { idempotent } from "../middleware/idempotency";
 import {
   generateGuestToken, generateQrToken, guestTokenHash, qrTokenHash,
 } from "../lib/crypto";
+import { mayAccessOrder } from "../lib/authz";
 
 const orders = new Hono<AppEnv>();
 
@@ -78,20 +79,58 @@ async function issueGuestAccess(c: Ctx, orderId: string): Promise<string> {
 }
 
 /**
- * Resolve who is asking. A signed-in owner goes through RLS as normal; a guest
- * presenting a valid token for THIS order is allowed, and nothing else.
+ * Resolve who is asking, for the routes that act through the service role.
+ *
+ * `requireAuth` is not applied to the order routes — a guest must reach their
+ * own order — so authorisation is proven here, and it must be proven from the
+ * order row, not from "is there a caller at all".
+ *
+ * The bug this replaces: any authenticated caller was allowed through
+ * (`if (caller) return true`), and the follow-up ownership check in the routes
+ * read `if (caller && order.user_id && order.user_id !== caller.profileId)`.
+ * For a guest order `user_id` is null, so that condition was false and the
+ * check was skipped — a signed-in customer could cancel any guest order, or
+ * force a QR onto any paid one. Being signed in is not ownership.
+ *
+ * The rule now: a caller must own the order or be staff/admin; a guest must
+ * present a valid capability token for THIS order. Nothing else.
  */
 async function authoriseOrderAccess(c: Ctx, orderId: string): Promise<boolean> {
   const caller = c.get("caller");
-  if (caller) return true;               // RLS decides from here
+  const admin = c.get("admin");
 
-  const token = c.req.query("t");
-  if (!token) return false;
+  // Read the row once, forcing a data row so `.maybeSingle()` can tell "no
+  // such order" (0 rows) from "guest order" (a row with a null user_id).
+  // `.single()` on a guest order used to raise PGRST116, which the old code
+  // translated into a rejected read.
+  let orderUserId: string | null = null;
+  let found = false;
+  if (caller) {
+    const row = await select<{ user_id: string | null }>(
+      admin.from("order").select("user_id").eq("order_id", orderId).maybeSingle(),
+    );
+    if (row) {
+      found = true;
+      orderUserId = row.user_id ?? null;
+    }
+  }
 
-  const match = await rpc<string | null>(c.get("admin"), "order_for_guest_token", {
-    p_hash: await guestTokenHash(token, c.env.QR_SIGNING_KEY),
+  const token = c.req.query("t") ?? c.req.header("X-Guest-Token");
+  const guestTokenMatches = token
+    ? (await rpc<string | null>(admin, "order_for_guest_token", {
+        p_hash: await guestTokenHash(token, c.env.QR_SIGNING_KEY),
+      })) === orderId
+    : false;
+
+  if (caller && !found && !guestTokenMatches) return false;
+
+  return mayAccessOrder({
+    callerProfileId: caller?.profileId ?? null,
+    callerRole: caller?.role ?? null,
+    // With no caller the row was never read; the guest path below decides.
+    orderUserId: caller ? orderUserId : null,
+    guestTokenMatches,
   });
-  return match === orderId;
 }
 
 /**
@@ -276,21 +315,20 @@ orders.get("/:id", rateLimit("order.read", 60, 60_000), async (c) => {
  */
 orders.post("/:id/qr", async (c) => {
   const id = c.req.param("id");
-  const caller = c.get("caller");
 
   if (!(await authoriseOrderAccess(c, id))) throw appError("ORDER_NOT_FOUND");
 
   const order = await select<any>(
     c.get("admin").from("order")
-      .select("order_id, order_number, user_id, payment_status, status, fulfillment_type, total_kobo")
+      .select("order_id, order_number, payment_status, status, fulfillment_type, total_kobo")
       .eq("order_id", id).maybeSingle(),
   );
   if (!order) throw appError("ORDER_NOT_FOUND");
 
-  // A signed-in caller must own it. A guest already proved it with the token.
-  if (caller && order.user_id && order.user_id !== caller.profileId) {
-    throw appError("FORBIDDEN");
-  }
+  // Ownership is already proven by authoriseOrderAccess above. Re-checking
+  // `order.user_id !== caller.profileId` here was the bug: a guest order has a
+  // null user_id, so the condition fell through and any signed-in caller could
+  // mint a QR for it.
   if (order.payment_status !== "paid") {
     throw appError("UNPAID", { total_kobo: order.total_kobo ?? 0 });
   }
@@ -345,10 +383,10 @@ orders.post("/:id/cancel", async (c) => {
     c.get("admin").from("order").select("user_id").eq("order_id", id).maybeSingle(),
   );
   if (!order) throw appError("ORDER_NOT_FOUND");
-  if (caller && order.user_id && order.user_id !== caller.profileId) {
-    throw appError("FORBIDDEN");
-  }
 
+  // Ownership is already proven by authoriseOrderAccess. The old check here
+  // (`caller && order.user_id && ...`) was the mirror of the /qr bug and let a
+  // signed-in stranger cancel a guest's order.
   const result = await rpc<any>(c.get("admin"), "cancel_order", {
     p_order_id: id,
     p_actor_id: caller?.profileId ?? null,

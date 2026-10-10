@@ -150,8 +150,12 @@ app.get("/api/me", requireAuth, async (c) => {
       .eq("profile_id", caller.profileId).single(),
   );
 
+  // The role's landing route must match the frontend's own route table
+  // (`web/utils/paths.ts`). The cashier app lives at `/cashier`, not `/staff`;
+  // `/staff` is a dead path the app never serves, so a cashier signing in used
+  // to land on a blank page.
   const home: Record<string, string> = {
-    customer: "/", staff: "/staff",
+    customer: "/", staff: "/cashier",
     driver: "/driver", admin: "/admin",
   };
 

@@ -3,11 +3,14 @@ import { create } from "zustand";
 import type { AppRole, Profile, UserProfile } from "@/types";
 import { dummyUserProfile } from "@/data";
 import { mediaUrl, setApiToken } from "@/lib/api";
-import { getMe } from "@/lib/endpoints";
+import { isConfigured } from "@/lib/env";
+import { getMe, updateMe } from "@/lib/endpoints";
 import {
+  adoptSessionFromUrl,
   ensureFreshSession,
   loadSession,
   onAuthStateChange,
+  requestMagicLink,
   signInWithPassword,
   signOut,
   signUp,
@@ -33,6 +36,16 @@ interface AuthState {
 
   /** Sign in with a real Supabase account and load the profile. */
   loginWithPassword: (email: string, password: string) => Promise<void>;
+  /**
+   * Send a magic link to the address. The drawn login has no password field,
+   * so this is the account path for a real deployment. Resolves when the mail
+   * is accepted, not when the person returns.
+   */
+  requestMagicLink: (email: string, nextPath?: string) => Promise<void>;
+  /** Adopt a session Supabase appended to `/auth/callback` and read `/me`. */
+  completeMagicLink: () => Promise<void>;
+  /** True when the app can reach Supabase at all (env configured). */
+  isConfigured: boolean;
   /** Register. Returns whether the address must be confirmed before signing in. */
   register: (
     email: string,
@@ -43,6 +56,12 @@ interface AuthState {
   bootstrap: () => Promise<void>;
   /** Re-read `/me` (after a profile edit, say). */
   refresh: () => Promise<void>;
+  /** Persist the person's own name fields, then re-read them. */
+  saveProfile: (patch: {
+    first_name?: string;
+    last_name?: string;
+    phone?: string;
+  }) => Promise<void>;
 
   logout: () => Promise<void>;
   updateUser: (data: Partial<UserProfile>) => void;
@@ -110,6 +129,28 @@ export const useAuthStore = create<AuthState>()((set, get) => {
       set({ isLoggedIn: true, user: targetUser });
     },
 
+    requestMagicLink: async (email, nextPath) => {
+      const redirect = `${window.location.origin}/auth/callback`;
+      const url = nextPath
+        ? `${redirect}?next=${encodeURIComponent(nextPath)}`
+        : redirect;
+      await requestMagicLink(email.trim().toLowerCase(), url);
+    },
+
+    completeMagicLink: async () => {
+      const session = await adoptSessionFromUrl();
+      if (!session) {
+        // No session in the URL: either the SDK-less flow lost it, or the link
+        // was already used. Fall back to whatever is persisted.
+        await adoptSession();
+        return;
+      }
+      setApiToken(session.access_token);
+      await adoptSession();
+    },
+
+    isConfigured,
+
     loginWithPassword: async (email, password) => {
       const session = await signInWithPassword(email, password);
       setApiToken(session.access_token);
@@ -137,6 +178,14 @@ export const useAuthStore = create<AuthState>()((set, get) => {
 
     refresh: async () => {
       if (get().isLoggedIn) await adoptSession();
+    },
+
+    saveProfile: async (patch) => {
+      // Without a backend (demo preview) there is nothing to persist; the
+      // optimistic `updateUser` on the component side still updates the view.
+      if (!isConfigured || !get().isLoggedIn) return;
+      await updateMe(patch);
+      await adoptSession();
     },
 
     logout: async () => {

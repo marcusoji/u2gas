@@ -9,6 +9,10 @@ export interface EmailLoginFormProps {
   onSubmit: (e?: React.FormEvent) => void;
   onBack: () => void;
   isSubmitting: boolean;
+  /** A magic link was accepted; show the drawn "check your mail" state. */
+  linkSent?: boolean;
+  /** A message to show when the link could not be sent. */
+  error?: string | null;
 }
 
 export function EmailLoginForm({
@@ -17,8 +21,37 @@ export function EmailLoginForm({
   onSubmit,
   onBack,
   isSubmitting,
+  linkSent = false,
+  error = null,
 }: EmailLoginFormProps) {
   const hasText = email.trim().length > 0;
+
+  if (linkSent) {
+    return (
+      <motion.div
+        key="link-sent"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="w-full flex flex-col items-center mt-12 select-none"
+      >
+        <p className="text-[11px] tracking-widest text-[#1317E4] uppercase mb-4 text-center">
+          CHECK YOUR MAIL
+        </p>
+        <p className="text-[13px] tracking-wider text-[#838EF8] uppercase text-center break-all max-w-[290px]">
+          {email.trim()}
+        </p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-6 text-[11px] tracking-wider text-[#838EF8] hover:text-[#1317E4] uppercase transition-colors cursor-pointer select-none flex items-center gap-1.5"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+          <span>BACK</span>
+        </button>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.form
@@ -59,6 +92,12 @@ export function EmailLoginForm({
       >
         {isSubmitting ? "LOGGING IN..." : "CONTINUE"}
       </button>
+
+      {error && (
+        <p className="mt-4 text-[11px] tracking-wider text-[#FF0303] uppercase text-center max-w-[280px]">
+          {error}
+        </p>
+      )}
 
       {/* Back to Options button with Lucide ArrowLeft */}
       <button

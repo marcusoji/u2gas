@@ -161,6 +161,72 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * Send a magic link. This is how the drawn login screen signs a real account
+ * in: there is no password field in the design, and the Worker documents
+ * passwordless auth as the only method.
+ *
+ * The redirect has to be an allow-listed URL on the Supabase project (Phase 4
+ * of the deployment guide). The caller passes the page that will read the
+ * returned session — `/auth/callback`.
+ */
+export async function requestMagicLink(
+  email: string,
+  emailRedirectTo: string,
+): Promise<void> {
+  await post("/otp", { email, create_user: false, email_redirect_to: emailRedirectTo });
+}
+
+/**
+ * Adopt the session Supabase appends to the redirect URL.
+ *
+ * A magic link returns to `…/auth/callback#access_token=…&refresh_token=…`
+ * (the implicit flow) or `?code=…` (PKCE). Both are handled here so the
+ * callback page does not care which one the project is configured for.
+ * Returns null when the URL carries no session.
+ */
+export async function adoptSessionFromUrl(): Promise<AuthSession | null> {
+  if (typeof window === "undefined") return null;
+
+  const search = new URLSearchParams(window.location.search);
+  const code = search.get("code");
+  if (code) {
+    // PKCE: exchange the one-time code for a session.
+    const raw = await post<RawSession>("/token?grant_type=pkce", {
+      auth_code: code,
+    });
+    const session = toSession(raw);
+    persist(session);
+    return session;
+  }
+
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  if (!accessToken || !refreshToken) return null;
+
+  const session: AuthSession = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_at: Date.now() + Number(hash.get("expires_in") ?? 3600) * 1000 - 60_000,
+    user: { id: hash.get("user_id") ?? "", email: hash.get("email") },
+  };
+  persist(session);
+  // Strip the tokens from the address bar so they are not left in history.
+  window.history.replaceState(null, "", window.location.pathname);
+  return session;
+}
+
+/**
+ * Only ever redirect within this app. A magic link carries a `next` deep link,
+ * and sending the browser to an unvalidated one is an open redirect.
+ */
+export function safeNext(next: string | null): string | null {
+  if (!next) return null;
+  if (!next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
+
+/**
  * Return a session whose access token is currently valid, refreshing it when
  * it is close to expiry. Returns null when there is nothing to refresh.
  */
