@@ -18,7 +18,7 @@
         │   Cloudflare Pages     │  fetch     │   Cloudflare Workers     │
         │                        ├───────────►│                          │
         │  /        customer     │   CORS     │  JWT verify (JWKS)       │
-        │  /staff   cashier      │   pinned   │  role authorisation      │
+        │  /cashier cashier      │   pinned   │  role authorisation      │
         │  /driver  driver       │            │  idempotency keys        │
         │  /admin   admin        │            │  rate limiting (DO)      │
         │                        │            │  input validation        │

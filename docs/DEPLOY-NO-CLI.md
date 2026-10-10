@@ -656,7 +656,7 @@ Work through this as a real user would.
 
 **Staff** (set a user's role to `staff` in the Table Editor, then add a row to
 `staff_member` linking their `profile_id`)
-- [ ] Sign in, land on `/staff`
+- [ ] Sign in, land on `/cashier`
 - [ ] Both queues load
 - [ ] Create a walk-in order
 - [ ] Record a cash payment, see the change due

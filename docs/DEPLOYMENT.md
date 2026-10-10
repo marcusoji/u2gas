@@ -302,7 +302,7 @@ Work down this list in order. Each step depends on the one above it.
 - [ ] Ordering gas reserves stock — check `gas_stock.reserved_kg` moved
 - [ ] Paying through Monnify flips the order to `confirmed`
 - [ ] Replaying that webhook creates no second payment
-- [ ] The QR scans once at `/staff` and is refused the second time
+- [ ] The QR scans once at `/cashier` and is refused the second time
 - [ ] An unpaid order expires within a minute of its hold and stock returns
 - [ ] A three-item bundle publishes, and an incompatible pair is refused
 - [ ] A bundle's receipt lines add up to the bundle price, not the list price

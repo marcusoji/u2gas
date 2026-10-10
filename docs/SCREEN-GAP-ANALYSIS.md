@@ -1,7 +1,7 @@
 # U2GAS — Screen gap analysis
 
 The live Figma file (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS`
-`256:14758`) is the UI source of record, read through the Figma MCP. Below is what the reference renders, what's missing against the functional spec, and how each
+`256:14758`) is the only UI source of record, read through the Figma MCP. Below is what the reference renders, what's missing against the functional spec, and how each
 missing screen should be built from the existing language.
 
 Legend: ✅ designed · ⚠️ designed but incomplete · ❌ missing
