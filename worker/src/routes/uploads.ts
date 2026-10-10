@@ -112,7 +112,9 @@ uploads.post("/image", requireRole("staff", "admin"),
       });
     }
     if (!["product", "bundle", "stock_entry"].includes(ownerType)) {
-      throw appError("VALIDATION_FAILED");
+      throw appError("VALIDATION_FAILED", {
+        fields: [{ field: "owner_type", message: "Unsupported owner type" }],
+      });
     }
 
     const asset = await storeImage(
@@ -137,7 +139,11 @@ uploads.post("/image", requireRole("staff", "admin"),
 uploads.post("/avatar", requireAuth, rateLimit("upload", 10, 60_000), async (c) => {
   const form = await c.req.formData();
   const file = form.get("file");
-  if (!isUploadFile(file)) throw appError("VALIDATION_FAILED");
+  if (!isUploadFile(file)) {
+    throw appError("VALIDATION_FAILED", {
+      fields: [{ field: "file", message: "Choose a picture" }],
+    });
+  }
 
   const caller = c.get("caller")!;
   const asset = await storeImage(c, await file.arrayBuffer(), "profile", caller.profileId);

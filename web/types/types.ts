@@ -144,7 +144,8 @@ export interface Bundle {
   name: string;
   description: string | null;
   price_kobo: number;
-  image: ImageRef | null;
+  /** Already a URL: the client normalises the API's `image_asset` ref. */
+  image: string;
   members: BundleMember[];
   separately_kobo: number;
   saving_kobo: number;

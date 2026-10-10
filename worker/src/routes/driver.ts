@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv, Ctx } from "../types";
 import { rpc, select } from "../lib/db";
 import { appError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { requireRole } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
 import { qrTokenHash } from "../lib/crypto";
@@ -47,8 +48,8 @@ driver.get("/me", async (c) => {
  */
 driver.patch("/availability", async (c) => {
   const body = z.object({ status: z.enum(["available", "busy", "offline"]) })
-    .safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const id = await driverId(c);
   const admin = c.get("admin");
@@ -142,7 +143,7 @@ driver.post("/deliveries/:id/en-route", async (c) => {
  */
 driver.post("/scan", rateLimit("scan", 120, 60_000), async (c) => {
   const body = z.object({ token: z.string().min(8).max(200) })
-    .safeParse(await c.req.json());
+    .safeParse(await readJson(c));
   if (!body.success) throw appError("QR_INVALID");
 
   const hash = await qrTokenHash(body.data.token, c.env.QR_SIGNING_KEY);
@@ -170,8 +171,8 @@ const failure = z.object({
 });
 
 driver.post("/deliveries/:id/failed", async (c) => {
-  const body = failure.safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  const body = failure.safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const readable: Record<string, string> = {
     no_answer: "No answer at the address",

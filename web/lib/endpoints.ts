@@ -3,6 +3,7 @@ import type {
   AdminStaffProfile,
   AuditEntry,
   Bundle,
+  BundleMember,
   BundleOffer,
   DriverDrop,
   DriverProfile,
@@ -78,12 +79,54 @@ export async function getShop(
   return { items: (payload.items ?? []).map(normalizeListing) };
 }
 
-export function getProduct(id: string): Promise<{ product: Product }> {
-  return apiFetch(`/catalog/products/${id}`);
+/**
+ * Resolve whatever an image-bearing row carries — an `image_asset` ref
+ * (`{ base_path }`), a bare `image_path`/`base_path` string, or an absolute URL
+ * — into the `image` URL the screens render.
+ */
+function imageUrlFrom(row: Record<string, unknown>): string {
+  const asset = row.image_asset;
+  if (asset && typeof asset === "object" && "base_path" in asset) {
+    return mediaUrl((asset as { base_path?: string | null }).base_path ?? null);
+  }
+  if (typeof asset === "string") return mediaUrl(asset);
+  const path = row.image_path ?? row.base_path;
+  return typeof path === "string" ? mediaUrl(path) : "";
 }
 
-export function getBundle(id: string): Promise<{ bundle: Bundle }> {
-  return apiFetch(`/catalog/bundles/${id}`);
+/**
+ * The catalogue endpoints return the raw `image_asset` ref (contract §3.1); the
+ * screens render `Product.image` as a URL. Normalise here, so no component has
+ * to know about `base_path`.
+ */
+export function normalizeProduct(row: Record<string, unknown>): Product {
+  return { ...(row as unknown as Product), image: imageUrlFrom(row) };
+}
+
+export async function getProduct(id: string): Promise<{ product: Product }> {
+  const payload = await apiFetch<{ product: Record<string, unknown> }>(
+    `/catalog/products/${id}`,
+  );
+  return { product: normalizeProduct(payload.product) };
+}
+
+export async function getBundle(id: string): Promise<{ bundle: Bundle }> {
+  const payload = await apiFetch<{ bundle: Record<string, unknown> }>(
+    `/catalog/bundles/${id}`,
+  );
+  const b = payload.bundle;
+  return {
+    bundle: {
+      ...(b as unknown as Bundle),
+      image: imageUrlFrom(b),
+      // Members carry `slot_index`/`quantity` alongside the product fields, so
+      // spread the original row and only swap the image ref for a URL.
+      members: ((b.members as Record<string, unknown>[]) ?? []).map((m) => ({
+        ...(m as unknown as BundleMember),
+        image: imageUrlFrom(m),
+      })),
+    },
+  };
 }
 
 export function getZones(): Promise<{ zones: Zone[] }> {
@@ -93,9 +136,10 @@ export function getZones(): Promise<{ zones: Zone[] }> {
 export function getCompleteTheSet(
   ids: string[],
 ): Promise<{ bundles: BundleOffer[] }> {
-  return apiFetch("/catalog/complete-the-set", {
-    query: { in: ids.join(",") },
-  });
+  // Repeated `?in=`, matching `c.req.queries("in")` on the Worker. Joining them
+  // into one comma-separated value made the endpoint see a single malformed id
+  // and return an empty list.
+  return apiFetch("/catalog/complete-the-set", { query: { in: ids } });
 }
 
 // --- Account -----------------------------------------------------------------
@@ -412,8 +456,11 @@ export function setRate(rate_kobo_per_kg: number): Promise<{ ok: true }> {
   });
 }
 
-export function getAdminProducts(): Promise<{ products: Product[] }> {
-  return apiFetch("/admin/products");
+export async function getAdminProducts(): Promise<{ products: Product[] }> {
+  const payload = await apiFetch<{ products: Record<string, unknown>[] }>(
+    "/admin/products",
+  );
+  return { products: (payload.products ?? []).map(normalizeProduct) };
 }
 
 export function createProduct(body: Record<string, unknown>): Promise<{ product: Product }> {

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv, Ctx } from "../types";
 import { rpc, select } from "../lib/db";
 import { appError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { requireRole } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
 import { idempotent } from "../middleware/idempotency";
@@ -144,7 +145,7 @@ const walkIn = z.object({
 });
 
 staff.post("/walk-in", rateLimit("walkin", 60, 60_000), async (c) => {
-  const body = walkIn.safeParse(await c.req.json());
+  const body = walkIn.safeParse(await readJson(c));
   if (!body.success) {
     throw appError("VALIDATION_FAILED", {
       fields: body.error.issues.map((i) => ({ field: i.path.join("."), message: i.message })),
@@ -190,8 +191,8 @@ const inPerson = z.object({
 
 staff.post("/payments", rateLimit("staffpay", 120, 60_000),
   idempotent("payment.record"), async (c) => {
-  const body = inPerson.safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  const body = inPerson.safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
   const b = body.data;
 
   if (b.method === "cash" && b.tendered_kobo === undefined) {
@@ -264,7 +265,11 @@ staff.post("/payments", rateLimit("staffpay", 120, 60_000),
 staff.get("/change-preview", async (c) => {
   const orderId = c.req.query("order_id");
   const tendered = Number(c.req.query("tendered_kobo") ?? 0);
-  if (!orderId) throw appError("VALIDATION_FAILED");
+  if (!orderId) {
+    throw appError("VALIDATION_FAILED", {
+      fields: [{ field: "order_id", message: "Which order?" }],
+    });
+  }
 
   const order = await select<any>(
     c.get("admin").from("order").select("total_kobo, order_number")
@@ -288,7 +293,7 @@ staff.get("/change-preview", async (c) => {
  */
 staff.post("/scan", rateLimit("scan", 120, 60_000), async (c) => {
   const body = z.object({ token: z.string().min(8).max(200) })
-    .safeParse(await c.req.json());
+    .safeParse(await readJson(c));
   if (!body.success) throw appError("QR_INVALID");
 
   const hash = await qrTokenHash(body.data.token, c.env.QR_SIGNING_KEY);
@@ -338,8 +343,8 @@ staff.post("/reconciliation", idempotent("shift.close"), async (c) => {
     shift_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     counted_kobo: z.number().int().nonnegative(),
     note: z.string().max(500).optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const sid = await staffId(c);
   const admin = c.get("admin");

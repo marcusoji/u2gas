@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv } from "../types";
 import { rpc, select } from "../lib/db";
 import { appError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { requireAuth } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
 
@@ -27,10 +28,6 @@ const body = z.object({
   is_default: z.boolean().optional(),
 });
 
-function fields(e: z.ZodError) {
-  return { fields: e.issues.map((i) => ({ field: i.path.join("."), message: i.message })) };
-}
-
 addresses.get("/", async (c) => {
   const rows = await select<any[]>(
     c.get("db").from("saved_address")
@@ -45,8 +42,8 @@ addresses.get("/", async (c) => {
 });
 
 addresses.post("/", rateLimit("address", 30, 60_000), async (c) => {
-  const parsed = body.safeParse(await c.req.json());
-  if (!parsed.success) throw appError("VALIDATION_FAILED", fields(parsed.error));
+  const parsed = body.safeParse(await readJson(c));
+  if (!parsed.success) throw validationError(parsed.error);
 
   const caller = c.get("caller")!;
   const { is_default, ...rest } = parsed.data;
@@ -68,8 +65,8 @@ addresses.post("/", rateLimit("address", 30, 60_000), async (c) => {
 });
 
 addresses.patch("/:id", async (c) => {
-  const parsed = body.partial().safeParse(await c.req.json());
-  if (!parsed.success) throw appError("VALIDATION_FAILED", fields(parsed.error));
+  const parsed = body.partial().safeParse(await readJson(c));
+  if (!parsed.success) throw validationError(parsed.error);
 
   const id = c.req.param("id");
   const { is_default, ...rest } = parsed.data;

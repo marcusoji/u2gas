@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv, Ctx } from "../types";
 import { rpc, select } from "../lib/db";
 import { appError, AppError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { rateLimit } from "../middleware/ratelimit";
 import { hmacSha512Hex, timingSafeEqual, paymentReference, guestTokenHash } from "../lib/crypto";
 import {
@@ -51,8 +52,8 @@ async function ownsOrder(c: Ctx, orderId: string): Promise<boolean> {
  */
 payments.post("/initialize", rateLimit("pay", 15, 60_000), async (c) => {
   const parsed = z.object({ order_id: z.string().uuid() })
-    .safeParse(await c.req.json().catch(() => ({})));
-  if (!parsed.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!parsed.success) throw validationError(parsed.error);
 
   const orderId = parsed.data.order_id;
   if (!(await ownsOrder(c, orderId))) throw appError("ORDER_NOT_FOUND");
@@ -196,9 +197,9 @@ payments.post("/verify", rateLimit("pay", 30, 60_000), async (c) => {
   const parsed = z.object({
     reference: z.string().regex(/^[A-Za-z0-9._-]{6,120}$/),
     order_id: z.string().uuid(),
-  }).safeParse(await c.req.json().catch(() => ({})));
+  }).safeParse(await readJson(c));
 
-  if (!parsed.success) throw appError("VALIDATION_FAILED");
+  if (!parsed.success) throw validationError(parsed.error);
 
   const { reference, order_id } = parsed.data;
   if (!(await ownsOrder(c, order_id))) throw appError("ORDER_NOT_FOUND");

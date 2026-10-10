@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { AppEnv, Ctx } from "../types";
 import { rpc, select } from "../lib/db";
 import { appError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { requireAuth } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
 import { idempotent } from "../middleware/idempotency";
@@ -124,7 +125,7 @@ const holdMinutes = (c: Ctx) => setting(c, "hold_minutes", 30);
  * (Spec 17)
  */
 orders.post("/gas", rateLimit("order", 20, 60_000), idempotent("order.create"), async (c) => {
-  const body = parse(gasBody, await c.req.json());
+  const body = parse(gasBody, await readJson(c));
   const caller = c.get("caller");
 
   if (!caller && !body.guest_phone) {
@@ -156,7 +157,7 @@ orders.post("/gas", rateLimit("order", 20, 60_000), idempotent("order.create"), 
 
 /** Accessories, bundles, or accessories plus gas in one order. */
 orders.post("/cart", rateLimit("order", 20, 60_000), idempotent("order.create"), async (c) => {
-  const body = parse(cartBody, await c.req.json());
+  const body = parse(cartBody, await readJson(c));
   const caller = c.get("caller");
 
   if (!caller && !body.guest_phone) {

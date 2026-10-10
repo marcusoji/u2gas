@@ -156,3 +156,30 @@ The page's frames carry several id prefixes — `256:*`, `369:*`, `720:*`,
 They are all members of the current page, so a screen may be keyed on any of
 them; only the *page* id (`256:14758`) is stable. Re-read the page through the
 MCP rather than trusting an id recorded here, since the file is live.
+
+## The client/Worker contract has four easy-to-miss shapes
+
+`docs/FRONTEND-API-CONTRACT.md` is the interface the two sides agree on. Four
+places had silently drifted; a change to either side must keep them in step.
+
+- **Repeated query parameters, not comma-joined.** The Worker reads lists with
+  `c.req.queries("in")`, so the client must emit `?in=a&in=b`. `apiFetch` only
+  set one value per key and callers joined with `,`, so
+  `/catalog/complete-the-set` saw a single malformed id and returned an empty
+  list. `buildUrl` now takes `string | string[]` and *appends* per value;
+  `getCompleteTheSet` passes the array through.
+- **`detail.fields` is an array of `{ field, message }`.** `ApiError` cast it to
+  a record, so `fieldErrors` was an array and a form could highlight nothing.
+  It is now mapped to `{ field: message }` (and an already-mapped object is
+  still accepted).
+- **An image column is a ref, the screens want a URL.** Catalogue and admin
+  rows carry `image_asset` as `{ base_path }` (or `image_path`); the screens
+  render `Product.image` as a string. Normalise at the endpoint boundary
+  (`imageUrlFrom` / `normalizeProduct`) — do not push `base_path` into a
+  component. `Bundle.image` was typed `ImageRef` and is now `string` to match.
+- **A body that cannot be parsed is a 400, not a 500.** `c.req.json()` throws a
+  SyntaxError on an empty or malformed body, which reached `onError` as
+  INTERNAL. `readJson(c)` maps it to `VALIDATION_FAILED` with a `body` field,
+  and every `safeParse` refusal now throws `validationError(...)` so the form
+  gets `detail.fields` instead of a bare code.
+

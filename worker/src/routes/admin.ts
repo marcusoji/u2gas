@@ -7,6 +7,7 @@ import {
   monnifyRefundable, koboToNaira,
 } from "../lib/monnify";
 import { appError } from "../lib/errors";
+import { readJson, validationError } from "../lib/body";
 import { requireRole } from "../middleware/auth";
 import { rateLimit } from "../middleware/ratelimit";
 
@@ -92,8 +93,8 @@ admin.post("/stock/entries", async (c) => {
     // The delivery-note photograph, if one was taken. Optional by design:
     // a tanker at the gate should not wait on a camera.
     photo_asset: z.string().uuid().optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   // Raises on gas_never_oversold if an admin tries to remove stock that is
   // already promised to a customer. That refusal is correct, not a bug.
@@ -128,8 +129,8 @@ admin.get("/stock/entries", async (c) => {
 
 admin.patch("/rate", async (c) => {
   const body = z.object({ rate_kobo_per_kg: z.number().int().positive() })
-    .safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   // One transaction: the rate, its history row and the audit entry. These were
   // three separate writes, so a failure between them changed the price with no
@@ -179,12 +180,8 @@ admin.get("/products", async (c) => {
 });
 
 admin.post("/products", async (c) => {
-  const body = productBody.safeParse(await c.req.json());
-  if (!body.success) {
-    throw appError("VALIDATION_FAILED", {
-      fields: body.error.issues.map((i) => ({ field: i.path.join("."), message: i.message })),
-    });
-  }
+  const body = productBody.safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
   const { attributes, ...fields } = body.data;
   const db = c.get("admin");
 
@@ -219,8 +216,8 @@ admin.patch("/products/:id", async (c) => {
     stock_note: z.string().max(500).optional(),
     active: z.boolean().optional(),
     image_asset: z.string().uuid().optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const db = c.get("admin");
   const id = c.req.param("id");
@@ -268,8 +265,8 @@ admin.patch("/products/:id", async (c) => {
 /** Live compatibility check for the three-slot form, as slots are filled. */
 admin.post("/bundles/check", async (c) => {
   const body = z.object({ product_ids: z.array(z.string().uuid()).min(2).max(3) })
-    .safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const violations = await rpc<any[]>(c.get("admin"), "check_bundle_compatibility", {
     p_product_ids: body.data.product_ids,
@@ -298,7 +295,7 @@ admin.post("/bundles", async (c) => {
     })).min(2).max(3),
     override_rule_id: z.string().uuid().optional(),
     override_reason: z.string().min(10).max(500).optional(),
-  }).safeParse(await c.req.json());
+  }).safeParse(await readJson(c));
 
   if (!body.success) {
     throw appError("VALIDATION_FAILED", {
@@ -379,8 +376,8 @@ admin.get("/flagged", async (c) => {
 
 admin.post("/orders/:id/cancel", async (c) => {
   const body = z.object({ reason: z.string().min(3).max(500) })
-    .safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const result = await rpc<any>(c.get("admin"), "cancel_order", {
     p_order_id: c.req.param("id"),
@@ -396,8 +393,8 @@ admin.post("/orders/:id/cancel", async (c) => {
 
 /** Assign a driver (spec 25 step 1). */
 admin.post("/orders/:id/assign", async (c) => {
-  const body = z.object({ driver_id: z.string().uuid() }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  const body = z.object({ driver_id: z.string().uuid() }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   // Delivery row and driver availability move together. (Item 12)
   const result = await rpc<any>(c.get("admin"), "assign_delivery", {
@@ -585,8 +582,8 @@ admin.post("/refunds/:id/process", rateLimit("refund", 30, 60_000), async (c) =>
 /** Close a refund settled outside the system — cash handed back at the depot. */
 admin.post("/refunds/:id/manual", async (c) => {
   const body = z.object({ note: z.string().min(3).max(500) })
-    .safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+    .safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const id = c.req.param("id");
   await rpc(c.get("admin"), "claim_refund", {
@@ -607,8 +604,8 @@ admin.post("/zones", async (c) => {
     name: z.string().min(1).max(120),
     fee_kobo: z.number().int().nonnegative(),
     coverage_note: z.string().max(500).optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   // Zone row and its audit record in one transaction.
   const zone = await select<any>(
@@ -627,8 +624,8 @@ admin.patch("/zones/:id", async (c) => {
     fee_kobo: z.number().int().nonnegative().optional(),
     coverage_note: z.string().max(500).optional(),
     active: z.boolean().optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   // Zone write and its audit row in one transaction.
   const zone = await select<any>(
@@ -730,8 +727,8 @@ admin.post("/staff", async (c) => {
     role: z.enum(["staff", "admin", "driver"]),
     bank_name: z.string().max(120).optional(),
     account_number: z.string().regex(/^[0-9]{10}$/).optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const result = await rpc<any>(c.get("admin"), "admin_add_staff", {
     p_actor: c.get("caller")!.profileId,
@@ -775,8 +772,8 @@ admin.patch("/staff/:id", async (c) => {
     role: z.enum(["staff", "admin", "driver"]).optional(),
     bank_name: z.string().max(120).nullable().optional(),
     account_number: z.string().regex(/^[0-9]{10}$/).nullable().optional(),
-  }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   const db = c.get("admin");
   const staffRow = await select<any>(
@@ -811,8 +808,8 @@ admin.get("/settings", async (c) =>
     c.get("admin").from("app_setting").select("key, value, updated_at")) }));
 
 admin.patch("/settings/:key", async (c) => {
-  const body = z.object({ value: z.any() }).safeParse(await c.req.json());
-  if (!body.success) throw appError("VALIDATION_FAILED");
+  const body = z.object({ value: z.any() }).safeParse(await readJson(c));
+  if (!body.success) throw validationError(body.error);
 
   await c.get("admin").from("app_setting").upsert({
     key: c.req.param("key"),

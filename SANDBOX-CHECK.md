@@ -50,7 +50,8 @@ npm run dev
 5. Check the application routes in the actual React runtime — there is no
    static HTML snapshot of the screens.
 6. Capture screenshots at the reference viewport (440px-wide frames where
-   applicable) and compare them to `u2gass.vercel.app`.
+   applicable) and compare them to the live Figma file (`U2-GAS`, page `MAIN
+   SCREENS` `256:14758`) read through the Figma MCP — the only design source.
 7. Record console errors and failed network requests separately from visual
    differences.
 

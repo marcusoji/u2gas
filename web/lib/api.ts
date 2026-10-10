@@ -32,10 +32,29 @@ export class ApiError extends Error {
       typeof available === "number" ? available : null;
 
     const fields = this.detail.fields;
-    this.fieldErrors =
-      fields && typeof fields === "object"
-        ? (fields as Record<string, string>)
-        : null;
+    // The Worker sends `detail.fields` as an array of `{ field, message }`
+    // (contract §1). It used to be cast straight to a record, so `fieldErrors`
+    // was an array and a form could highlight nothing. Map it to `{ field:
+    // message }`, and also accept an already-mapped object.
+    if (Array.isArray(fields)) {
+      const mapped: Record<string, string> = {};
+      for (const entry of fields) {
+        if (
+          entry &&
+          typeof entry === "object" &&
+          typeof (entry as { field?: unknown }).field === "string"
+        ) {
+          mapped[(entry as { field: string }).field] = String(
+            (entry as { message?: unknown }).message ?? "",
+          );
+        }
+      }
+      this.fieldErrors = Object.keys(mapped).length ? mapped : null;
+    } else if (fields && typeof fields === "object") {
+      this.fieldErrors = fields as Record<string, string>;
+    } else {
+      this.fieldErrors = null;
+    }
 
     this.isRetryable = this.status >= 500 || this.code === "RETRY";
   }
@@ -64,7 +83,14 @@ export function newIdempotencyKey(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-type Query = Record<string, string | number | boolean | undefined | null>;
+type QueryValue = string | number | boolean | undefined | null;
+/**
+ * A query value may be an array, which is emitted as a *repeated* parameter
+ * (`?in=a&in=b`), not comma-joined. The Worker reads these with
+ * `c.req.queries("in")`; a single comma-joined value parses as one id and the
+ * endpoint silently returns nothing.
+ */
+type Query = Record<string, QueryValue | QueryValue[]>;
 
 function buildUrl(path: string, query?: Query, guestToken?: string): string {
   const base = env.apiBase.replace(/\/$/, "");
@@ -73,9 +99,12 @@ function buildUrl(path: string, query?: Query, guestToken?: string): string {
     typeof window !== "undefined" ? window.location.origin : "http://localhost",
   );
   if (query) {
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null && value !== "") {
-        url.searchParams.set(key, String(value));
+    for (const [key, raw] of Object.entries(query)) {
+      const values = Array.isArray(raw) ? raw : [raw];
+      for (const value of values) {
+        if (value !== undefined && value !== null && value !== "") {
+          url.searchParams.append(key, String(value));
+        }
       }
     }
   }
