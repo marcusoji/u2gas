@@ -3,11 +3,12 @@
 This project is a Next.js 16 frontend (`web/`) over a Cloudflare Worker
 (`worker/`) and Supabase (`supabase/`). Do not replace the build system.
 
-The frontend under `web/` is a **carbon copy of the uploaded
-`U2gas_frontend-main.zip`** and is a self-contained UI demo: it renders the
-`data.ts` fixtures and reads no API, so every screen is reachable with no
-backend. The live Figma file is the only design source (`U2-GAS`,
-`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`).
+**The live Figma file is the only design source of truth** (`U2-GAS`,
+`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`), read through the
+Figma MCP. There is no committed HTML snapshot and no markup generator, and none
+may be added. The frontend under `web/` was seeded from the uploaded
+`U2gas_frontend-main.zip` and is now wired to the Worker; where a screen and the
+upload disagree, the live Figma file is what the screen is checked against.
 
 ## Frontend
 
@@ -55,7 +56,7 @@ npm run dev
 
 ## Important
 
-Do not claim visual parity without diffing `web/` against the extracted
-reference zip (`diff -r` must be clean apart from build artifacts and
-git-ignored `.env*`). The uploaded frontend is the only UI source; there is no
-committed HTML gallery to certify against.
+Do not claim visual parity without checking `web/` against the live Figma file
+(`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`) through
+the Figma MCP. The live Figma file is the only UI source; there is no committed
+HTML gallery and no snapshot to certify against.

@@ -169,8 +169,9 @@ domain that never answers). The ordered steps are in
    action, the schema still supports it but `publish_bundle` needs replacing
    with a customer-facing suggestion endpoint.
 2. **Frontend framework.** Next.js 16, matching the uploaded frontend
-   (`U2gas_frontend-main.zip`) and Cloudflare Pages. `web/` is a carbon copy of
-   that app; it is the only UI source.
+   (`U2gas_frontend-main.zip`) and Cloudflare Pages. `web/` was seeded from that
+   app and is wired to the Worker; the live Figma file is the design it is
+   checked against.
 5. **Fonts.** The pixel face is `web/public/fonts/jgs7.woff2` wired through
    `next/font/local`; Barlow Semi Condensed comes from `next/font/google`.
    jgs7 is the only face the uploaded frontend ships.
@@ -627,3 +628,28 @@ switch the service on (`docs/MONNIFY-REFUND-ACTIVATION.md`) — a refund attempt
 before that fails regardless of credentials.
 
 
+
+## Phase 28 — Live Figma pinned as the only design source (docs pass)
+
+The operator asked to remove any HTML design files and make the live Figma file
+the only design source. No `.html` file remains anywhere in the tree — the old
+`docs/*.html` galleries (`u2gas-all-screens.html`, `u2gas-batch*-exact.html`,
+`design-system-reference.html`, `u2gas-screens.html`) and `web/index.html` were
+already removed in the purge, and none is tracked or ignored.
+
+What this pass fixed is the prose: several docs still named the uploaded
+frontend as the "UI source of record", which reads as a second source of truth
+next to the live file. Each now states one rule — the live Figma file
+(`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`, read
+through the Figma MCP) is the only design source, there is no committed HTML
+snapshot or generator, and `web/` was seeded from the upload and is wired to the
+Worker.
+
+- **Reframed** `AGENTS.md`, `README.md`, `SANDBOX-CHECK.md`, `docs/HANDOVER.md`,
+  `docs/DESIGN-SYSTEM.md`, `docs/FRONTEND-API-CONTRACT.md` §10,
+  `docs/FRONTEND-PARITY-IMPLEMENTATION-PLAN.md`, `docs/SCREEN-GAP-ANALYSIS.md`,
+  `docs/SPEC-ADDENDUM.md` §76, `docs/PRODUCTION-READINESS.md`,
+  `docs/ENVIRONMENT.md` and `docs/DEPLOYMENT.md`.
+- Removed the remaining "carbon copy / verify against `u2gass.vercel.app`"
+  wording that told the reader to certify against a snapshot.
+- `web/` is unchanged by this pass: only documentation moved.

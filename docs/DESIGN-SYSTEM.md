@@ -1,11 +1,10 @@
 # U2GAS — Design System
 
-> **These are the uploaded frontend's own tokens.** The UI source of record is
-> `U2gas_frontend-main.zip` (also deployed at `u2gass.vercel.app`); the live
-> Figma file is the only design source (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page
-> `MAIN SCREENS` `256:14758`). `web/` is a carbon copy of the uploaded app, so
-> when a token changes there, mirror the change here and in
-> `web/app/globals.css`.
+> **These are the tokens the screens use.** The live Figma file (`U2-GAS`,
+> `file v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`) is the only
+> design source of truth, read through the Figma MCP; there is no committed HTML
+> snapshot. `web/app/globals.css` carries the same tokens, so when the live file
+> changes, mirror the change here and in `web/app/globals.css`.
 
 Everything below is read from the reference app (`web/app/globals.css`, the
 components, and the `@theme inline` block). Nothing here was invented.

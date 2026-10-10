@@ -239,12 +239,11 @@ It is what CORS is pinned to.
 ## 5. Cloudflare Pages
 
 `bash scripts/deploy-cloudflare.sh` deploys the API and then builds the
-frontend. It does not deploy the frontend: `web/` is a carbon copy of the
-uploaded `U2gas_frontend-main.zip`, a plain Next.js 16 app with no static
-export, so Pages needs a Next adapter (e.g. `@opennextjs/cloudflare`) that is
-not installed yet. The script stops with that step called out; add the adapter
-and a `wrangler pages deploy <output>` invocation when the UI is wired to the
-Worker.
+frontend. It does not deploy the frontend: `web/` was seeded from the uploaded
+`U2gas_frontend-main.zip` and is wired to the Worker, a plain Next.js 16 app with
+no static export, so Pages needs a Next adapter (e.g. `@opennextjs/cloudflare`)
+that is not installed yet. The script stops with that step called out; add the
+adapter and a `wrangler pages deploy <output>` invocation to ship the UI.
 
 By hand, the API half is:
 
@@ -327,7 +326,7 @@ cd worker && npm install && npm run dev        # 127.0.0.1:8787
 cd web && npm install && npm run dev           # localhost:3000
 ```
 
-The frontend under `web/` is a carbon copy of the uploaded
-`U2gas_frontend-main.zip` and renders the `data.ts` fixtures, so it needs no
-backend to show every screen. Wiring it to the Worker + Supabase is a separate
-step; until then the Worker is only needed if you are working on the API itself.
+The frontend under `web/` was seeded from the uploaded
+`U2gas_frontend-main.zip` and is wired to the Worker + Supabase; the live Figma
+file is the design it is checked against. Start the Worker when you work on the
+API itself.

@@ -6,11 +6,10 @@ Supabase (`supabase/`).
 > **The live Figma file is the only design source of truth.**
 > `U2-GAS` — file `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` (`256:14758`) —
 > read through the Figma MCP. There is no committed HTML snapshot and no
-> generator; do not reintroduce one. `web/` is a carbon copy of the uploaded
+> generator; do not reintroduce one. `web/` was seeded from the uploaded
 > frontend (`U2gas_frontend-main.zip`) and keeps its components, fixtures and
-> layout: when the uploaded frontend changes, mirror the change into `web/`
-> verbatim, and when the design changes, the live file is what it is checked
-> against.
+> layout; it is now wired to the Worker, and the live file is what every screen
+> is checked against.
 
 ## Commands
 
@@ -37,18 +36,17 @@ Root scripts (`package.json`) proxy into `web/`:
 - `web/lib/utils.ts` — the `cn` class helper. This is the only `lib/` file the
   uploaded frontend ships.
 - `web/helpers/functions.ts` — `koboToNaira` and friends.
-- `web/data.ts` — the dummy fixtures (`dummyUserProfile`, `dummyUsers`, …) the
-  screens render. The uploaded frontend is a UI demo: it reads no API and binds
-  these fixtures directly.
+- `web/data.ts` — the dummy fixtures (`dummyUserProfile`, `dummyUsers`, …).
+  They remain the offline fallback; live data arrives through
+  `lib/endpoints.ts` and `hooks/useApiData.ts`.
 - `web/stores/` — Zustand view stores (`authStore`, `cartStore`,
   `adminStaffStore`, `adminTankStore`).
 - `web/types/` — the view-model types the fixtures and screens share.
 
-The uploaded frontend is the reference: `web/` is a carbon copy of it. It is a
-self-contained UI demo with **no backend wiring** — screens read `data.ts`
-fixtures, and there is no `lib/api.ts`, `lib/supabase.ts` or environment module.
-Keeping it a carbon copy is the priority; do not reintroduce a Worker/Supabase
-client into a screen that the reference renders from a fixture.
+The live Figma file is the design `web/` is checked against. The uploaded
+frontend seeded `web/` and its markup is kept; the Worker/Supabase wiring that
+did not exist in the upload lives in `lib/` and `hooks/`, not in a screen's
+markup.
 
 ## Build
 
@@ -64,11 +62,11 @@ and the role apps (`/admin`, `/cashier`, `/driver`) rendered from the `data.ts`
 fixtures and Zustand stores, with no Supabase client and no session handling.
 
 That is still true of most screens. The wiring added so far is confined to the
-payment path and the layers the carbon copy did not have — `lib/supabase.ts`
+payment path and the layers the upload did not have — `lib/supabase.ts`
 (session, `ensureFreshSession`), `lib/api.ts` (bearer token, `ApiError`),
 `lib/endpoints.ts`, `lib/env.ts` and `stores/authStore.ts`. Add the rest of the
-wiring there, not by editing a screen's markup, or `web/` stops being a carbon
-copy of the reference.
+wiring there, not by editing a screen's markup, so `web/` keeps the reference's
+look.
 
 ## Environment
 
@@ -82,7 +80,7 @@ Most screens still bind the fixtures in `web/data.ts` directly (through the
 Zustand stores and component props). `helpers/functions.ts` holds
 `koboToNaira`; money is kobo (integer), gas is kg.
 
-Wiring to the Worker is in progress and lives in the layers the carbon copy did
+Wiring to the Worker is in progress and lives in the layers the upload did
 not have: `lib/api.ts` (one `ApiError`, bearer token, idempotency key),
 `lib/endpoints.ts` (one function per Worker route) and `lib/supabase.ts`. The
 home payment flow is wired — `PaymentModal` initializes a real Monnify payment
@@ -122,9 +120,10 @@ Barlow Semi Condensed is loaded from Google Fonts via `next/font/google`
 - **`"use client"` on anything with state, effects, event handlers or browser
   APIs.** `page.tsx` files stay server components; the interactive part lives in
   the imported `*PageClient` / view component.
-- **Verify against the uploaded frontend, not a remembered design.** Diff a
-  screen against the reference app (`U2gas_frontend-main.zip`, also deployed at
-  `u2gass.vercel.app`) and keep `web/` byte-for-byte in step with it: same
+- **Verify against the live Figma file, not a remembered design or a saved
+  snapshot.** Read the screen in `U2-GAS`
+  (`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`) through the
+  Figma MCP and keep `web/` in step with it: same
   markup, same classes, same copy. Do not "improve" a screen by eye.
 - **A drawn value is drawn text, typos included** (`C0PYRIGHT`, `Please redude`,
   curly punctuation). Match the reference's characters exactly; a straight quote
@@ -139,10 +138,9 @@ Barlow Semi Condensed is loaded from Google Fonts via `next/font/google`
 
 There is no snapshot and no generator: the live Figma file `U2-GAS`
 (`v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` `256:14758`), read through the
-Figma MCP, is the only design source. `web/` is a carbon copy of the uploaded
-frontend (`U2gas_frontend-main.zip`, also deployed at `u2gass.vercel.app`) — when
-the upload changes, mirror the change verbatim; when the design changes, the live
-file is what a screen is checked against.
+Figma MCP, is the only design source. `web/` was seeded from the uploaded
+frontend (`U2gas_frontend-main.zip`, also deployed at `u2gass.vercel.app`) and
+keeps its markup; the live file is what a screen is checked against.
 
 The old Vite/React frontend, its `docs/*.html` galleries (`u2gas-all-screens.html`,
 the `u2gas-batch*-exact.html` files, `design-system-reference.html`), the

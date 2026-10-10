@@ -4,7 +4,7 @@ Gas and accessories depot platform for U2 Oil and Gas. Four apps on one
 deployment: customer, cashier, driver, admin.
 
 ```
-web/                 Next.js 16 app (carbon copy of the uploaded frontend)
+web/                 Next.js 16 app (seeded from the uploaded frontend, wired to the Worker)
 worker/              Cloudflare Workers API (Hono)
 supabase/
   migrations/        Schema, functions, RLS, seed
@@ -94,19 +94,14 @@ Full setup is in `docs/DEPLOYMENT.md`. Keys are in `docs/ENVIRONMENT.md`.
 
 ## Seeing the UI
 
-The frontend under `web/` is a carbon copy of the uploaded
-`U2gas_frontend-main.zip` and is a self-contained UI demo: it renders the
-`data.ts` fixtures and reads no API, so every screen is reachable with no Worker
-and no sign-in.
+The frontend under `web/` was seeded from the uploaded
+`U2gas_frontend-main.zip` and is wired to the `worker/` (Cloudflare Workers API)
+and `supabase/` (schema, functions, RLS) backend that remain in the repo. The
+live Figma file is the only design source the screens are checked against.
 
 ```
 cd web && npm install && npm run dev
 ```
-
-`worker/` (the Cloudflare Workers API) and `supabase/` (schema, functions, RLS)
-remain in the repo as the backend. Nothing in the copied frontend calls them
-yet — wiring the UI to the backend is a deliberate, separate step, not part of
-keeping the carbon copy.
 
 ## Testing
 
@@ -129,10 +124,10 @@ comes from Google Fonts at build time. See `docs/DEPLOYMENT.md` §5.
 
 **The live Figma file is the only design source.** `U2-GAS` — file
 `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS` (`256:14758`) — read through the
-Figma MCP. There is no committed HTML snapshot of the screens and no generator.
-`web/` is a carbon copy of the uploaded frontend (`U2gas_frontend-main.zip`, also
-deployed at `u2gass.vercel.app`); when the upload changes, mirror the change into
-`web/` verbatim.
+Figma MCP. There is no committed HTML snapshot of the screens and no generator,
+and none may be added. `web/` was seeded from the uploaded frontend
+(`U2gas_frontend-main.zip`, also deployed at `u2gass.vercel.app`) and keeps its
+markup; when the design changes, the live file is what it is checked against.
 
 ## Documentation
 
@@ -145,7 +140,7 @@ deployed at `u2gass.vercel.app`); when the upload changes, mirror the change int
 | `docs/DEPLOY-NO-CLI.md` | Step-by-step deployment using only web dashboards |
 | `docs/PRODUCTION-READINESS.md` | What was fixed, what remains, the verdict |
 | `docs/ENVIRONMENT.md` | Every variable, where it comes from, what rotating costs |
-| `docs/DESIGN-SYSTEM.md` | Tokens and components taken from the uploaded frontend |
+| `docs/DESIGN-SYSTEM.md` | Tokens and components, checked against the live Figma file |
 | `docs/SCREEN-GAP-ANALYSIS.md` | Which screens existed, which were missing |
 
 ## Status

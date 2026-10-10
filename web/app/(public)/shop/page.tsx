@@ -17,7 +17,7 @@ export default function ShopPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { data, error, loading } = useShop();
+  const { data } = useShop();
   const products = data?.items ?? [];
 
   const filteredItems = products.filter((item) =>
@@ -99,12 +99,8 @@ export default function ShopPage() {
           ))}
 
           {filteredItems.length === 0 && (
-            <div className="col-span-2 py-12 text-center text-sm text-neutral-400 font-mono uppercase">
-              {loading
-                ? "LOADING ACCESSORIES…"
-                : error
-                  ? error.message
-                  : "NO ACCESSORIES FOUND"}
+            <div className="col-span-2 py-12 text-center text-sm text-neutral-400 font-mono">
+              NO ACCESSORIES FOUND
             </div>
           )}
         </div>

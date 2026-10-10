@@ -7,7 +7,6 @@ import { ReceiptModal } from "@/components/modals/ReceiptModal";
 import { HistoryModal } from "@/components/modals/HistoryModal";
 import { ProfileModal } from "@/components/modals/ProfileModal";
 import { useAuthStore } from "@/stores/authStore";
-import { ApiError } from "@/lib/api";
 import {
   createGasOrder,
   getAvailability,
@@ -20,7 +19,6 @@ export default function GasOrderFlow() {
   const [order, setOrder] = useState<GasOrder | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [guestToken, setGuestToken] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
   const [terminalStatus, setTerminalStatus] = useState<
     "idle" | "processing" | "success" | "failed"
   >("idle");
@@ -65,11 +63,10 @@ export default function GasOrderFlow() {
 
   /** PAY: confirm the depot can cover the amount, then hold it with a real order. */
   const handlePay = async (draft: GasOrder) => {
-    setError(null);
     try {
       const availability = await getAvailability(draft.gas_amount_kg);
       if (!availability.sufficient) {
-        // The Worker's own copy is written for the interface; render it verbatim.
+        // The drawn terminal already owns the refusal state; surface it there.
         setTerminalStatus("failed");
         return;
       }
@@ -81,8 +78,7 @@ export default function GasOrderFlow() {
       setOrderId(created.order_id);
       setGuestToken(guest_token);
       setShowPayment(true);
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "ORDER FAILED");
+    } catch {
       setTerminalStatus("failed");
     }
   };
@@ -109,12 +105,6 @@ export default function GasOrderFlow() {
           onPaymentComplete={handlePaymentComplete}
         />
       </GasTerminal>
-
-      {error && (
-        <p className="mt-3 text-[10px] tracking-widest text-[#E41313] uppercase text-center">
-          {error}
-        </p>
-      )}
 
       <ReceiptModal
         open={showReceipt}

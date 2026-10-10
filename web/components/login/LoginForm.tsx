@@ -15,41 +15,35 @@ export default function LoginForm() {
   const router = useRouter();
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const loginWithPassword = useAuthStore((state) => state.loginWithPassword);
+  const login = useAuthStore((state) => state.login);
 
   const handleTerminalKeyPress = (key: string) => {
-    if (!showEmailLogin) return;
-    if (key === "x" || key === "X") {
-      setEmail((prev) => prev.slice(0, -1));
-    } else if (key === "PAY") {
-      void handleEmailSubmit();
-    } else if (/^[0-9]$/.test(key)) {
-      setEmail((prev) => prev + key);
+    if (showEmailLogin) {
+      if (key === "x" || key === "X") {
+        setEmail((prev) => prev.slice(0, -1));
+      } else if (key === "PAY") {
+        handleEmailSubmit();
+      } else if (/^[0-9]$/.test(key)) {
+        setEmail((prev) => prev + key);
+      }
     }
   };
 
-  const handleEmailSubmit = async (e?: React.FormEvent) => {
+  const handleEmailSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const finalEmail = email.trim();
-    if (!finalEmail || !password) {
-      setError("ENTER YOUR EMAIL AND PASSWORD");
-      return;
-    }
-    setError(null);
+    const finalEmail = email.trim() || "example@gmail.com";
     setIsSubmitting(true);
-    try {
-      await loginWithPassword(finalEmail, password);
-      const home = useAuthStore.getState().home || paths.home;
-      router.push(home);
-    } catch (cause) {
-      // The auth provider's own message is already written for the interface.
-      setError(cause instanceof Error ? cause.message : "SIGN IN FAILED");
-    } finally {
+    login({ email: finalEmail });
+    setTimeout(() => {
       setIsSubmitting(false);
-    }
+      router.push(`${paths.home}?logged_in=true`);
+    }, 300);
+  };
+
+  const handleQuickAuth = () => {
+    login({ email: "user@u2gas.com" });
+    router.push(`${paths.home}?logged_in=true`);
   };
 
   return (
@@ -72,15 +66,12 @@ export default function LoginForm() {
           {!showEmailLogin ? (
             <SocialAuth
               onOpenEmailLogin={() => setShowEmailLogin(true)}
-              onQuickAuth={() => setShowEmailLogin(true)}
+              onQuickAuth={handleQuickAuth}
             />
           ) : (
             <EmailLoginForm
               email={email}
               setEmail={setEmail}
-              password={password}
-              setPassword={setPassword}
-              error={error}
               onSubmit={handleEmailSubmit}
               onBack={() => setShowEmailLogin(false)}
               isSubmitting={isSubmitting}

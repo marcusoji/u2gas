@@ -27,9 +27,12 @@ function useAsync<T>(load: () => Promise<T>, deps: unknown[]): AsyncState<T> {
   const [nonce, setNonce] = useState(0);
 
   // Keep the latest loader without making it a dependency: callers pass an
-  // inline closure, and depending on it would refetch on every render.
+  // inline closure, and depending on it would refetch on every render. The ref
+  // is written from an effect so it is never updated during render.
   const loadRef = useRef(load);
-  loadRef.current = load;
+  useEffect(() => {
+    loadRef.current = load;
+  });
 
   useEffect(() => {
     let cancelled = false;

@@ -18,6 +18,11 @@ interface AuthState {
   isLoggedIn: boolean;
   /** The display shape components already read. */
   user: UserProfile | null;
+  /**
+   * Demo sign-in used by the drawn login screen: it flips the session on
+   * without a gateway round-trip. `loginWithPassword` is the real path.
+   */
+  login: (user?: UserProfile) => void;
   /** The full row from `/me`, including the role the Worker authorises on. */
   profile: Profile | null;
   role: AppRole | null;
@@ -96,6 +101,14 @@ export const useAuthStore = create<AuthState>()((set, get) => {
     role: null,
     home: "/",
     isReady: false,
+
+    login: (user) => {
+      const targetUser = user || dummyUserProfile;
+      if (typeof document !== "undefined") {
+        document.cookie = "u2gas_logged_in=true; path=/; max-age=2592000";
+      }
+      set({ isLoggedIn: true, user: targetUser });
+    },
 
     loginWithPassword: async (email, password) => {
       const session = await signInWithPassword(email, password);

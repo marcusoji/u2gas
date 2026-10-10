@@ -6,10 +6,10 @@ screen.
 
 ## Run it locally
 
-The frontend under `web/` is a carbon copy of the uploaded
-`U2gas_frontend-main.zip` and is a self-contained UI demo: it renders the
-`data.ts` fixtures and reads no API, so every screen is reachable with no Worker
-and no sign-in.
+The frontend under `web/` was seeded from the uploaded
+`U2gas_frontend-main.zip` and is wired to the Worker (`worker/`) and Supabase
+(`supabase/`) backend, so a screen is checked against the live Figma file rather
+than the upload.
 
 ```bash
 git clone <repo> && cd u2gas
@@ -18,8 +18,7 @@ npm run dev
 ```
 
 Open `http://localhost:3000/`. The Worker (`worker/`) and Supabase (`supabase/`)
-are the backend and remain in the repo, but nothing in the copied frontend calls
-them yet.
+are the backend and remain the system's authority; the frontend consumes them.
 
 ### Checks (run them before you commit)
 
@@ -32,28 +31,31 @@ npm run build           # next build
 
 ## The one contract to keep
 
-The **uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
-`u2gass.vercel.app`) is the only UI source of record.** `web/` must stay a
-carbon copy of it: `diff -r` against the extracted reference must be empty.
+The **live Figma file (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS`
+`256:14758`) is the only UI source of record**, read through the Figma MCP. There
+is no committed HTML snapshot and no generator, and none may be added. `web/`
+keeps the uploaded frontend's markup and classes, and where the two disagree the
+live file wins.
 
-1. **To change a screen, diff it against the reference and mirror the change
-   into `web/` verbatim** — same markup, same classes, same copy. Never restyle
-   a screen by eye.
+1. **To change a screen, read the live file through the Figma MCP and mirror the
+   change into `web/` verbatim** — same markup, same classes, same copy. Never
+   restyle a screen by eye, and never certify against a saved snapshot.
 2. **A drawn value is drawn text, typos included** (`C0PYRIGHT`,
    `INSUFFICIENT- Please redude`, curly punctuation) — match it character for
    character.
 
 ## Adding a new page
 
-1. Add the page to the reference, then copy it into `web/` (or, if it is a new
-   screen built from the reference's own language, keep the same primitives and
-   copy).
+1. Read the screen in the live Figma file through the Figma MCP, then build it
+   into `web/` from the reference's own language, keeping the same primitives and
+   copy.
 2. Add `app/(public)/<route>/page.tsx` — a thin component. Anything with state,
    effects or handlers is `"use client"`.
-3. Build the screen from the existing primitives and the `data.ts` fixtures.
-   There is no API client, auth or Supabase layer in the copied frontend.
+3. Build the screen from the existing primitives; fetch through
+   `hooks/useApiData.ts` and the typed `lib/endpoints.ts` wrappers rather than
+   reaching for a fixture.
 4. Run `npx tsc --noEmit`, `npm run lint` and `npm run build`, then load the
-   route at 440px and compare it to `u2gass.vercel.app`.
+   route at 440px and compare it to the live Figma frame.
 
 ## Fonts
 
@@ -67,12 +69,13 @@ pulls the upstream Jgs webfont (or subsets a local `JGS_SRC` master) into
 
 ## Asset workflow (pictures the screens show)
 
-Pictures are the reference's own files under `web/public/` (`images/`, `icons/`,
-`shop/`). Keep them as the reference ships them.
+Pictures are the uploaded frontend's own files under `web/public/` (`images/`,
+`icons/`, `shop/`). Keep them as they ship; the live Figma file is the reference
+for any picture you add or replace.
 
 ## Still to do
 
-- Wire the UI to the Worker + Supabase. This is a deliberate, separate step —
-  the copied frontend is a fixture-only demo today.
+- Confirm the screens against the live Figma file (`U2-GAS`,
+  `v4xgWC0Q0wtSKmAff3EOzU`, `256:14758`) through the Figma MCP.
 - Full typecheck, lint and build.
 - Deploy and confirm.

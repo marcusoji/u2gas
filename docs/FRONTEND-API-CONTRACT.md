@@ -936,14 +936,12 @@ Admin-editable, seeded in `0007`:
 
 ## 10. UI source of record
 
-The uploaded frontend (`U2gas_frontend-main.zip`, also deployed at
-`u2gass.vercel.app`) is the only UI source for what exists. The live Figma file
-is the only design source (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page
-`MAIN SCREENS` `256:14758`), and there is no committed HTML snapshot or
-generator. `web/` is a carbon copy of the uploaded app. It is now wired to this
-contract: `lib/api.ts` is the transport, `lib/endpoints.ts` holds one typed
-wrapper per endpoint below, `lib/supabase.ts` carries the session, and
-`hooks/useApiData.ts` fetches for the screens.
+The live Figma file (`U2-GAS`, `v4xgWC0Q0wtSKmAff3EOzU`, page `MAIN SCREENS`
+`256:14758`) is the only design source, read through the Figma MCP; there is no
+committed HTML snapshot or generator. `web/` was seeded from the uploaded app and
+is now wired to this contract: `lib/api.ts` is the transport, `lib/endpoints.ts`
+holds one typed wrapper per endpoint below, `lib/supabase.ts` carries the
+session, and `hooks/useApiData.ts` fetches for the screens.
 
 A drawn value is still drawn text, typos included (`C0PYRIGHT`,
 `INSUFFICIENT- Please redude`); match the live file character for character.

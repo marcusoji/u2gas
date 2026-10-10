@@ -5,7 +5,6 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import type { GasOrderDraft } from "@/types";
 import { getOrder, initializePayment } from "@/lib/endpoints";
-import { ApiError } from "@/lib/api";
 import { rememberPaymentAttempt } from "@/lib/paymentSession";
 
 type PaymentModalProps = {
@@ -37,7 +36,6 @@ export default function PaymentModal({
   const [mode, setMode] = useState<"walk-in" | "delivery">("walk-in");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // The gateway's own page is the authority: `initialize` returns its URL, the
   // tab it opens posts back to /orders/verify, and `verify` records the result.
@@ -133,7 +131,6 @@ export default function PaymentModal({
    */
   const handleSelectMethod = async (method: string) => {
     setSelectedMethod(method);
-    setError(null);
 
     if (method === "DEPOT" || !orderId) {
       setIsProcessing(true);
@@ -150,12 +147,9 @@ export default function PaymentModal({
       // in the query without becoming tamperable.
       rememberPaymentAttempt({ orderId, reference, guestToken });
       if (authorization_url) window.open(authorization_url, "_blank", "noopener");
-    } catch (cause) {
+    } catch {
       setIsProcessing(false);
       setSelectedMethod(null);
-      setError(
-        cause instanceof ApiError ? cause.message : "THE PAYMENT PAGE DIDN'T OPEN",
-      );
     }
   };
 
@@ -207,12 +201,6 @@ export default function PaymentModal({
               aria-label="Close"
               className="w-12 h-1 bg-[#8E8E93] rounded-full hover:bg-neutral-600 transition-colors cursor-pointer"
             />
-
-            {error && (
-              <p className="text-[11px] tracking-widest text-[#E41313] uppercase text-center">
-                {error}
-              </p>
-            )}
 
             <AnimatePresence mode="wait">
               {isProcessing ? (

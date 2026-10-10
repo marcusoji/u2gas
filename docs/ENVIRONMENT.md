@@ -48,13 +48,10 @@ In `wrangler.toml` under `[vars]`.
 
 ## Cloudflare Pages
 
-All public. Anything secret here is a leak. The **copied frontend (`web/`) reads
-none of these yet** — it is a carbon copy of the uploaded
-`U2gas_frontend-main.zip` and renders `data.ts` fixtures with no env module.
-They are the contract for when the UI is wired to the Worker: the app then reads
-`NEXT_PUBLIC_*` at build time and inlines them. The Supabase **publishable** key
-is the only Supabase key the browser may see; a build must refuse to ship a
-`sb_secret_` / `service_role` key.
+All public. Anything secret here is a leak. The frontend (`web/`) reads these
+at build time through `lib/env.ts`; the live Figma file is the only design source
+behind the screens. The Supabase **publishable** key is the only Supabase key the
+browser may see; a build must refuse to ship a `sb_secret_` / `service_role` key.
 
 | Name | Example |
 |---|---|

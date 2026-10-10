@@ -2,8 +2,9 @@
 
 Covers the hardening pass across all 56 parts of the brief. The Worker and
 Supabase work in this report carries directly into the current app. The
-frontend was subsequently replaced wholesale by the uploaded
-`U2gas_frontend-main.zip` (a carbon copy now lives in `web/`), so rows below
+frontend was subsequently re-seeded from the uploaded
+`U2gas_frontend-main.zip` (now in `web/`, wired to the Worker; the live Figma
+file is the design it is checked against), so rows below
 that name a frontend file are **historical** — they record what the earlier
 frontend did, not what ships today.
 
