@@ -22,7 +22,12 @@ type PaymentModalProps = {
   orderId?: string | null;
   /** Guest capability token, for a checkout that started signed out. */
   guestToken?: string;
-  onPaymentComplete: (outcome: "success" | "failed") => void;
+  /**
+   * `pending` is not a failure: a walk-in who chose PAY IN THE DEPOT holds an
+   * unpaid order that a cashier settles. Reporting `success` there told the
+   * customer a payment had happened when none had.
+   */
+  onPaymentComplete: (outcome: "success" | "failed" | "pending") => void;
 };
 
 export default function PaymentModal({
@@ -36,6 +41,9 @@ export default function PaymentModal({
   const [mode, setMode] = useState<"walk-in" | "delivery">("walk-in");
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Set when the browser refused the gateway tab, so the sheet can offer the
+  // checkout URL as a clickable link instead of silently going nowhere.
+  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
 
   // The gateway's own page is the authority: `initialize` returns its URL, the
   // tab it opens posts back to /orders/verify, and `verify` records the result.
@@ -45,14 +53,28 @@ export default function PaymentModal({
     if (!isProcessing || !open) return;
 
     // PAY IN THE DEPOT leaves the order pending for a cashier to settle, so
-    // there is no gateway to poll and no payment_status to wait for.
-    if (selectedMethod === "DEPOT" || !orderId) {
+    // there is no gateway to poll and no payment_status to wait for. The order
+    // is *held*, not paid, so the outcome is `pending` — the terminal says so
+    // rather than stamping SUCCESS over an unpaid order.
+    if (selectedMethod === "DEPOT") {
       const timer = window.setTimeout(() => {
         setIsProcessing(false);
         setSelectedMethod(null);
         onOpenChange(false);
-        onPaymentComplete("success");
+        onPaymentComplete("pending");
       }, 1400);
+      return () => window.clearTimeout(timer);
+    }
+
+    // No order to poll means the hold never got created: nothing was charged,
+    // so this is a failure, not a success.
+    if (!orderId) {
+      const timer = window.setTimeout(() => {
+        setIsProcessing(false);
+        setSelectedMethod(null);
+        onOpenChange(false);
+        onPaymentComplete("failed");
+      }, 400);
       return () => window.clearTimeout(timer);
     }
 
@@ -121,16 +143,18 @@ export default function PaymentModal({
     if (!nextOpen) {
       setIsProcessing(false);
       setSelectedMethod(null);
+      setBlockedUrl(null);
     }
   };
 
   /**
    * Hand the customer to the gateway. `PAY IN THE DEPOT` is not a Monnify
    * method — the order simply stays pending for a cashier to settle, so the
-   * sheet closes and the terminal reports success.
+   * sheet closes and the terminal reports the hold as pending, not paid.
    */
   const handleSelectMethod = async (method: string) => {
     setSelectedMethod(method);
+    setBlockedUrl(null);
 
     if (method === "DEPOT" || !orderId) {
       setIsProcessing(true);
@@ -138,16 +162,70 @@ export default function PaymentModal({
     }
 
     setIsProcessing(true);
+
+    // Open the destination tab *first*, synchronously, before the network call.
+    // `window.open` only survives a browser's popup blocker while it is in the
+    // direct call stack of the user's click; after an `await` it is treated as
+    // an unsolicited popup and silently blocked, which left the customer on a
+    // processing screen with no gateway.
+    //
+    // `noopener` is deliberately not passed: it makes `window.open` return
+    // null, and we need the handle to seed the child tab's storage (below) and
+    // navigate it. The opener link is severed by hand instead, which gives the
+    // same isolation while keeping the reference.
+    const gatewayTab = window.open("about:blank", "_blank");
+    if (gatewayTab) {
+      try {
+        gatewayTab.opener = null;
+      } catch {
+        // Some browsers refuse the assignment; navigation still proceeds.
+      }
+    }
+
     try {
       const { authorization_url, reference, already_paid } =
         await initializePayment(orderId, guestToken);
-      if (already_paid) return; // the poll settles it on the next tick
+      if (already_paid) {
+        gatewayTab?.close();
+        return; // the poll settles it on the next tick
+      }
       // The return page reads these from session storage: the gateway sends
       // back only `?order=`, so the reference and the guest token cannot ride
       // in the query without becoming tamperable.
       rememberPaymentAttempt({ orderId, reference, guestToken });
-      if (authorization_url) window.open(authorization_url, "_blank", "noopener");
+
+      // sessionStorage is per-tab and a child opened here snapshotted it before
+      // this attempt existed, so the gateway tab would return to /orders/verify
+      // with nothing to verify with. Copy the record into it directly (it is
+      // same-origin while blank) before sending it to Monnify.
+      if (gatewayTab) {
+        try {
+          gatewayTab.sessionStorage.setItem(
+            "u2gas_payment_attempts_v1",
+            JSON.stringify({
+              [orderId]: { orderId, reference, createdAt: Date.now() },
+            }),
+          );
+          if (guestToken) {
+            gatewayTab.sessionStorage.setItem("u2gas_payment_guest_v1", guestToken);
+          }
+        } catch {
+          // If the copy is refused, the webhook still settles the order and the
+          // opener tab still polls it.
+        }
+      }
+
+      if (authorization_url && gatewayTab) {
+        gatewayTab.location.href = authorization_url;
+      } else if (authorization_url) {
+        // The tab could not be reserved, so the popup was blocked. Tell the
+        // customer instead of leaving them on a spinner, and offer a link they
+        // can follow themselves.
+        setBlockedUrl(authorization_url);
+        setIsProcessing(false);
+      }
     } catch {
+      gatewayTab?.close();
       setIsProcessing(false);
       setSelectedMethod(null);
     }
@@ -337,6 +415,23 @@ export default function PaymentModal({
                   <p className="text-[#B5B5B5] text-base tracking-[0.14em] uppercase mb-3">
                     PAYMENT OPTIONS
                   </p>
+
+                  {blockedUrl && (
+                    <div className="w-full flex flex-col items-center gap-2 mb-2">
+                      <p className="text-[11px] tracking-wider text-[#B00020] text-center max-w-[280px]">
+                        YOUR BROWSER BLOCKED THE PAYMENT TAB — OPEN IT BELOW
+                      </p>
+                      <a
+                        href={blockedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setBlockedUrl(null)}
+                        className="border border-brand-primary text-brand-primary rounded-full px-6 py-2 text-[12px] tracking-wider hover:bg-brand-primary/5 active:scale-95 transition-all"
+                      >
+                        OPEN PAYMENT PAGE
+                      </a>
+                    </div>
+                  )}
 
                   {/* Cards for Delivery Mode */}
                   {mode === "delivery" ? (

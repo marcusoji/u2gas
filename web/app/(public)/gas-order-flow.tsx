@@ -20,7 +20,7 @@ export default function GasOrderFlow() {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [guestToken, setGuestToken] = useState<string | undefined>();
   const [terminalStatus, setTerminalStatus] = useState<
-    "idle" | "processing" | "success" | "failed"
+    "idle" | "processing" | "success" | "failed" | "held"
   >("idle");
 
   const [showReceipt, setShowReceipt] = useState(false);
@@ -35,9 +35,11 @@ export default function GasOrderFlow() {
 
   const notifications: Notification[] = notificationData?.notifications ?? [];
 
-  const handlePaymentComplete = (outcome: "success" | "failed") => {
-    setTerminalStatus(outcome);
+  const handlePaymentComplete = (outcome: "success" | "failed" | "pending") => {
+    setTerminalStatus(outcome === "pending" ? "held" : outcome);
     reloadHome();
+    // Only a settled payment produces a receipt. A held (pay-in-depot) order
+    // has taken no money, so presenting a receipt would be a lie.
     if (outcome === "success") {
       setReceiptItems([
         {

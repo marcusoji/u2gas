@@ -43,9 +43,9 @@ export default function GasTerminal({
     setHasStartedTyping(false);
   }, [initialValue]);
 
-  // Close success/failed status on click anywhere outside or on Escape key & lock background scroll
+  // Close held/success/failed status on click anywhere outside or on Escape key & lock background scroll
   useEffect(() => {
-    if (status !== "success" && status !== "failed") return;
+    if (status !== "success" && status !== "failed" && status !== "held") return;
 
     const originalBodyOverflow = document.body.style.overflow;
     const originalHtmlOverflow = document.documentElement.style.overflow;
@@ -170,9 +170,9 @@ export default function GasTerminal({
           {children}
         </div>
 
-        {/* Full-page blur overlay for Success / Failed */}
+        {/* Full-page blur overlay for Success / Failed / Held */}
         <AnimatePresence>
-          {(status === "success" || status === "failed") && (
+          {(status === "success" || status === "failed" || status === "held") && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -186,7 +186,7 @@ export default function GasTerminal({
                 <motion.div
                   key={`terminal-hand-${status}`}
                   initial={{ scale: 0.15, opacity: 0.3 }}
-                  animate={{ scale: 2, opacity: 1 }}
+                  animate={{ scale: status === "held" ? 1.4 : 2, opacity: 1 }}
                   transition={{
                     type: "tween",
                     duration: 0.9,
@@ -199,7 +199,13 @@ export default function GasTerminal({
                         ? "/images/success.png"
                         : "/images/failed.png"
                     }
-                    alt={status === "success" ? "Success" : "Failed"}
+                    alt={
+                      status === "success"
+                        ? "Success"
+                        : status === "held"
+                          ? "Order held"
+                          : "Failed"
+                    }
                     className="object-contain drop-shadow-[0_16px_32px_rgba(0,0,0,0.45)] pointer-events-none"
                   />
                 </motion.div>
@@ -218,16 +224,37 @@ export default function GasTerminal({
                   className="relative z-40 w-full flex justify-center"
                 >
                   <TerminalScreenBox
-                    value={status === "success" ? "SUCCESS!!" : "FAILED!!"}
-                    variant={status === "success" ? "green" : "red"}
+                    value={
+                      status === "success"
+                        ? "SUCCESS!!"
+                        : status === "held"
+                          ? "HOLD PLACED"
+                          : "FAILED!!"
+                    }
+                    variant={
+                      status === "success"
+                        ? "green"
+                        : status === "held"
+                          ? "amber"
+                          : "red"
+                    }
                     speed={8}
                     className={
                       status === "success"
                         ? "shadow-[0_4px_24px_rgba(3,255,49,0.5)]"
-                        : "shadow-[0_4px_24px_rgba(255,3,3,0.45)]"
+                        : status === "held"
+                          ? "shadow-[0_4px_24px_rgba(255,179,0,0.45)]"
+                          : "shadow-[0_4px_24px_rgba(255,3,3,0.45)]"
                     }
                   />
                 </motion.div>
+
+                {status === "held" && (
+                  <p className="relative z-40 mt-4 text-center text-[11px] tracking-widest uppercase text-white/90 max-w-[300px]">
+                    Not paid yet — a cashier settles this order when you pay at
+                    the depot.
+                  </p>
+                )}
               </div>
             </motion.div>
           )}

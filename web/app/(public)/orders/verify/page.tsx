@@ -1,11 +1,15 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getOrder, verifyPayment } from "@/lib/endpoints";
 import { ApiError } from "@/lib/api";
-import { readPaymentAttempt, forgetPaymentAttempt } from "@/lib/paymentSession";
+import {
+  readPaymentAttempt,
+  latestPaymentAttempt,
+  forgetPaymentAttempt,
+} from "@/lib/paymentSession";
 import { paths } from "@/utils/paths";
 
 /**
@@ -15,6 +19,14 @@ import { paths } from "@/utils/paths";
  * webhook invisible to the customer, so it never reports failure on its own —
  * if the gateway has not settled yet it says so and lets them check again.
  * See docs/FRONTEND-API-CONTRACT.md §6.2.
+ *
+ * Two things are repaired here. The reference and guest token live in session
+ * storage, which is per-tab: if the gateway was opened in a new tab and the
+ * return did not land in that tab, there is no attempt record to read. That is
+ * not a failure — the page falls back to reading the order (the webhook may
+ * already have settled it). And when the gateway returns without echoing
+ * `?order=`, the order id is recovered from the most recent attempt this tab
+ * recorded rather than stranding the payment.
  */
 type State = "confirming" | "paid" | "pending" | "unknown";
 
@@ -37,7 +49,20 @@ export default function OrderVerifyPage() {
 
 function VerifyResult() {
   const params = useSearchParams();
-  const orderId = params.get("order");
+  const queryOrderId = params.get("order");
+
+  // The stored attempt is read through useSyncExternalStore, which renders the
+  // server snapshot (null) first and the real value after hydration. Reading it
+  // directly during render would read `window` on the server and mismatch.
+  const storedOrderId = useSyncExternalStore(
+    () => () => {},
+    () => latestPaymentAttempt()?.orderId ?? null,
+    () => null,
+  );
+  // The query is authoritative; the stored attempt is the fallback for a return
+  // the gateway sent back without echoing the order id.
+  const orderId = queryOrderId ?? storedOrderId;
+
   const [state, setState] = useState<State>("confirming");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -49,12 +74,13 @@ function VerifyResult() {
     if (!orderId) return;
 
     let cancelled = false;
+    // May be null when the return landed in a tab that never saw initialize
+    // (a new tab, or storage unavailable). Polling the order still settles it.
     const attempt = readPaymentAttempt(orderId);
 
     const settle = async () => {
       // Ask the gateway directly first: it can settle the order before the
-      // webhook arrives. A missing reference means this tab never started the
-      // payment (or storage is unavailable), so skip straight to polling.
+      // webhook arrives.
       if (attempt) {
         try {
           const result = await verifyPayment(
@@ -63,7 +89,7 @@ function VerifyResult() {
             attempt.guestToken,
           );
           if (!cancelled && result.paid) {
-            forgetPaymentAttempt();
+            forgetPaymentAttempt(orderId);
             setState("paid");
             return;
           }
@@ -79,7 +105,7 @@ function VerifyResult() {
         try {
           const { order } = await getOrder(orderId, attempt?.guestToken);
           if (order.payment_status === "paid") {
-            forgetPaymentAttempt();
+            forgetPaymentAttempt(orderId);
             setState("paid");
             return;
           }

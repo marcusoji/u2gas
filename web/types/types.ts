@@ -470,7 +470,7 @@ export interface GasTerminalProps {
   onPay?: (orderDraft: GasOrderDraft) => void | Promise<void>;
   onChange?: (value: string) => void;
   className?: string;
-  status?: "idle" | "processing" | "success" | "failed";
+  status?: "idle" | "processing" | "success" | "failed" | "held";
   onDismissStatus?: () => void;
   children?: React.ReactNode;
 }
