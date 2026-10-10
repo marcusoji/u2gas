@@ -3,9 +3,18 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import type { Product } from "@/types";
+import type { Product, Zone } from "@/types";
 import { products } from "@/data";
 import { useCartStore, type CartItem } from "@/stores/cartStore";
+import { useAuthStore } from "@/stores/authStore";
+import {
+  createCartOrder,
+  getOrder,
+  getZones,
+  initializePayment,
+} from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
+import { rememberPaymentAttempt } from "@/lib/paymentSession";
 import FullScreenView from "@/components/ui/FullScreenView";
 import { paths } from "@/utils/paths";
 import {
@@ -27,6 +36,8 @@ export type ShopModalProps = {
 };
 
 export type ViewMode = "grid" | "detail" | "basket";
+
+type PaymentStatus = "idle" | "processing" | "success" | "held";
 
 export function ShopModal({
   open,
@@ -50,10 +61,23 @@ export function ShopModal({
     string | null
   >(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState<
-    "idle" | "processing" | "success"
-  >("idle");
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("idle");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Real checkout state: the order the Worker created, the guest capability
+  // token, the delivery zone, and the guest's own details.
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [guestToken, setGuestToken] = useState<string | undefined>();
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [zoneId, setZoneId] = useState<string>("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [blockedUrl, setBlockedUrl] = useState<string | null>(null);
+
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const needsGuest = !isLoggedIn;
 
   // Cart Store
   const cartItems = useCartStore((state) => state.items);
@@ -83,20 +107,84 @@ export function ShopModal({
       setShowPayment(false);
       setIsProcessing(false);
       setPaymentStatus("idle");
+      setError(null);
+      setBlockedUrl(null);
     }
   }, [open, activeInitial]);
 
-  // Payment processing timer (2.4s)
+  // Delivery zones are only needed when the customer chooses delivery.
   useEffect(() => {
-    if (isProcessing) {
-      const timer = setTimeout(() => {
-        setIsProcessing(false);
-        setPaymentStatus("success");
-      }, 2400);
+    if (!open || checkoutMode !== "delivery" || zones.length > 0) return;
+    let cancelled = false;
+    getZones()
+      .then(({ zones: list }) => {
+        if (cancelled) return;
+        setZones(list);
+        if (list.length && !zoneId) setZoneId(list[0].zone_id);
+      })
+      .catch(() => {
+        // The select stays empty; the Worker will refuse a delivery without a
+        // zone, and the error is shown on checkout.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, checkoutMode, zones.length, zoneId]);
 
-      return () => clearTimeout(timer);
+  // The gateway is the authority. `initialize` returns its URL and the webhook
+  // settles the order; polling the order is what closes the sheet, so a closed
+  // tab or a late webhook still resolves.
+  useEffect(() => {
+    if (
+      paymentStatus !== "processing" ||
+      !orderId ||
+      selectedPaymentMethod === "DEPOT"
+    ) {
+      return;
     }
-  }, [isProcessing]);
+
+    let cancelled = false;
+    const startedAt = Date.now();
+
+    const tick = async () => {
+      try {
+        const { order: current } = await getOrder(orderId, guestToken);
+        if (cancelled) return;
+        if (current.payment_status === "paid") {
+          setIsProcessing(false);
+          setPaymentStatus("success");
+          return;
+        }
+        if (
+          current.payment_status === "failed" ||
+          current.payment_status === "refunded" ||
+          current.status === "cancelled" ||
+          current.status === "expired"
+        ) {
+          setIsProcessing(false);
+          setPaymentStatus("idle");
+          setSelectedPaymentMethod(null);
+          setError("THE PAYMENT DID NOT GO THROUGH");
+          return;
+        }
+      } catch {
+        // A transient read failure must not cancel a live payment attempt.
+      }
+      if (!cancelled && Date.now() - startedAt > 180_000) {
+        setIsProcessing(false);
+        setPaymentStatus("idle");
+        setSelectedPaymentMethod(null);
+        setError("THE PAYMENT IS STILL PENDING — CHECK YOUR ORDERS");
+        return;
+      }
+      if (!cancelled) window.setTimeout(tick, 3000);
+    };
+
+    void tick();
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentStatus, orderId, guestToken, selectedPaymentMethod]);
 
   useEffect(() => {
     if (isSearchOpen && inputRef.current) {
@@ -109,14 +197,23 @@ export function ShopModal({
     setSearchQuery("");
   };
 
+  const resetCheckout = () => {
+    setShowPayment(false);
+    setIsProcessing(false);
+    setPaymentStatus("idle");
+    setSelectedPaymentMethod(null);
+    setError(null);
+    setBlockedUrl(null);
+    setOrderId(null);
+    setGuestToken(undefined);
+  };
+
   const handleCloseModal = () => {
     setSelectedProduct(null);
     setIsSearchOpen(false);
     setSearchQuery("");
     setViewMode("grid");
-    setShowPayment(false);
-    setIsProcessing(false);
-    setPaymentStatus("idle");
+    resetCheckout();
     onOpenChange(false);
   };
 
@@ -126,17 +223,161 @@ export function ShopModal({
     setViewMode("basket");
   };
 
-  const handleSelectPayment = (method: string) => {
+  /**
+   * Place the order and hand the customer to the gateway.
+   *
+   * `PAY IN THE DEPOT` is not a Monnify method: the order is created and left
+   * unpaid for a cashier to settle, so the sheet closes on a held order rather
+   * than a paid one.
+   */
+  const handleSelectPayment = async (method: string) => {
+    if (isProcessing) return;
     setSelectedPaymentMethod(method);
+    setError(null);
+    setBlockedUrl(null);
+
+    if (cartItems.length === 0) {
+      setError("YOUR BASKET IS EMPTY");
+      return;
+    }
+    if (checkoutMode === "delivery") {
+      if (!zoneId) {
+        setError("CHOOSE A DELIVERY ZONE");
+        return;
+      }
+      if (!deliveryAddress.trim()) {
+        setError("ENTER A DELIVERY ADDRESS");
+        return;
+      }
+    }
+    if (needsGuest) {
+      if (!guestName.trim()) {
+        setError("ENTER YOUR NAME");
+        return;
+      }
+      if (!guestPhone.trim()) {
+        setError("ENTER YOUR PHONE NUMBER");
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setPaymentStatus("processing");
+
+    const lines = cartItems.map((item) => ({
+      kind: "product" as const,
+      product_id: item.id,
+      quantity: item.quantity,
+    }));
+
+    try {
+      const { order, guest_token } = await createCartOrder({
+        lines,
+        fulfillment: checkoutMode === "delivery" ? "delivery" : "pickup",
+        ...(checkoutMode === "delivery"
+          ? { zone_id: zoneId, address: deliveryAddress.trim() }
+          : {}),
+        ...(needsGuest
+          ? { guest_name: guestName.trim(), guest_phone: guestPhone.trim() }
+          : {}),
+      });
+
+      setOrderId(order.order_id);
+      setGuestToken(guest_token);
+
+      if (method === "DEPOT") {
+        setIsProcessing(false);
+        setPaymentStatus("held");
+        return;
+      }
+
+      // Open the destination tab synchronously, before the network call: after
+      // an `await` the browser treats `window.open` as an unsolicited popup and
+      // blocks it, stranding the customer on a spinner.
+      const gatewayTab = window.open("about:blank", "_blank");
+      if (gatewayTab) {
+        try {
+          gatewayTab.opener = null;
+        } catch {
+          // Some browsers refuse the assignment; navigation still proceeds.
+        }
+      }
+
+      try {
+        const { authorization_url, reference, already_paid } =
+          await initializePayment(order.order_id, guest_token);
+        if (already_paid) {
+          gatewayTab?.close();
+          return; // the poll settles it on the next tick
+        }
+        rememberPaymentAttempt({
+          orderId: order.order_id,
+          reference,
+          guestToken: guest_token,
+        });
+
+        // The gateway return lands in the tab that opened it, which snapshotted
+        // sessionStorage before this attempt existed, so copy the record in.
+        if (gatewayTab) {
+          try {
+            gatewayTab.sessionStorage.setItem(
+              "u2gas_payment_attempts_v1",
+              JSON.stringify({
+                [order.order_id]: {
+                  orderId: order.order_id,
+                  reference,
+                  createdAt: Date.now(),
+                },
+              }),
+            );
+            if (guest_token) {
+              gatewayTab.sessionStorage.setItem(
+                "u2gas_payment_guest_v1",
+                guest_token,
+              );
+            }
+          } catch {
+            // The webhook still settles the order and the opener tab polls it.
+          }
+        }
+
+        if (authorization_url && gatewayTab) {
+          gatewayTab.location.href = authorization_url;
+        } else if (authorization_url) {
+          setBlockedUrl(authorization_url);
+          setIsProcessing(false);
+        }
+      } catch (err) {
+        gatewayTab?.close();
+        setIsProcessing(false);
+        setPaymentStatus("idle");
+        setSelectedPaymentMethod(null);
+        setError(
+          err instanceof ApiError ? err.message : "COULD NOT START THE PAYMENT",
+        );
+      }
+    } catch (err) {
+      setIsProcessing(false);
+      setPaymentStatus("idle");
+      setSelectedPaymentMethod(null);
+      setError(
+        err instanceof ApiError ? err.message : "COULD NOT PLACE THE ORDER",
+      );
+    }
   };
 
   const handleDismissSuccess = () => {
     clearCart();
-    setPaymentStatus("idle");
-    setShowPayment(false);
-    setSelectedPaymentMethod(null);
+    resetCheckout();
+    handleCloseModal();
+    router.push(paths.home);
+  };
+
+  // A pay-at-depot order is a real, held order: the basket is settled by a
+  // cashier, so it is cleared here rather than left to be ordered again.
+  const handleDismissHeld = () => {
+    clearCart();
+    resetCheckout();
     handleCloseModal();
     router.push(paths.home);
   };
@@ -216,6 +457,19 @@ export function ShopModal({
         isProcessing={isProcessing}
         paymentStatus={paymentStatus}
         onDismissSuccess={handleDismissSuccess}
+        needsGuest={needsGuest}
+        guestName={guestName}
+        guestPhone={guestPhone}
+        onGuestNameChange={setGuestName}
+        onGuestPhoneChange={setGuestPhone}
+        error={error}
+        blockedUrl={blockedUrl}
+        zones={zones}
+        zoneId={zoneId}
+        onZoneChange={setZoneId}
+        deliveryAddress={deliveryAddress}
+        onDeliveryAddressChange={setDeliveryAddress}
+        onDismissHeld={handleDismissHeld}
       />
     </FullScreenView>
   );

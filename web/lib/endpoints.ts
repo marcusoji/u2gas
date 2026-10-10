@@ -1,6 +1,5 @@
 import { apiFetch, mediaUrl, newIdempotencyKey } from "./api";
 import type {
-  AdminStaffProfile,
   AuditEntry,
   Bundle,
   BundleMember,
@@ -512,7 +511,7 @@ export function createZone(body: Record<string, unknown>): Promise<{ zone: Zone 
   return apiFetch("/admin/zones", { method: "POST", body });
 }
 
-export function getAdminStaff(): Promise<{ staff: AdminStaffProfile[] }> {
+export function getAdminStaff(): Promise<{ staff: unknown[] }> {
   return apiFetch("/admin/staff");
 }
 

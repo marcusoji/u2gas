@@ -14,8 +14,25 @@ export type ShopPaymentOverlayProps = {
   selectedPaymentMethod: string | null;
   onSelectPayment: (method: string) => void;
   isProcessing: boolean;
-  paymentStatus: "idle" | "processing" | "success";
+  paymentStatus: "idle" | "processing" | "success" | "held";
   onDismissSuccess: () => void;
+  /** A signed-out customer must leave a name and phone the Worker can record. */
+  needsGuest: boolean;
+  guestName: string;
+  guestPhone: string;
+  onGuestNameChange: (value: string) => void;
+  onGuestPhoneChange: (value: string) => void;
+  error: string | null;
+  /** Set when the browser refused the gateway tab, so it can be linked. */
+  blockedUrl: string | null;
+  /** Delivery zone choices, loaded from the Worker. */
+  zones: { zone_id: string; name: string; fee_kobo: number }[];
+  zoneId: string;
+  onZoneChange: (zoneId: string) => void;
+  deliveryAddress: string;
+  onDeliveryAddressChange: (value: string) => void;
+  /** Fired when a pay-at-depot order is dismissed (the basket is then cleared). */
+  onDismissHeld: () => void;
 };
 
 export function ShopPaymentOverlay({
@@ -28,6 +45,19 @@ export function ShopPaymentOverlay({
   isProcessing,
   paymentStatus,
   onDismissSuccess,
+  needsGuest,
+  guestName,
+  guestPhone,
+  onGuestNameChange,
+  onGuestPhoneChange,
+  error,
+  blockedUrl,
+  zones,
+  zoneId,
+  onZoneChange,
+  deliveryAddress,
+  onDeliveryAddressChange,
+  onDismissHeld,
 }: ShopPaymentOverlayProps) {
   const getTotalItems = useCartStore((state) => state.getTotalItems);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
@@ -158,19 +188,39 @@ export function ShopPaymentOverlay({
 
                     {/* Map Preview for Delivery Mode */}
                     {checkoutMode === "delivery" && (
-                      <div className="w-full h-28 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
-                        <Image
-                          src="/images/map.jpg"
-                          alt="Delivery map"
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          className="relative z-10 bg-brand-primary text-white text-[11px] px-5 py-2.5 rounded-[10px] cursor-pointer shadow-md hover:bg-blue-700 transition-colors"
+                      <div className="w-full flex flex-col items-center gap-2">
+                        <div className="w-full h-28 rounded-2xl overflow-hidden relative flex items-center justify-center shadow-xs">
+                          <Image
+                            src="/images/map.jpg"
+                            alt="Delivery map"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <select
+                          value={zoneId}
+                          onChange={(e) => onZoneChange(e.target.value)}
+                          disabled={isProcessing}
+                          className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] focus:outline-hidden focus:border-[#1317E4] disabled:opacity-60"
                         >
-                          CONFIRM DELIVERY ADDRESS
-                        </button>
+                          <option value="">CHOOSE A DELIVERY ZONE</option>
+                          {zones.map((zone) => (
+                            <option key={zone.zone_id} value={zone.zone_id}>
+                              {zone.name} — ₦
+                              {(zone.fee_kobo / 100).toLocaleString()}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="text"
+                          value={deliveryAddress}
+                          onChange={(e) =>
+                            onDeliveryAddressChange(e.target.value)
+                          }
+                          disabled={isProcessing}
+                          placeholder="DELIVERY ADDRESS"
+                          className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] disabled:opacity-60"
+                        />
                       </div>
                     )}
 
@@ -178,6 +228,45 @@ export function ShopPaymentOverlay({
                     <p className="text-[#B5B5B5] text-[11px] tracking-[0.14em] uppercase">
                       PAYMENT OPTIONS
                     </p>
+
+                    {needsGuest && (
+                      <div className="w-full flex flex-col items-center gap-2">
+                        <input
+                          type="text"
+                          value={guestName}
+                          onChange={(e) => onGuestNameChange(e.target.value)}
+                          disabled={isProcessing}
+                          placeholder="YOUR NAME"
+                          className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] uppercase disabled:opacity-60"
+                        />
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          value={guestPhone}
+                          onChange={(e) => onGuestPhoneChange(e.target.value)}
+                          disabled={isProcessing}
+                          placeholder="PHONE NUMBER"
+                          className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] disabled:opacity-60"
+                        />
+                      </div>
+                    )}
+
+                    {error && (
+                      <p className="text-[11px] font-mono text-red-500 tracking-wider text-center max-w-[300px]">
+                        {error}
+                      </p>
+                    )}
+
+                    {blockedUrl && (
+                      <a
+                        href={blockedUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-mono text-brand-primary underline tracking-wider text-center"
+                      >
+                        OPEN THE PAYMENT PAGE
+                      </a>
+                    )}
 
                     {/* Payment Buttons */}
                     {checkoutMode === "delivery" ? (
@@ -289,6 +378,28 @@ export function ShopPaymentOverlay({
                   className="shadow-[0_4px_24px_rgba(3,255,49,0.5)]"
                 />
               </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ──────────────── PAY-IN-DEPOT (HELD) OVERLAY ──────────────── */}
+      <AnimatePresence>
+        {paymentStatus === "held" && (
+          <motion.div
+            key="checkout-held-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onDismissHeld}
+            className="absolute inset-0 z-50 bg-black/40 backdrop-blur-[3px] flex flex-col items-center justify-center select-none cursor-pointer overflow-hidden p-4"
+          >
+            <div className="flex flex-col items-center justify-center gap-5">
+              <TerminalScreenBox value="HELD!!" variant="amber" speed={8} />
+              <p className="text-white text-[12px] font-mono tracking-wider text-center max-w-[280px] uppercase">
+                Pay at the depot — your order is held for a cashier to settle
+              </p>
             </div>
           </motion.div>
         )}

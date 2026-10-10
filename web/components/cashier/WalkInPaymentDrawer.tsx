@@ -3,13 +3,21 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PaymentMethodBadge, { PaymentMethod } from "./PaymentMethodBadge";
+import { staffWalkIn, staffRecordPayment } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
 
 export interface WalkInOrderData {
   kg: number;
   totalNaira: number;
   method: PaymentMethod;
   timestamp: string;
+  /** The order number the customer's receipt is keyed on (e.g. U2-100045). */
   orderId: string;
+  /** The order row's uuid, kept for any follow-up call that needs it. */
+  orderUuid: string;
+  /** Cash only: what the customer handed over and the change to give back. */
+  tenderedNaira?: number;
+  changeDueNaira?: number;
 }
 
 interface WalkInPaymentDrawerProps {
@@ -19,6 +27,13 @@ interface WalkInPaymentDrawerProps {
   ratePerKg?: number;
   onSuccess?: (order: WalkInOrderData) => void;
 }
+
+/** The drawn badge vocabulary mapped onto the Worker's payment methods. */
+const METHOD_TO_API: Record<PaymentMethod, "cash" | "card_terminal" | "bank_transfer"> = {
+  CASH: "cash",
+  POS: "card_terminal",
+  "BANK TRANS": "bank_transfer",
+};
 
 export default function WalkInPaymentDrawer({
   open,
@@ -31,23 +46,63 @@ export default function WalkInPaymentDrawer({
     null,
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [tendered, setTendered] = useState("");
 
   // Calculate total price based on kg (e.g. 10kg = ₦10,000)
   const totalNaira = kg * ratePerKg;
   const formattedPrice = `₦${totalNaira.toLocaleString()}`;
 
   const handleSelectMethod = (method: PaymentMethod) => {
+    setError(null);
     setSelectedMethod(method);
   };
 
-  const handleContinueToPay = () => {
+  const handleContinueToPay = async () => {
     if (!selectedMethod || isProcessing) return;
 
-    setIsProcessing(true);
+    const name = customerName.trim();
+    const phone = customerPhone.trim();
+    if (!name || !phone) {
+      setError("ENTER THE CUSTOMER'S NAME AND PHONE");
+      return;
+    }
 
-    // Simulate payment transaction
-    setTimeout(() => {
-      setIsProcessing(false);
+    // Cash needs the amount handed over: the Worker computes the change from
+    // it, and refuses a cash payment that does not say what was tendered.
+    let tenderedNaira: number | undefined;
+    if (selectedMethod === "CASH") {
+      const value = Number(tendered.replace(/[^0-9.]/g, ""));
+      if (!value || value < totalNaira) {
+        setError("ENTER AT LEAST THE AMOUNT DUE");
+        return;
+      }
+      tenderedNaira = value;
+    }
+
+    setError(null);
+    setIsProcessing(true);
+    try {
+      // One order per walk-in sale, then the explicit payment confirmation —
+      // opening the drawer is not payment.
+      const { order } = await staffWalkIn({
+        kg,
+        lines: [],
+        guest_name: name,
+        guest_phone: phone,
+        fulfillment: "pickup",
+      });
+
+      const result = await staffRecordPayment({
+        order_id: order.order_id,
+        method: METHOD_TO_API[selectedMethod],
+        ...(tenderedNaira !== undefined
+          ? { tendered_kobo: Math.round(tenderedNaira * 100) }
+          : {}),
+      });
+
       const orderData: WalkInOrderData = {
         kg,
         totalNaira,
@@ -56,18 +111,34 @@ export default function WalkInPaymentDrawer({
           hour: "2-digit",
           minute: "2-digit",
         }),
-        orderId: `ORD-${Math.floor(10000 + Math.random() * 90000)}`,
+        orderId: result.order_number,
+        orderUuid: order.order_id,
+        ...(tenderedNaira !== undefined
+          ? {
+              tenderedNaira,
+              changeDueNaira: result.change_due_kobo / 100,
+            }
+          : {}),
       };
 
       onSuccess?.(orderData);
       onOpenChange(false);
-      // Reset state for subsequent uses
       setSelectedMethod(null);
-    }, 1500);
+      setCustomerName("");
+      setCustomerPhone("");
+      setTendered("");
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "COULD NOT RECORD THE PAYMENT",
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleClose = () => {
     if (isProcessing) return;
+    setError(null);
     onOpenChange(false);
     setSelectedMethod(null);
   };
@@ -177,6 +248,44 @@ export default function WalkInPaymentDrawer({
                       className="cursor-pointer"
                     />
                   </div>
+                </div>
+
+                {/* Customer identity — the Worker needs a name and phone to
+                    record who a walk-in order belongs to. */}
+                <div className="w-full flex flex-col items-center gap-2 mb-4">
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    disabled={isProcessing}
+                    placeholder="CUSTOMER NAME"
+                    className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] uppercase disabled:opacity-60"
+                  />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    disabled={isProcessing}
+                    placeholder="CUSTOMER PHONE"
+                    className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] disabled:opacity-60"
+                  />
+                  {selectedMethod === "CASH" && (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={tendered}
+                      onChange={(e) => setTendered(e.target.value)}
+                      disabled={isProcessing}
+                      placeholder="CASH RECEIVED (₦)"
+                      className="w-full max-w-[300px] h-11 rounded-full bg-white border border-dashed border-[#CCD0DC] px-5 text-center text-[13px] font-mono tracking-wider text-[#1317E4] placeholder:text-neutral-400 focus:outline-hidden focus:border-[#1317E4] disabled:opacity-60"
+                    />
+                  )}
+                  {error && (
+                    <span className="text-[11px] font-mono text-red-500 tracking-wider text-center">
+                      {error}
+                    </span>
+                  )}
                 </div>
 
                 {/* Action Button: 'Continue to Pay' OR 'PROCESSING...' */}

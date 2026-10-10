@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Plus, X, Camera } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminStaffStore } from "@/stores/adminStaffStore";
+import { useAdminStaffList } from "@/hooks/useApiData";
+import { addStaff } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
 import { paths } from "@/utils/paths";
 
 interface AdminEditStaffViewProps {
@@ -22,13 +25,21 @@ export default function AdminEditStaffView({
     staffList,
     selectedStaffId,
     setSelectedStaffId,
+    setStaffList,
     updateStaff,
     removeStaff,
   } = useAdminStaffStore();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newAvatarUrl, setNewAvatarUrl] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const { data, reload } = useAdminStaffList();
+
+  React.useEffect(() => {
+    if (data?.staff) setStaffList(data.staff);
+  }, [data, setStaffList]);
 
   const activeStaff =
     staffList.find((s) => s.id === selectedStaffId) || staffList[0];
@@ -62,8 +73,39 @@ export default function AdminEditStaffView({
     }
   };
 
-  const handleSubmitAddStaff = (e: React.FormEvent) => {
+  const handleSubmitAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (busy) return;
+    const form = e.currentTarget as HTMLFormElement;
+    const data = new FormData(form);
+    const email = String(data.get("email") ?? "").trim();
+    const firstName = String(data.get("firstName") ?? "").trim();
+    const lastName = String(data.get("lastName") ?? "").trim();
+    const role = String(data.get("role") ?? "staff");
+    if (!email) {
+      setError("AN EMAIL IS REQUIRED");
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      await addStaff({
+        email,
+        role,
+        display_name: `${firstName} ${lastName}`.trim() || undefined,
+        bank_name: String(data.get("bankName") ?? "").trim() || undefined,
+        account_number:
+          String(data.get("accountNumber") ?? "").trim() || undefined,
+      });
+      setIsAddModalOpen(false);
+      // Read the roster back so the sheet shows the person the Worker created.
+      reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "COULD NOT ADD STAFF");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleRemoveStaff = () => {
@@ -199,9 +241,34 @@ export default function AdminEditStaffView({
                     style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
                     className="border border-dashed border-[#838EF8] px-3.5 py-0.5 rounded-[8px] inline-flex items-center justify-center max-w-full"
                   >
-                    <input
-                      type="text"
+                    <select
                       name="role"
+                      defaultValue="staff"
+                      className="bg-transparent text-center text-[#1317E4] text-[15px] font-bold tracking-wider uppercase outline-none leading-tight w-[200px]"
+                    >
+                      <option value="staff">CASHIER</option>
+                      <option value="driver">DRIVER</option>
+                      <option value="admin">ADMIN</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* EMAIL */}
+                <div className="w-full bg-white rounded-full py-2.5 px-4 flex flex-col items-center justify-center border border-dashed border-[#C5CAE9] focus-within:border-[#1317E4] transition-all">
+                  <span
+                    style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
+                    className="text-[10px] font-bold tracking-[0.15em] text-[#1317E4] uppercase mb-1"
+                  >
+                    EMAIL
+                  </span>
+                  <div
+                    style={{ fontFamily: 'var(--font-jgs7), "jgs7", monospace' }}
+                    className="border border-dashed border-[#838EF8] px-3.5 py-0.5 rounded-[8px] inline-flex items-center justify-center max-w-full"
+                  >
+                    <input
+                      type="email"
+                      name="email"
+                      required
                       placeholder="EXAMPLE@GMAIL.COM"
                       className="bg-transparent text-center text-[#1317E4] placeholder:text-[#838EF8]/60 text-[15px] font-bold tracking-wider uppercase outline-none leading-tight w-[200px]"
                     />
@@ -251,11 +318,18 @@ export default function AdminEditStaffView({
                   </button>
                   <button
                     type="submit"
-                    className="bg-[#1317E4] text-white rounded-[10px] font-mono text-[11px] font-bold px-5 py-1.5 uppercase tracking-wider hover:bg-[#0f12c5] active:scale-95 transition-all cursor-pointer shadow-xs"
+                    disabled={busy}
+                    className="bg-[#1317E4] text-white rounded-[10px] font-mono text-[11px] font-bold px-5 py-1.5 uppercase tracking-wider hover:bg-[#0f12c5] active:scale-95 transition-all cursor-pointer shadow-xs disabled:opacity-60"
                   >
-                    ADD STAFF
+                    {busy ? "ADDING…" : "ADD STAFF"}
                   </button>
                 </div>
+
+                {error && (
+                  <p className="text-[10px] font-mono text-red-500 tracking-wider text-center uppercase">
+                    {error}
+                  </p>
+                )}
               </form>
             </motion.div>
           </motion.div>

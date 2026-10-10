@@ -5,12 +5,36 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import ManualEntryModal from "./ManualEntryModal";
+import { driverScan } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
 
 export interface ScanResultData {
   orderId: string;
   customer?: string;
   itemTitle?: string;
   timestamp: string;
+}
+
+/** The Worker's refusal codes, turned into the one line the scanner shows. */
+function scanFailureMessage(code: string): string {
+  switch (code) {
+    case "QR_INVALID":
+      return "QR NOT RECOGNISED";
+    case "QR_ALREADY_SCANNED":
+      return "ALREADY SCANNED";
+    case "QR_EXPIRED":
+      return "QR EXPIRED";
+    case "UNPAID":
+      return "ORDER NOT PAID";
+    case "ALREADY_FULFILLED":
+      return "ALREADY DELIVERED";
+    case "WRONG_FULFILLMENT_TYPE":
+      return "NOT A DELIVERY";
+    case "ORDER_ALREADY_CLOSED":
+      return "ORDER CLOSED";
+    default:
+      return "VERIFICATION FAILED";
+  }
 }
 
 export default function DriverScanner() {
@@ -24,6 +48,10 @@ export default function DriverScanner() {
   );
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const qrScannerRef = useRef<Html5Qrcode | null>(null);
+  // The decode callback fires repeatedly and can fire again before the first
+  // redemption resolves; a ref (not state) blocks the second call, because the
+  // closure captured when the camera started would still see the old state.
+  const verifyingRef = useRef(false);
 
   // Initialize and stop scanner
   useEffect(() => {
@@ -97,48 +125,45 @@ export default function DriverScanner() {
     }
   };
 
-  const handleScanSuccess = (text: string) => {
+  const handleScanSuccess = async (text: string) => {
+    if (verifyingRef.current) return;
+    verifyingRef.current = true;
     stopScanner();
     setIsScanning(false);
-    setScanStatus("success");
-    setScannedResult({
-      orderId: text.trim() || "ORD-89421",
-      customer: "Verified Customer",
-      itemTitle: "12.5kg Cooking Gas Cylinder",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-  };
 
-  const handleScanFailure = (text?: string) => {
-    stopScanner();
-    setIsScanning(false);
-    setScanStatus("failed");
-    setScannedResult({
-      orderId: text?.trim() || "ORD-INVALID",
-      customer: "Unrecognized Order",
-      itemTitle: "Verification Failed",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+    const token = text.trim();
+    const at = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
     });
+
+    try {
+      const result = await driverScan(token);
+      setScanStatus("success");
+      setScannedResult({
+        orderId: result.order_number,
+        customer: "Verified Delivery",
+        itemTitle: "Cylinder handover confirmed",
+        timestamp: at,
+      });
+    } catch (err) {
+      setScanStatus("failed");
+      setScannedResult({
+        orderId: token || "QR",
+        customer:
+          err instanceof ApiError ? scanFailureMessage(err.code) : "VERIFICATION FAILED",
+        itemTitle: "Verification Failed",
+        timestamp: at,
+      });
+    } finally {
+      verifyingRef.current = false;
+    }
   };
 
   const handleManualConfirm = (code: string) => {
-    const clean = code.trim().toUpperCase();
-    if (
-      clean.includes("FAIL") ||
-      clean.includes("ERR") ||
-      clean.includes("INVALID") ||
-      clean === "ORD-00000"
-    ) {
-      handleScanFailure(clean);
-    } else {
-      handleScanSuccess(clean);
-    }
+    // The pen button enters the same QR token the camera would read, so it goes
+    // through the same redemption rather than a separate local guess.
+    void handleScanSuccess(code);
   };
 
   const handleReset = () => {
@@ -146,6 +171,7 @@ export default function DriverScanner() {
     setScanStatus("idle");
     setCameraError(null);
     setIsScanning(false);
+    verifyingRef.current = false;
   };
 
   const toggleScan = () => {
@@ -206,24 +232,19 @@ export default function DriverScanner() {
                       : "CAMERA UNAVAILABLE"}
                   </p>
                   <p className="text-[9px] text-neutral-400 uppercase mb-3">
-                    Test verification with simulation modes or manual entry
+                    Enter the code printed under the QR instead
                   </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleScanSuccess("ORD-89421")}
-                      className="px-3 py-1.5 rounded-full bg-[#1317E4] text-white text-[10px] uppercase tracking-wider cursor-pointer active:scale-95"
-                    >
-                      Simulate Success
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleScanFailure("ORD-INVALID")}
-                      className="px-3 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-[10px] uppercase tracking-wider cursor-pointer active:scale-95"
-                    >
-                      Simulate Fail
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopScanner();
+                      setIsScanning(false);
+                      setIsManualModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-[#1317E4] text-white text-[10px] uppercase tracking-wider cursor-pointer active:scale-95"
+                  >
+                    Enter code
+                  </button>
                 </div>
               )}
             </div>

@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { GasStock, Notification } from "@/types";
+import type { GasStock, Notification, StockEntry } from "@/types";
 import { ApiError } from "@/lib/api";
 import {
+  getAdminStaff,
+  getAdminStock,
   getHome,
   getNotifications,
   getShop,
+  getStockEntries,
   type HomePayload,
 } from "@/lib/endpoints";
+import { toAdminStaffProfile, type StaffRow } from "@/stores/adminStaffStore";
 import type { Product } from "@/types";
 
 interface AsyncState<T> {
@@ -101,4 +105,25 @@ export function homeToStock(home: HomePayload | null): GasStock | undefined {
     days_remaining: null,
     updated_at: new Date().toISOString(),
   };
+}
+
+/** The depot's live stock figures, for the admin tank and history screens. */
+export function useAdminStock() {
+  return useAsync<GasStock>(() => getAdminStock(), []);
+}
+
+/** The stock ledger for a month, in the board's own vocabulary. */
+export function useStockEntries(month?: string) {
+  return useAsync<{ entries: StockEntry[] }>(
+    () => getStockEntries(month),
+    [month ?? ""],
+  );
+}
+
+/** The staff roster, already flattened to the roster screens' own shape. */
+export function useAdminStaffList() {
+  return useAsync(async () => {
+    const { staff } = await getAdminStaff();
+    return { staff: (staff as StaffRow[]).map(toAdminStaffProfile) };
+  }, []);
 }

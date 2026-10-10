@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminStaffStore } from "@/stores/adminStaffStore";
+import { useAdminStaffList } from "@/hooks/useApiData";
+import { removeStaff as removeStaffApi } from "@/lib/endpoints";
+import { ApiError } from "@/lib/api";
 import { paths } from "@/utils/paths";
 
 interface AdminStaffViewProps {
@@ -22,10 +25,20 @@ export default function AdminStaffView({
     staffList,
     selectedStaffId,
     setSelectedStaffId,
+    setStaffList,
     removeStaff,
   } = useAdminStaffStore();
 
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { data, error: loadError, loading } = useAdminStaffList();
+
+  // The roster is the server's, not the store's seed. A short list is left
+  // short: inventing a person would put someone on screen who does not exist.
+  React.useEffect(() => {
+    if (data?.staff) setStaffList(data.staff);
+  }, [data, setStaffList]);
 
   const selectedStaff =
     staffList.find((s) => s.id === selectedStaffId) || staffList[0];
@@ -54,9 +67,26 @@ export default function AdminStaffView({
     }
   };
 
+  /** Removal is server-side; the store only follows once the Worker agrees. */
+  const handleRemoveStaff = async () => {
+    if (!selectedStaff || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await removeStaffApi(selectedStaff.id);
+      removeStaff(selectedStaff.id);
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "COULD NOT REMOVE STAFF",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-[420px] flex-1 flex flex-col items-center justify-between px-6 py-6 sm:py-8 select-none">
-      <div className="w-full flex items-center justify-start">
+      <div className="w-full flex items-center justify-start justify-between gap-4">
         <button
           type="button"
           onClick={handleBack}
@@ -66,6 +96,12 @@ export default function AdminStaffView({
           <ChevronRight className="w-3.5 h-3.5 stroke-[2.5]" />
           <span className="leading-none">BACK</span>
         </button>
+        <span
+          aria-live="polite"
+          className="text-[10px] font-mono uppercase tracking-wider text-neutral-500 text-right"
+        >
+          {loading ? "Loading…" : (error ?? loadError?.message ?? "")}
+        </span>
       </div>
 
       <div className="w-full flex flex-col items-center gap-7 my-auto py-3">
@@ -224,12 +260,9 @@ export default function AdminStaffView({
         <div className="mt-2 flex justify-center">
           <button
             type="button"
-            onClick={() => {
-              if (selectedStaff) {
-                removeStaff(selectedStaff.id);
-              }
-            }}
-            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer"
+            onClick={handleRemoveStaff}
+            disabled={busy || !selectedStaff}
+            className="bg-[#D50000] text-white font-mono text-[12px] font-bold px-7 py-2.5 rounded-full uppercase tracking-wider shadow-[0_4px_16px_rgba(213,0,0,0.32)] hover:bg-[#b50000] active:scale-95 transition-all cursor-pointer disabled:opacity-60"
           >
             REMOVE STAFF
           </button>
